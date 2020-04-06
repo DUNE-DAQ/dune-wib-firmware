@@ -47,7 +47,10 @@ Only necessary if block diagram has changed:
 
 ### Create PetaLinux images
 
-PetaLinux 2019.1 from Xilinx should be installed. Source the `settings.sh` file from that install. 
+PetaLinux 2019.1 from Xilinx should be installed. Source the `settings.sh` file from that install.
+Note: PetaLinux supports a very narrow range of distributions and may not work at all outside of that range. 
+You may need to perform these steps on a supported machine.
+
 Start at step 4 if you only want to update the FPGA bitstream.
 
 1. `cd` into the `linux/` folder.
