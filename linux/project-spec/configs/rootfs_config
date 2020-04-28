@@ -59,7 +59,7 @@ CONFIG_system-zynqmp=y
 #
 # busybox 
 #
-# CONFIG_busybox is not set
+CONFIG_busybox=y
 # CONFIG_busybox-inetd is not set
 # CONFIG_busybox-dbg is not set
 # CONFIG_busybox-syslog is not set
@@ -157,15 +157,15 @@ CONFIG_system-zynqmp=y
 #
 # i2c-tools 
 #
-# CONFIG_i2c-tools is not set
-# CONFIG_i2c-tools-dev is not set
+CONFIG_i2c-tools=y
+CONFIG_i2c-tools-dev=y
 # CONFIG_i2c-tools-misc is not set
 # CONFIG_i2c-tools-dbg is not set
 
 #
 # init-ifupdown 
 #
-# CONFIG_init-ifupdown is not set
+CONFIG_init-ifupdown=y
 # CONFIG_init-ifupdown-dev is not set
 # CONFIG_init-ifupdown-dbg is not set
 
@@ -475,7 +475,7 @@ CONFIG_canutils=y
 #
 # dropbear 
 #
-# CONFIG_dropbear is not set
+CONFIG_dropbear=y
 # CONFIG_dropbear-dev is not set
 # CONFIG_dropbear-dbg is not set
 
@@ -555,7 +555,7 @@ CONFIG_openssh-sftp-server=y
 #
 # rsync 
 #
-# CONFIG_rsync is not set
+CONFIG_rsync=y
 # CONFIG_rsync-dev is not set
 # CONFIG_rsync-dbg is not set
 
@@ -738,7 +738,7 @@ CONFIG_openssh-sftp-server=y
 #
 # grep 
 #
-# CONFIG_grep is not set
+CONFIG_grep=y
 # CONFIG_grep-dbg is not set
 # CONFIG_grep-dev is not set
 
@@ -767,7 +767,7 @@ CONFIG_openssh-sftp-server=y
 #
 # less 
 #
-# CONFIG_less is not set
+CONFIG_less=y
 # CONFIG_less-dbg is not set
 # CONFIG_less-dev is not set
 
@@ -833,14 +833,14 @@ CONFIG_pciutils=y
 #
 # screen 
 #
-# CONFIG_screen is not set
+CONFIG_screen=y
 # CONFIG_screen-dev is not set
 # CONFIG_screen-dbg is not set
 
 #
 # sed 
 #
-# CONFIG_sed is not set
+CONFIG_sed=y
 # CONFIG_sed-dev is not set
 # CONFIG_sed-dbg is not set
 
@@ -890,15 +890,15 @@ CONFIG_pciutils=y
 #
 # vim 
 #
-# CONFIG_vim is not set
+CONFIG_vim=y
 # CONFIG_vim-help is not set
 # CONFIG_vim-dbg is not set
 # CONFIG_vim-vimrc is not set
 # CONFIG_vim-dev is not set
 # CONFIG_vim-tutor is not set
-# CONFIG_vim-tools is not set
-# CONFIG_vim-common is not set
-# CONFIG_vim-syntax is not set
+CONFIG_vim-tools=y
+CONFIG_vim-common=y
+CONFIG_vim-syntax=y
 
 #
 # zip 
@@ -4034,7 +4034,7 @@ CONFIG_hellopm=y
 #
 # packagegroup-petalinux 
 #
-# CONFIG_packagegroup-petalinux is not set
+CONFIG_packagegroup-petalinux=y
 # CONFIG_packagegroup-petalinux-dbg is not set
 # CONFIG_packagegroup-petalinux-dev is not set
 
@@ -4104,7 +4104,7 @@ CONFIG_hellopm=y
 #
 # packagegroup-petalinux-networking-stack 
 #
-# CONFIG_packagegroup-petalinux-networking-stack is not set
+CONFIG_packagegroup-petalinux-networking-stack=y
 # CONFIG_packagegroup-petalinux-networking-stack-dbg is not set
 # CONFIG_packagegroup-petalinux-networking-stack-dev is not set
 
@@ -4201,4 +4201,4 @@ CONFIG_imagefeature-hwcodecs=y
 #
 # PetaLinux RootFS Settings
 #
-CONFIG_ROOTFS_ROOT_PASSWD="root"
+CONFIG_ROOTFS_ROOT_PASSWD="fpga"
