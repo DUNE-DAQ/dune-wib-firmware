@@ -374,7 +374,7 @@ end component clk_wiz_0;
     SIGNAL	iic_rtl_0_sda_t : STD_LOGIC;
 
     SIGNAL	reg0_p 			:  STD_LOGIC_VECTOR(31 DOWNTO 0);
-    SIGNAL	reg1_p 			:  STD_LOGIC_VECTOR(31 DOWNTO 0);
+    SIGNAL	i2c_select_p 			:  STD_LOGIC_VECTOR(31 DOWNTO 0);
     SIGNAL	reg2_p 			:  STD_LOGIC_VECTOR(31 DOWNTO 0);
     SIGNAL	reg3_p 			:  STD_LOGIC_VECTOR(31 DOWNTO 0);
     SIGNAL	reg4_p 			:  STD_LOGIC_VECTOR(31 DOWNTO 0);
@@ -450,7 +450,7 @@ PORT MAP(       rstn 			=> AXI_RSTn(0),
 				data 			=> Data_OUT,
 				data_out        => Data_IN,
 				reg0_i  	    => reg0_p,
-				reg1_i	        => reg1_p,		 
+				reg1_i	        => i2c_select_p,		 
 				reg2_i 	        => reg2_p,		 
 				reg3_i 	        => reg3_p,	
 				reg4_i 	        => reg4_p,
@@ -468,7 +468,7 @@ PORT MAP(       rstn 			=> AXI_RSTn(0),
 				reg16_i 	    => reg16_p(30 downto 0) & '0', --is this times 2
 	
 				reg0_o          => reg0_p,
-				reg1_o          => reg1_p,				
+				reg1_o          => i2c_select_p,				
 				reg2_o          => reg2_p,		
 				reg3_o          => reg3_p,		
 				reg4_o          => open,
@@ -497,10 +497,10 @@ PORT MAP(       rstn 			=> AXI_RSTn(0),
 			EXT_CMD2		 => '0',
 			EXT_CMD3		 => '0',
 			EXT_CMD4		 => '0',	
-			SW_CMD1			 => '0',       --reg1_p(0),
-			SW_CMD2			 => '0',    --reg1_p(1),
-			SW_CMD3			 => '0',  --reg1_p(2),
-			SW_CMD4			 => '0', --reg1_p(3),
+			SW_CMD1			 => '0',      
+			SW_CMD2			 => '0', 
+			SW_CMD3			 => '0',
+			SW_CMD4			 => '0',
 			DIS_CMD1	     => '0',
 			DIS_CMD2		 => '0',
 			DIS_CMD3		 => '0',
@@ -520,7 +520,7 @@ obuf4: OBUFDS  port map (O => FEMB_CMD_FPGA_OUT_P, OB => FEMB_CMD_FPGA_OUT_N, I 
 I2C_CONTROL_inst : entity work.I2C_CONTROL
 PORT MAP(
  
-          I2C_SELECT               => reg1_p( 7 downto 0),
+          I2C_SELECT               => i2c_select_p( 7 downto 0),
           iic_rtl_0_scl_i          => iic_rtl_0_scl_i,
           iic_rtl_0_scl_o          => iic_rtl_0_scl_o,
           iic_rtl_0_scl_t          => iic_rtl_0_scl_t, 
