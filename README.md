@@ -59,3 +59,14 @@ Start at step 4 if you only want to update the FPGA bitstream.
 4. Run `./rebuild_boot_image.sh` to generate `../BOOT.BIN` and `../image.ub`.
 5. Copy (at least) `BOOT.BIN` to SD card boot partition for a new bitstream (`image.ub` as well, to update kernel).
 6. Reboot the WIB.
+
+## Creating a bootable SD image
+
+The `linux/make_sd_image.sh` script uses [http://libguestfs.org/](libguestfs) to create an `rootfs.img` file that can be copied to an SD card and boot the WIB.
+
+1. Ensure your `BOOT.BIN` and `image.ub` files are up-to-date and that `petalinux-build` has been run recently.
+2. `cd` into the `linux/` folder.
+3. Run `./make_sd_image.sh` to create `../rootfs.img`
+4. Assuming your SD card is `/dev/sdX`, run `sudo dd if=../rootfs.img of=/dev/sdX bs=256M status=progress`
+5. Run `sync` to ensure the data is written to disk.
+6. The SD card is ready to boot the WIB.
