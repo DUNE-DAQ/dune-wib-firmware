@@ -56,7 +56,7 @@ Start at step 4 if you only want to update the FPGA bitstream.
 1. `cd` into the `linux/` folder.
 2. For a new repository, or if block diagram has changed, run `petalinux-config --get-hw-description=../` ensuring that the hardare definition `../DUNE_WIB.hdf` is up to date.
 3. For a new repository, or if block diagram has changed, run `petalinux-build` to build the linux system.
-4. Run `./rebuild_boot_image.sh` to generate `../BOOT.BIN` and `../image.ub`.
+4. Run `./make_bootloader.sh` to generate `../BOOT.BIN` and `../image.ub`.
 5. Copy (at least) `BOOT.BIN` to SD card boot partition for a new bitstream (`image.ub` as well, to update kernel).
 6. Reboot the WIB.
 
