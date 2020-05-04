@@ -475,7 +475,7 @@ CONFIG_canutils=y
 #
 # dropbear 
 #
-CONFIG_dropbear=y
+# CONFIG_dropbear is not set
 # CONFIG_dropbear-dev is not set
 # CONFIG_dropbear-dbg is not set
 
@@ -4034,7 +4034,7 @@ CONFIG_hellopm=y
 #
 # packagegroup-petalinux 
 #
-CONFIG_packagegroup-petalinux=y
+# CONFIG_packagegroup-petalinux is not set
 # CONFIG_packagegroup-petalinux-dbg is not set
 # CONFIG_packagegroup-petalinux-dev is not set
 
