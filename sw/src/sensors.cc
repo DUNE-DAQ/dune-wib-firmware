@@ -5,9 +5,6 @@
 #include "i2c.h"
 #include "io_reg.h"
 
-#include "wib.pb.h"
-
-
 double read_ltc2499_temp(i2c_t *i2c, uint8_t ch) {
     uint8_t cmd[2] = { 0xB0 | ((ch%2)<<3) | (ch/2), 0x80};
     i2c_write(i2c,0x15,cmd,2);
@@ -60,16 +57,7 @@ uint16_t read_ltc2991_value(i2c_t *i2c, uint8_t slave, uint8_t ch) {
     
 }
 
-int test() {
-
-   io_reg_t led;
-   io_reg_init(&led,0xA0000000,1);
-   io_reg_write(&led,0,0);
-   for (int i = 0; i < 8; i++) {
-       io_reg_write(&led,0,~(1<<i));
-       usleep(100000);
-   }
-   io_reg_write(&led,0,0x5A);
+int read_all() {
 
    io_reg_t reg;
    io_reg_init(&reg,0xA0002000,32);
@@ -117,13 +105,4 @@ int test() {
    }
    
    return 0;
-}
-
-
-int main(int argc, char **argv) {
-    
-    wib::GetStatus getstatus;
-    
-    wib::Command command;
-    
 }
