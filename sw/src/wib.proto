@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package wib;
+
+import "google/protobuf/any.proto";
+
+message Command {
+    google.protobuf.Any cmd = 1;
+}
+
+
+/* Low level debug commands */
+
+message ReadReg {
+    uint64 base_addr = 1;
+    uint64 offset = 2;
+    int32  size = 3;
+}
+
+message WriteReg {
+    uint64 base_addr = 1;
+    uint64 offset = 2;
+    int32  size = 3;
+    uint64 value = 4;
+}
+
+message RegValue {
+    uint64 base_addr = 1;
+    uint64 offset = 2;
+    uint64 value = 3;
+}
+
+/* CCM/SC/Monitoring commands */
+
+message GetStatus {
+}
+
+message Status {
+    repeated double ltc2990_4E_voltages = 1;
+    repeated double ltc2990_4C_voltages = 2;
+    repeated double ltc2991_48_voltages = 3;
+    repeated double ad7414_49_temps = 4;
+    repeated double ad7414_4D_temps = 5;
+    repeated double ad7414_4A_temps = 6;
+    repeated double ltc2499_15_temps = 7;
+}

@@ -1,43 +1,54 @@
 CFLAGS = -march=native -mtune=native -g -O3 -Isrc
-LFLAGS = -s
+LFLAGS = -s -lprotobuf
 
 
 # output binary for each of these (no headers)
-BSRC = src/read_sensors.c
-BOBJ = $(addprefix build/,$(notdir $(BSRC:.c=.o)))
+BSRC = src/read_sensors.cxx
+BOBJ = $(addprefix build/,$(notdir $(BSRC:.cxx=.o)))
 BDEP = $(BOBJ:.o=.d)
 
-# component object for each src/*.c
-LSRC = $(filter-out $(BSRC),$(wildcard src/*.c))
-LOBJ = $(addprefix build/,$(notdir $(LSRC:.c=.o)))
+# component object for each src/*.cc
+LSRC = $(filter-out $(BSRC),$(wildcard src/*.cc))
+LOBJ = $(addprefix build/,$(notdir $(LSRC:.cc=.o)))
 LDEP = $(LOBJ:.o=.d)
+
+# protobuf dependencies
+PBSRCS   := $(wildcard src/*.proto)
+PBOBJS   := $(PBSRCS:.proto=.pb.o)
+PBGENS   := $(PBSRCS:.proto=.pb.cc) $(PBSRCS:.proto=.pb.h)
 
 BINS = $(notdir $(basename $(BSRC))) 
 
 all: $(BINS)
 	@echo Finished building
+	
+clean:
+	@rm -rf build $(PBGENS)
+
+src/%.pb.cc: src/%.proto
+	protoc -I=src --cpp_out=src $<
 
 # binaries depend on all component objects
-$(BINS): %: build/%.o $(LOBJ)
+$(BINS): %: build/%.o $(LOBJ) $(PGOBJS)
 	$(CXX) $< $(LOBJ) $(LFLAGS) -o $@
 
-$(BDEP): build/%.d: src/%.c
+$(BDEP): build/%.d: src/%.cxx $(PBGENS)
 	@mkdir -p build
 	@set -e; rm -f $@
-	$(CC) -M $(CFLAGS) -MT $(<:.cxx=.o) $< > $@
+	$(CXX) -M $(CFLAGS) -MT $(<:.cxx=.o) $< > $@
 	@sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' -i $@
 
-$(LDEP): build/%.d: src/%.c src/%.h
+$(LDEP): build/%.d: src/%.cc src/%.h $(PBGENS)
 	@mkdir -p build
 	@set -e; rm -f $@
-	$(CC) -M $(CFLAGS) -MT $(<:.c=.o) $< > $@
+	$(CXX) -M $(CFLAGS) -MT $(<:.cc=.o) $< > $@
 	@sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' -i $@
 
 # these won't exist the first build
 -include $(LDEP) $(BDEP)
 
-$(BOBJ): build/%.o: build/%.d
-	$(CC) $(CFLAGS) -c $(addprefix src/,$(notdir $(<:.d=.c))) -o $@
+$(BOBJ): build/%.o: build/%.d $(PBGENS)
+	$(CXX) $(CFLAGS) -c $(addprefix src/,$(notdir $(<:.d=.cxx))) -o $@
 
-$(LOBJ): build/%.o: build/%.d
-	$(CC) $(CFLAGS) -c $(addprefix src/,$(notdir $(<:.d=.c))) -o $@
+$(LOBJ): build/%.o: build/%.d $(PBGENS)
+	$(CXX) $(CFLAGS) -c $(addprefix src/,$(notdir $(<:.d=.cc))) -o $@

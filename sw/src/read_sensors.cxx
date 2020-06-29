@@ -5,6 +5,8 @@
 #include "i2c.h"
 #include "io_reg.h"
 
+#include "wib.pb.h"
+
 
 double read_ltc2499_temp(i2c_t *i2c, uint8_t ch) {
     uint8_t cmd[2] = { 0xB0 | ((ch%2)<<3) | (ch/2), 0x80};
@@ -58,7 +60,7 @@ uint16_t read_ltc2991_value(i2c_t *i2c, uint8_t slave, uint8_t ch) {
     
 }
 
-int main(int argc, char **argv) {
+int test() {
 
    io_reg_t led;
    io_reg_init(&led,0xA0000000,1);
@@ -115,4 +117,13 @@ int main(int argc, char **argv) {
    }
    
    return 0;
+}
+
+
+int main(int argc, char **argv) {
+    
+    wib::GetStatus getstatus;
+    
+    wib::Command command;
+    
 }
