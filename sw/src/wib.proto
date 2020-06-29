@@ -24,15 +24,18 @@ message WriteReg {
     uint64 value = 4;
 }
 
-message RegValue {
-    uint64 base_addr = 1;
-    uint64 offset = 2;
-    uint64 value = 3;
-}
-
 /* CCM/SC/Monitoring commands */
 
 message GetStatus {
+}
+
+/* Command Replies */
+
+message RegValue {
+    uint64 base_addr = 1;
+    uint64 offset = 2;
+    int32 size = 3;
+    uint64 value = 4;
 }
 
 message Status {
