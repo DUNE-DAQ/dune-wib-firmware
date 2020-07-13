@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+
+#include "sensors.h"
 #include "i2c.h"
 #include "io_reg.h"
 
@@ -57,7 +59,7 @@ uint16_t read_ltc2991_value(i2c_t *i2c, uint8_t slave, uint8_t ch) {
     
 }
 
-int read_all() {
+int read_sensors(wib::Sensors &sensors) {
 
    io_reg_t reg;
    io_reg_init(&reg,0xA0002000,32);

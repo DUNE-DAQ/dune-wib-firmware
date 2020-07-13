@@ -26,7 +26,7 @@ message WriteReg {
 
 /* CCM/SC/Monitoring commands */
 
-message GetStatus {
+message GetSensors {
 }
 
 /* Command Replies */
@@ -38,7 +38,7 @@ message RegValue {
     uint64 value = 4;
 }
 
-message Status {
+message Sensors {
     repeated double ltc2990_4E_voltages = 1;
     repeated double ltc2990_4C_voltages = 2;
     repeated double ltc2991_48_voltages = 3;

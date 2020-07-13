@@ -23,18 +23,17 @@ void send_command(zmq::socket_t &socket, const C &msg, R &repl) {
 }
 
 int main(int argc, char **argv) {
-    printf("Starting!\n");
     
     zmq::context_t context(1);
     zmq::socket_t socket(context, ZMQ_PAIR);
 
     socket.connect("tcp://127.0.0.1:8888");
-    printf("Connected!\n");
     
-    wib::GetStatus getstatus;
-    wib::Status status;
-    send_command(socket,getstatus,status);
-    printf("Done!\n");
+    wib::GetSensors getsensors;
+    wib::Sensors sensors;
+    send_command(socket,getsensors,sensors);
+    
+    
     
     return 0;
 }
