@@ -6,6 +6,8 @@
 
 #include "io_reg.h"
 
+#ifndef SIMULATION
+
 int io_reg_init(io_reg_t *reg, size_t base_addr, size_t n_reg) {
 	
 	reg->fd=open("/dev/mem",O_RDWR);
@@ -32,4 +34,24 @@ uint32_t io_reg_read(io_reg_t *reg, size_t idx) {
 void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data) {
     reg->ptr[idx] = data;
 }
+
+#else
+
+int io_reg_init(io_reg_t *reg, size_t base_addr, size_t n_reg) {
+	return 0;
+}
+
+int io_reg_free(io_reg_t *reg) {
+    return 0;
+}
+
+uint32_t io_reg_read(io_reg_t *reg, size_t idx) {
+    return 0;
+}
+
+void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data) {
+    return;
+}
+
+#endif
 

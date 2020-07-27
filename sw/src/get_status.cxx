@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     zmq::context_t context(1);
     zmq::socket_t socket(context, ZMQ_PAIR);
 
-    socket.connect("tcp://127.0.0.1:8888");
+    socket.connect("tcp://127.0.0.1:1234");
     
     wib::GetSensors getsensors;
     wib::Sensors sensors;

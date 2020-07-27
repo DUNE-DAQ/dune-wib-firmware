@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
     zmq::context_t context;
     zmq::socket_t socket(context, ZMQ_PAIR);
 
-    socket.bind("tcp://*:8888");
+    socket.bind("tcp://*:1234");
 
     while (1) {
     

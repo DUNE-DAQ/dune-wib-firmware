@@ -1,4 +1,4 @@
-CFLAGS = -march=native -mtune=native -g -O3 -Isrc
+CFLAGS = -march=native -mtune=native -g -O3 -Isrc -DSIMULATION
 LFLAGS = -s -lprotobuf -lzmq
 
 # output binary for each of these (no headers)
