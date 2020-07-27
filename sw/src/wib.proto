@@ -9,6 +9,11 @@ message Command {
 }
 
 
+/* Initialization Commands */
+
+message Initialize {
+}
+
 /* Low level debug commands */
 
 message ReadReg {
@@ -30,6 +35,9 @@ message GetSensors {
 }
 
 /* Command Replies */
+
+message Empty {
+}
 
 message RegValue {
     uint64 base_addr = 1;

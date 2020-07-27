@@ -2,7 +2,7 @@ CFLAGS = -march=native -mtune=native -g -O3 -Isrc -DSIMULATION
 LFLAGS = -s -lprotobuf -lzmq
 
 # output binary for each of these (no headers)
-BSRC = src/get_status.cxx src/wib_server.cxx
+BSRC = src/get_status.cxx src/wib_server.cxx src/initialize.cxx
 BOBJ = $(addprefix build/,$(notdir $(BSRC:.cxx=.o)))
 BDEP = $(BOBJ:.o=.d)
 

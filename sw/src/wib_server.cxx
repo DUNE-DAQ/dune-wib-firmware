@@ -2,16 +2,19 @@
 #include "wib.pb.h"
 
 #include "sensors.h"
+#include "wib.h"
 
 int main(int argc, char **argv) {
-    printf("Starting!\n");
+    printf("wib_server starting\n");
+    
+    WIB w;
     
     zmq::context_t context;
     zmq::socket_t socket(context, ZMQ_PAIR);
 
     socket.bind("tcp://*:1234");
 
-    while (1) {
+    for (int i = 0; ; i++) {
     
         zmq::message_t cmd;
         socket.recv(cmd);
@@ -45,8 +48,12 @@ int main(int argc, char **argv) {
             value.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSensors>()) {
             wib::Sensors sensors;    
-            read_sensors(sensors);
+            w.read_sensors(sensors);
             sensors.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::Initialize>()) {
+            wib::Empty empty;    
+            w.initialize();
+            empty.SerializeToString(&reply_str);
         } /* else if (command.cmd().Is<wib::...>()) {
         
         } */
@@ -55,7 +62,7 @@ int main(int argc, char **argv) {
         memcpy((void*)reply.data(), reply_str.c_str(), reply_str.size());
         socket.send(reply);
         
-        printf("Handled!\n");
+        printf("handled message %i\n",i+1);
         
     }
 

@@ -13,7 +13,7 @@ int io_reg_init(io_reg_t *reg, size_t base_addr, size_t n_reg);
 
 int io_reg_free(io_reg_t *reg);
 
-uint32_t io_reg_read_reg(io_reg_t *reg, size_t idx);
+uint32_t io_reg_read(io_reg_t *reg, size_t idx);
 
 void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data);
 
