@@ -4,8 +4,8 @@
 
 
 
-
 &gem0 {
+        is-internal-pcspma;
         phy-mode = "moca";
         fixed-link {
           speed = <1000>;
