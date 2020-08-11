@@ -245,7 +245,7 @@ CONFIG_TMP_DIR_LOCATION="${PROOT}/build/tmp"
 # Parallel thread execution
 #
 CONFIG_YOCTO_BB_NUMBER_THREADS=""
-CONFIG_YOCTO_PARALLEL_MAKE=""
+CONFIG_YOCTO_PARALLEL_MAKE="8"
 
 #
 # Add pre-mirror url 
@@ -273,4 +273,5 @@ CONFIG_YOCTO_NETWORK_SSTATE_FEEDS_URL="http://petalinux.xilinx.com/sswreleases/r
 # User Layers
 #
 CONFIG_USER_LAYER_0=""
+
 CONFIG_SUBSYSTEM_BOOTARGS_GENERATED="earlycon console=ttyPS0,115200 clk_ignore_unused root=/dev/mmcblk0p2 rw rootwait"
