@@ -6,7 +6,6 @@ MAINTAINER Benjamin Land <bland100@sas.upenn.edu>
 
 #install dependences:
 RUN dpkg --add-architecture i386 && apt-get update &&  DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
-  libguestfs-tools \
   protobuf-compiler \
   python \
   build-essential \
@@ -53,7 +52,7 @@ RUN dpkg --add-architecture i386 && apt-get update &&  DEBIAN_FRONTEND=nonintera
   bc \
   u-boot-tools \
  && apt-get clean \
-# && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 
 ARG INSTALLER
 
