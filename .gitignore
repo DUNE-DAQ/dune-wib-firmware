@@ -1,3 +1,4 @@
 DUNE_WIB/
 *.log
 *.jou
+*.run

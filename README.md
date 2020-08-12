@@ -47,9 +47,12 @@ Only necessary if block diagram has changed:
 
 ### Create PetaLinux images
 
-PetaLinux 2019.1 from Xilinx should be installed. Source the `settings.sh` file from that install.
-Note: PetaLinux supports a very narrow range of distributions and may not work at all outside of that range. 
-You may need to perform these steps on a supported machine.
+PetaLinux 2019.1 is required to build the software for the root filesystem 
+image and the kernel to boot the WIB. 
+
+You can either build the Docker image provided in `linux/petalinux-2019.1` and 
+use that environment, or install the packages listed in the `Dockerfile` on a 
+machine with PetaLinux 2019.1 already installed.
 
 Start at step 4 if you only want to update the FPGA bitstream.
 
@@ -62,7 +65,7 @@ Start at step 4 if you only want to update the FPGA bitstream.
 
 ## Creating a bootable SD image
 
-The `linux/make_sd_image.sh` script uses [http://libguestfs.org/](libguestfs) to create an `rootfs.img` file that can be copied to an SD card and boot the WIB.
+The `linux/make_sd_image.sh` script uses `mtools` and `losetup` to create an `rootfs.img` file that can be copied to an SD card and boot the WIB.
 
 1. Ensure your `BOOT.BIN` and `image.ub` files are up-to-date and that `petalinux-build` has been run recently.
 2. `cd` into the `linux/` folder.
