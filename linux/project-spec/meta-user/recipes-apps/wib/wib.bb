@@ -2,10 +2,12 @@ SUMMARY = "WIB applications"
 LICENSE="CLOSED"
 SECTION = "PETALINUX/apps"
 
-DEPENDS = "zeromq"
+DEPENDS = "glibc zeromq cppzmq protobuf protobuf-native protobuf-c"
 
 SRC_URI = "file://* \
           "
+TARGET_CC_ARCH += "${LDFLAGS}"
+
 S = "${WORKDIR}"
 do_compile() {
         oe_runmake

@@ -15,7 +15,7 @@ void send_command(zmq::socket_t &socket, const C &msg, R &repl) {
     socket.send(request);
     
     zmq::message_t reply;
-    socket.recv(&reply);
+    socket.recv(&reply,0);
     
     std::string reply_str(static_cast<char*>(reply.data()), reply.size());
     repl.ParseFromString(reply_str);

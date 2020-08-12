@@ -1,5 +1,5 @@
-CFLAGS = -march=native -mtune=native -g -O3 -Isrc -DSIMULATION
-LFLAGS = -s -lprotobuf -lzmq
+CFLAGS = -g -O3 -Isrc -DSIMULATION
+LFLAGS = -lprotobuf -lzmq
 
 # output binary for each of these (no headers)
 BSRC = src/get_status.cxx src/wib_server.cxx src/initialize.cxx
@@ -20,9 +20,12 @@ BINS = $(notdir $(basename $(BSRC)))
 
 all: $(BINS)
 	@echo Finished building
-	
+
 clean:
 	@rm -rf build $(PBGENS)
+
+src/%.pb.h: src/%.proto
+	protoc -I=src --cpp_out=src $<
 
 src/%.pb.cc: src/%.proto
 	protoc -I=src --cpp_out=src $<

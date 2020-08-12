@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     for (int i = 0; ; i++) {
     
         zmq::message_t cmd;
-        socket.recv(cmd);
+        socket.recv(&cmd,0);
         
         wib::Command command;
         
