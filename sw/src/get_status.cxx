@@ -27,7 +27,17 @@ int main(int argc, char **argv) {
     zmq::context_t context(1);
     zmq::socket_t socket(context, ZMQ_PAIR);
 
-    socket.connect("tcp://127.0.0.1:1234");
+    char *ip;
+    if (argc < 2) {
+        ip = (char*)"127.0.0.1";
+    } else {
+        ip = argv[1];
+    }
+    
+    char *addr;
+    asprintf(&addr,"tcp://%s:1234",ip);
+    socket.connect(addr);
+    free(addr);
     
     wib::GetSensors getsensors;
     wib::Sensors sensors;

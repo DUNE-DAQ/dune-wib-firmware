@@ -73,3 +73,14 @@ The `linux/make_sd_image.sh` script uses `mtools` and `losetup` to create an `ro
 4. Assuming your SD card is `/dev/sdX`, run `sudo dd if=../rootfs.img of=/dev/sdX bs=256M status=progress`
 5. Run `sync` to ensure the data is written to disk.
 6. The SD card is ready to boot the WIB.
+
+## Testing the bootable SD image
+
+With PetaLinux's QEMU one can test the boot process before deploying to 
+hardware. This also provides an environment to test software on the linux system
+without hardware, but note that QEMU does not by default simulate the PL or even
+all of the standard Zynq Ultrascale+ hardware (e.g. ethernet).
+
+From the `linux/` directory, boot the image with:
+`petalinux-boot --qemu --uboot --qemu-args "-drive file=../rootfs.img,if=sd,format=raw,index=1"`
+`

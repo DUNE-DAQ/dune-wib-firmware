@@ -5,14 +5,22 @@
 #include "wib.h"
 
 int main(int argc, char **argv) {
-    printf("wib_server starting\n");
+    //set output to line buffering
+    setvbuf(stdout, NULL, _IOLBF, 0);
+    setvbuf(stderr, NULL, _IOLBF, 0);
+    
+    printf("wib_server preparing hardware interface\n");
     
     WIB w;
+    
+    printf("wib_server will listen on port 1234\n");
     
     zmq::context_t context;
     zmq::socket_t socket(context, ZMQ_PAIR);
 
     socket.bind("tcp://*:1234");
+    
+    printf("wib_server ready to serve\n");
 
     for (int i = 0; ; i++) {
     

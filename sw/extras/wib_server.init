@@ -1,5 +1,0 @@
-#!/bin/sh
-
-echo "Starting wib_server"
-
-/bin/wib_server &

@@ -1,4 +1,4 @@
-CFLAGS = -g -O3 -Isrc -DSIMULATION
+CFLAGS = -g -O3 -Isrc
 LFLAGS = -lprotobuf -lzmq
 
 # output binary for each of these (no headers)
