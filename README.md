@@ -31,41 +31,53 @@ To do this from Vivado,
     * "Recreate Block Diagrams using Tcl"
 4. Commit the new `.tcl` to the repository.
 
-## Generating FPGA Bitstream and Linux Boot Image
+## Building from Scratch
 
-### Generate bitstream
+Building the project is broken into stages:
+
+1. Generate the Ultrascale+ bitstream and boot images.
+2. Export hardware definition to a PetaLinux project for the WIB.
+3. Configure and build the PetaLinux distribution for the WIB.
+4. Create a bootable disk image for the WIB SD card boot mode.
+
+If an earlier stage is modififed, later stages typically need to be rerun.
+
+#### Generate bitstream
 
 1. Generate bitstream in Vivado.
 2. Export bitstream (`File`->`Export`->`Export Bitstream File`) to `DUNE_WIB.bit`.
 
-### Export hardware definition
+#### Export hardware definition
 
 Only necessary if block diagram has changed:
 
 1. Export hardware (`File`->`Export`->`Export Hardware`).
 2. Copy `DUNE_WIB/DUNE_WIB.sdk/DUNE_WIB.hdf` to `DUNE_WIB.hdf`.
 
-### Create PetaLinux images
+#### Create PetaLinux images
 
 PetaLinux 2019.1 is required to build the software for the root filesystem 
 image and the kernel to boot the WIB. 
 
 You can either build the Docker image provided in `linux/petalinux-2019.1` and 
 use that environment, or install the packages listed in the `Dockerfile` on a 
-machine with PetaLinux 2019.1 already installed.
+machine with PetaLinux 2019.1 already installed. See 
+`linux/petalinux-2019.1/README.md` for container instructions.
 
-Start at step 4 if you only want to update the FPGA bitstream.
+Perform only step 4 if you only want to update the FPGA bitstream. The generated
+files can be copied to the SD card boot partition.
 
 1. `cd` into the `linux/` folder.
 2. For a new repository, or if block diagram has changed, run `petalinux-config --get-hw-description=../` ensuring that the hardare definition `../DUNE_WIB.hdf` is up to date.
-3. For a new repository, or if block diagram has changed, run `petalinux-build` to build the linux system.
+3. For a new repository, or if block diagram has changed, run `petalinux-build` to build the linux system. This can take a long time, but caches build progress for future builds.
 4. Run `./make_bootloader.sh` to generate `../BOOT.BIN` and `../image.ub`.
 5. Copy (at least) `BOOT.BIN` to SD card boot partition for a new bitstream (`image.ub` as well, to update kernel).
 6. Reboot the WIB.
 
-## Creating a bootable SD image
+#### Creating a bootable SD image
 
-The `linux/make_sd_image.sh` script uses `mtools` and `losetup` to create an `rootfs.img` file that can be copied to an SD card and boot the WIB.
+The `linux/make_sd_image.sh` script uses `mtools` and `losetup` to create a
+`rootfs.img` file that can be copied to an SD card and boot the WIB. 
 
 1. Ensure your `BOOT.BIN` and `image.ub` files are up-to-date and that `petalinux-build` has been run recently.
 2. `cd` into the `linux/` folder.
@@ -74,13 +86,26 @@ The `linux/make_sd_image.sh` script uses `mtools` and `losetup` to create an `ro
 5. Run `sync` to ensure the data is written to disk.
 6. The SD card is ready to boot the WIB.
 
-## Testing the bootable SD image
+## Test drive the linux system with QEMU
 
 With PetaLinux's QEMU one can test the boot process before deploying to 
 hardware. This also provides an environment to test software on the linux system
 without hardware, but note that QEMU does not by default simulate the PL or even
 all of the standard Zynq Ultrascale+ hardware (e.g. ethernet).
 
+You can either build the Docker image provided in `linux/petalinux-2019.1` and 
+use that environment, or install the packages listed in the `Dockerfile` on a 
+machine with PetaLinux 2019.1 already installed. See 
+`linux/petalinux-2019.1/README.md` for container instructions.
+
 From the `linux/` directory, boot the image with:
+
 `petalinux-boot --qemu --uboot --qemu-args "-drive file=../rootfs.img,if=sd,format=raw,index=1"`
+
+QEMU will first launch `uboot` in a virtual Ultrascale+ device, which will read 
+the provided SD card image `../rootfs.img` and start the Linux kernel on the 
+boot partition.
+
+Additional options can be passed to QEMU with `--qemu-args` or directly to
+`petalinux-boot` to modify the simulated hardware.
 `
