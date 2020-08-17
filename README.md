@@ -74,7 +74,7 @@ image and the kernel to boot the WIB.
 You can either build the Docker image provided in `linux/petalinux-2019.1` and 
 use that environment, or install the packages listed in the `Dockerfile` on a 
 machine with PetaLinux 2019.1 already installed. See the 
-(container readme)[linux/petalinux-2019.1/README.md] for further instructions.
+[container readme](linux/petalinux-2019.1/README.md) for further instructions.
 
 Perform only step 4 if you only want to update the FPGA bitstream. The generated
 files can be copied to the SD card boot partition.
@@ -108,7 +108,7 @@ all of the standard Zynq Ultrascale+ hardware (e.g. ethernet).
 You can either build the Docker image provided in `linux/petalinux-2019.1` and 
 use that environment, or install the packages listed in the `Dockerfile` on a 
 machine with PetaLinux 2019.1 already installed. See the
-(container readme)[linux/petalinux-2019.1/README.md] for further instructions.
+[container readme](linux/petalinux-2019.1/README.md) for further instructions.
 
 From the `linux/` directory, boot the image with:
 
