@@ -1,6 +1,18 @@
 # DUNE WIB Firmware
 
-Central repository for development of DUNE WIB firmware.
+Central repository for development of DUNE WIB firmware and software.
+
+  * [Development](#development)
+    + [Getting Started](#getting-started)
+    + [Organization](#organization)
+    + [Version Control](#version-control)
+  * [Building from Scratch](#building-from-scratch)
+    +  [Generate bitstream](#generate-bitstream)
+    +  [Export hardware definition](#export-hardware-definition)
+    +  [Create PetaLinux images](#create-petalinux-images)
+    +  [Creating a bootable SD image](#creating-a-bootable-sd-image)
+  * [Test drive the linux system with QEMU](#test-drive-the-linux-system-with-qemu)
+
 
 ## Development
 
@@ -42,27 +54,27 @@ Building the project is broken into stages:
 
 If an earlier stage is modififed, later stages typically need to be rerun.
 
-#### Generate bitstream
+### Generate bitstream
 
 1. Generate bitstream in Vivado.
 2. Export bitstream (`File`->`Export`->`Export Bitstream File`) to `DUNE_WIB.bit`.
 
-#### Export hardware definition
+### Export hardware definition
 
 Only necessary if block diagram has changed:
 
 1. Export hardware (`File`->`Export`->`Export Hardware`).
 2. Copy `DUNE_WIB/DUNE_WIB.sdk/DUNE_WIB.hdf` to `DUNE_WIB.hdf`.
 
-#### Create PetaLinux images
+### Create PetaLinux images
 
 PetaLinux 2019.1 is required to build the software for the root filesystem 
 image and the kernel to boot the WIB. 
 
 You can either build the Docker image provided in `linux/petalinux-2019.1` and 
 use that environment, or install the packages listed in the `Dockerfile` on a 
-machine with PetaLinux 2019.1 already installed. See 
-`linux/petalinux-2019.1/README.md` for container instructions.
+machine with PetaLinux 2019.1 already installed. See the 
+(container readme)[linux/petalinux-2019.1/README.md] for further instructions.
 
 Perform only step 4 if you only want to update the FPGA bitstream. The generated
 files can be copied to the SD card boot partition.
@@ -74,7 +86,7 @@ files can be copied to the SD card boot partition.
 5. Copy (at least) `BOOT.BIN` to SD card boot partition for a new bitstream (`image.ub` as well, to update kernel).
 6. Reboot the WIB.
 
-#### Creating a bootable SD image
+### Creating a bootable SD image
 
 The `linux/make_sd_image.sh` script uses `mtools` and `losetup` to create a
 `rootfs.img` file that can be copied to an SD card and boot the WIB. 
@@ -95,8 +107,8 @@ all of the standard Zynq Ultrascale+ hardware (e.g. ethernet).
 
 You can either build the Docker image provided in `linux/petalinux-2019.1` and 
 use that environment, or install the packages listed in the `Dockerfile` on a 
-machine with PetaLinux 2019.1 already installed. See 
-`linux/petalinux-2019.1/README.md` for container instructions.
+machine with PetaLinux 2019.1 already installed. See the
+(container readme)[linux/petalinux-2019.1/README.md] for further instructions.
 
 From the `linux/` directory, boot the image with:
 
