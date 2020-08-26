@@ -7,6 +7,7 @@ typedef struct io_reg_t {
 	int fd;
 	uint32_t *ptr;
 	size_t n_reg;
+	size_t base_addr;
 } io_reg_t;
 
 int io_reg_init(io_reg_t *reg, size_t base_addr, size_t n_reg);

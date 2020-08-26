@@ -9,7 +9,8 @@
 #ifndef SIMULATION
 
 int io_reg_init(io_reg_t *reg, size_t base_addr, size_t n_reg) {
-	
+
+	reg->base_addr = base_addr;
 	reg->fd=open("/dev/mem",O_RDWR);
 	if (reg->fd < 1) return 1;
 
@@ -37,7 +38,45 @@ void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data) {
 
 #else
 
+#include <zmq.hpp>
+
+#define READ 0
+#define WRITE 1
+#define DONE 2
+
+
+typedef struct {
+    unsigned int cmd, addr, data;
+} msg;
+    
+zmq::context_t axi_server_context;
+zmq::socket_t axi_server_socket(axi_server_context, ZMQ_PAIR);
+bool axi_server_init = false;
+
+void init_axi_server_socket() {
+    if (axi_server_init) return;
+    printf("Connecting to cocotb axi_server...\n"); 
+    axi_server_socket.connect("tcp://127.0.0.1:7777");
+    axi_server_init = true;
+}
+
+unsigned int axi_server(unsigned int cmd, unsigned int addr = 0, unsigned int data = 0) {
+    init_axi_server_socket();
+    zmq::message_t zm(sizeof(msg));
+    msg *m = (msg*)zm.data();
+    m->cmd = cmd;
+    m->addr = addr;
+    m->data = data;
+  
+    axi_server_socket.send(zm,0);
+    axi_server_socket.recv(&zm,0);
+    
+    m = (msg*) zm.data();
+    return m->data;
+}
+
 int io_reg_init(io_reg_t *reg, size_t base_addr, size_t n_reg) {
+    reg->base_addr = base_addr;
 	return 0;
 }
 
@@ -46,11 +85,13 @@ int io_reg_free(io_reg_t *reg) {
 }
 
 uint32_t io_reg_read(io_reg_t *reg, size_t idx) {
-    return 0;
+    printf("axi_read %lx\n",idx*4+reg->base_addr);
+    return axi_server(READ,idx*4+reg->base_addr);
 }
 
 void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data) {
-    return;
+    printf("axi_write %lx = %x\n",idx*4+reg->base_addr,data);
+    axi_server(WRITE,idx*4+reg->base_addr,data);
 }
 
 #endif
