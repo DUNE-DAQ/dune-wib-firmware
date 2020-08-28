@@ -1,6 +1,8 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://platform-top.h"
+SRC_URI += "file://platform-top.h \
+            file://devtool-fragment.cfg \
+            "
 
 do_configure_append () {
 	if [ "${U_BOOT_AUTO_CONFIG}" = "1" ]; then
