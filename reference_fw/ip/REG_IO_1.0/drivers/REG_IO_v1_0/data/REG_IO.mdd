@@ -1,0 +1,10 @@
+
+
+OPTION psf_version = 2.1;
+
+BEGIN DRIVER REG_IO
+	OPTION supported_peripherals = (REG_IO);
+	OPTION copyfiles = all;
+	OPTION VERSION = 1.0;
+	OPTION NAME = REG_IO;
+END DRIVER

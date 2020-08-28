@@ -11,7 +11,7 @@
 int io_reg_init(io_reg_t *reg, size_t base_addr, size_t n_reg) {
 
 	reg->base_addr = base_addr;
-	reg->fd=open("/dev/mem",O_RDWR);
+	reg->fd=open("/dev/mem",O_RDWR|O_SYNC);
 	if (reg->fd < 1) return 1;
 
 	size_t ptr = (size_t) mmap(NULL,n_reg*4,PROT_READ|PROT_WRITE,MAP_SHARED,reg->fd,base_addr);
