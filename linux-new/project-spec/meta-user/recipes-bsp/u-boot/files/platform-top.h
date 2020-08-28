@@ -1,5 +1,5 @@
 #include <configs/xilinx_zynqmp.h>
-#include <configs/platform-auto.h>
+//#include <configs/platform-auto.h>
 
 #define CONFIG_USB y
 #define CONFIG_DM_USB y
