@@ -32,7 +32,8 @@ firmware, a Linux kernel and distribution, and the software for the WIB.
 1. Install Vivado 2020.1
 2. Clone this repository
 3. Source `settings64.sh` from the Vivado install
-4. Run `./init.sh` to create `DUNE_WIB` Vivado project
+4. Build the Vivado project contained in the submodule `wib_sim`
+5. Follow remaining instructions to generate a bootable SD image for the WIB
 
 ### Organization
 
@@ -55,7 +56,7 @@ If an earlier stage is modified, later stages typically need to be rerun.
 ### Generate bitstream
 
 1. Generate bitstream in Vivado.
-2. Export bitstream (`File`->`Export`->`Export Bitstream File`) to `DUNE_WIB.bit`.
+2. Export bitstream `.bit` (`File`->`Export`->`Export Bitstream File`) to top level of this respository.
 
 ### Export hardware definition
 
