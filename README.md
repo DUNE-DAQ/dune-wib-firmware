@@ -2,18 +2,25 @@
 
 Central repository for development of DUNE WIB firmware and software.
 
+- [DUNE WIB Firmware](#dune-wib-firmware)
+  * [Read First](#read-first)
   * [Development](#development)
     + [Getting Started](#getting-started)
     + [Organization](#organization)
-    + [Version Control](#version-control)
   * [Building from Scratch](#building-from-scratch)
-    +  [Generate bitstream](#generate-bitstream)
-    +  [Export hardware definition](#export-hardware-definition)
-    +  [Create PetaLinux images](#create-petalinux-images)
-    +  [Creating a bootable SD image](#creating-a-bootable-sd-image)
-    +  [Write the SD image to microSD card](#write-the-sd-image-to-microsd-card)
+    + [Generate bitstream](#generate-bitstream)
+    + [Export hardware definition](#export-hardware-definition)
+    + [Create PetaLinux images](#create-petalinux-images)
+    + [Creating a bootable SD image](#creating-a-bootable-sd-image)
+    + [Write the SD image to microSD card](#write-the-sd-image-to-microsd-card)
   * [Test drive the linux system with QEMU](#test-drive-the-linux-system-with-qemu)
+    + [Initial setup](#initial-setup)
+    + [Booting with QEMU](#booting-with-qemu)
 
+## Read First
+
+This project is migrating from the Xilinx 2019.1 distribution to 2020.1, however
+the 2020.1 PetaLinux project is not functional yet. 
 
 ## Development
 
@@ -31,7 +38,7 @@ firmware, a Linux kernel and distribution, and the software for the WIB.
 
 * The `wib_sim` project supplies the firmware implementation and Vivado hardware definition.
 * An older reference firmware is contained in `reference_fw`
-* A Peta Linux project to build the Linux system is in `linux`
+* A Peta Linux project to build the Linux system is in `linux-*`
 * The `wib_server` software and test utilities are in `sw`
 
 ## Building from Scratch
@@ -62,7 +69,7 @@ Only necessary if block diagram has changed:
 PetaLinux 2020.1 is required to build the software for the root filesystem 
 image and the kernel to boot the WIB. 
 
-You can either build the Docker image provided in `linux/petalinux-2020.1` and 
+You can either build the Docker image provided in `linux-2020.1/petalinux-2020.1` and 
 use that environment, or install the packages listed in the `Dockerfile` on a 
 machine with PetaLinux 2020.1 already installed. See the 
 [container readme](linux/petalinux-2020.1/README.md) for further instructions.
@@ -100,7 +107,7 @@ all of the standard Zynq Ultrascale+ hardware (e.g. ethernet).
 You can either build the Docker image provided in `linux/petalinux-2020.1` and 
 use that environment, or install the packages listed in the `Dockerfile` on a 
 machine with PetaLinux 2020.1 already installed. See the
-[container readme](linux/petalinux-2020.1/README.md) for further instructions.
+[container README.md](linux-2020.1/petalinux-2020.1/README.md) for further instructions.
 
 ### Initial setup
 
