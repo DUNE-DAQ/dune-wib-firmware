@@ -59,7 +59,7 @@ CONFIG_system-zynqmp=y
 #
 # busybox 
 #
-# CONFIG_busybox is not set
+CONFIG_busybox=y
 # CONFIG_busybox-inetd is not set
 # CONFIG_busybox-dbg is not set
 # CONFIG_busybox-syslog is not set
@@ -167,7 +167,7 @@ CONFIG_haveged=y
 #
 # i2c-tools 
 #
-# CONFIG_i2c-tools is not set
+CONFIG_i2c-tools=y
 # CONFIG_i2c-tools-dev is not set
 # CONFIG_i2c-tools-misc is not set
 # CONFIG_i2c-tools-dbg is not set
@@ -317,7 +317,7 @@ CONFIG_mtd-utils=y
 #
 # tar 
 #
-# CONFIG_tar is not set
+CONFIG_tar=y
 # CONFIG_tar-dev is not set
 # CONFIG_tar-dbg is not set
 # CONFIG_tar-rmt is not set
@@ -579,7 +579,7 @@ CONFIG_openssh-sftp-server=y
 #
 # rsync 
 #
-# CONFIG_rsync is not set
+CONFIG_rsync=y
 # CONFIG_rsync-dev is not set
 # CONFIG_rsync-dbg is not set
 
@@ -907,7 +907,7 @@ CONFIG_pciutils=y
 #
 # vim 
 #
-# CONFIG_vim is not set
+CONFIG_vim=y
 # CONFIG_vim-help is not set
 # CONFIG_vim-dbg is not set
 # CONFIG_vim-vimrc is not set
@@ -4102,7 +4102,7 @@ CONFIG_hellopm=y
 #
 # packagegroup-petalinux-networking-stack 
 #
-# CONFIG_packagegroup-petalinux-networking-stack is not set
+CONFIG_packagegroup-petalinux-networking-stack=y
 # CONFIG_packagegroup-petalinux-networking-stack-dbg is not set
 # CONFIG_packagegroup-petalinux-networking-stack-dev is not set
 
@@ -4219,7 +4219,8 @@ CONFIG_imagefeature-debug-tweaks=y
 # apps 
 #
 # CONFIG_gpio-demo is not set
-# CONFIG_peekpoke is not set
+CONFIG_peekpoke=y
+CONFIG_wib=y
 
 #
 # user packages 
@@ -4228,5 +4229,5 @@ CONFIG_imagefeature-debug-tweaks=y
 #
 # PetaLinux RootFS Settings
 #
-CONFIG_ROOTFS_ROOT_PASSWD="root"
+CONFIG_ROOTFS_ROOT_PASSWD="fpga"
 CONFIG_ADD_EXTRA_USERS="petalinux:petalinux;"
