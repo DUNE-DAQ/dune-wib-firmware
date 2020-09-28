@@ -2,7 +2,7 @@ SUMMARY = "WIB applications"
 LICENSE="CLOSED"
 SECTION = "PETALINUX/apps"
 
-DEPENDS = "glibc zeromq cppzmq protobuf protobuf-native protobuf-c"
+DEPENDS = "glibc zeromq cppzmq protobuf protobuf-native protobuf-c readline"
 
 SRC_URI = "file://* \
           "
