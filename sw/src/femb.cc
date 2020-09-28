@@ -2,10 +2,14 @@
 
 #include <unistd.h>
 
+constexpr size_t CD_I2C_ADDR[] = { 0xA001000, 0xA004000, 0xA005000, 0xA006000, 0xA007000, 0xA008000, 0xA009000, 0xA00A000 };
+//FIXME only the 0th FC firmware interface exists, repeated here
+constexpr size_t CD_FASTCMD_ADDR[] = { 0xA003000, 0xA003000, 0xA003000, 0xA003000, 0xA003000, 0xA003000, 0xA003000, 0xA003000 };
+
 FEMB::FEMB(int index) {
     for (int i = 0; i < 2; i++) {
-        io_reg_init(&this->coldata_i2c[i],0xA0010000+0x40000*(i+2*index),2);
-        io_reg_init(&this->coldata_fast_cmd[i],0xA0030000+0x40000*(i+2*index),2);
+        io_reg_init(&this->coldata_i2c[i],CD_I2C_ADDR[i+index*2],2);
+        io_reg_init(&this->coldata_fast_cmd[i],CD_FASTCMD_ADDR[i+2*index],2);
         io_reg_write(&this->coldata_fast_cmd[i],REG_FAST_CMD_ACT_DELAY,19);
         last_coldata_i2c_chip[i] = -1;
     }

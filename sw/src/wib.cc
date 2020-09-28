@@ -10,10 +10,10 @@
 
 WIB::WIB() {
     io_reg_init(&this->regs,0xA0002000,32);
+    io_reg_init(&this->regs,0xA000D000,32);
     i2c_init(&this->i2c,"/dev/i2c-0");
     for (int i = 0; i < 4; i++) {
-        //FIXME: need FEMB devices in FW first
-        //this->femb[i] = new FEMB(i);
+        this->femb[i] = new FEMB(i);
     }
 }
 
@@ -21,8 +21,7 @@ WIB::~WIB() {
     io_reg_free(&this->regs);
     i2c_free(&this->i2c);
     for (int i = 0; i < 4; i++) {
-        //FIXME: need FEMB devices in FW first
-        //delete this->femb[i];
+        delete this->femb[i];
     }
 }
 

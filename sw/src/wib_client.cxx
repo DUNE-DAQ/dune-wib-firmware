@@ -60,7 +60,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         printf("peek 0x%lX 0x%X\n",rep.addr(),rep.value());
     } else if (cmd == "poke") {
         if (argc != 3) {
-            fprintf(stderr,"Usage: peek addr value\n");
+            fprintf(stderr,"Usage: poke addr value\n");
             return 0;
         }
         wib::Poke req;

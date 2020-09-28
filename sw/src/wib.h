@@ -29,6 +29,7 @@ protected:
     FEMB* femb[4];
     i2c_t i2c;
     io_reg_t regs;
+    io_reg_t leds;
 
 };
 
