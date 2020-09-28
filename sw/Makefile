@@ -1,9 +1,9 @@
 CCFLAGS = -g -O2 -Isrc
 CXXFLAGS = -g -O2 -Isrc
-LFLAGS = -lprotobuf -lzmq
+LFLAGS = -lprotobuf -lzmq -lreadline
 
 # output binary for each of these (no headers)
-BSRC = src/get_status.cxx src/wib_server.cxx src/initialize.cxx
+BSRC = src/wib_client.cxx src/wib_server.cxx
 BOBJ = $(addprefix build/,$(notdir $(BSRC:.cxx=.o)))
 BDEP = $(BOBJ:.o=.d)
 

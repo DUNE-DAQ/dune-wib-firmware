@@ -2,6 +2,11 @@
 #include "sensors.h"
 
 #include <cstdio>
+#include <cstdlib>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+
 
 WIB::WIB() {
     io_reg_init(&this->regs,0xA0002000,32);
@@ -23,6 +28,37 @@ WIB::~WIB() {
 
 bool WIB::initialize() {
     //setup the FEMBs and COLDATA chips
+}
+
+uint32_t WIB::peek(size_t addr) {
+	size_t page_addr = (addr & ~(sysconf(_SC_PAGESIZE)-1));
+	size_t page_offset = addr-page_addr;
+
+    int fd = open("/dev/mem",O_RDWR);
+	void *ptr = mmap(NULL,sysconf(_SC_PAGESIZE),PROT_READ|PROT_WRITE,MAP_SHARED,fd,(addr & ~(sysconf(_SC_PAGESIZE)-1)));
+
+	return *((uint32_t*)(ptr+page_offset));
+}
+
+uint32_t WIB::poke(size_t addr, uint32_t val) {
+	size_t page_addr = (addr & ~(sysconf(_SC_PAGESIZE)-1));
+	size_t page_offset = addr-page_addr;
+
+    int fd = open("/dev/mem",O_RDWR);
+	void *ptr = mmap(NULL,sysconf(_SC_PAGESIZE),PROT_READ|PROT_WRITE,MAP_SHARED,fd,(addr & ~(sysconf(_SC_PAGESIZE)-1)));
+
+	*((uint32_t*)(ptr+page_offset)) = val;
+	return val;
+}
+
+bool WIB::reboot() {
+    system("reboot");
+    return true;
+}
+
+bool WIB::update(const char *rootfs) {
+    
+    return true;
 }
 
 bool WIB::read_sensors(wib::Sensors &sensors) {

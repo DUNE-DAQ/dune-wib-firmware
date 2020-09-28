@@ -14,19 +14,23 @@ message Command {
 message Initialize {
 }
 
-/* Low level debug commands */
 
-message ReadReg {
-    uint64 base_addr = 1;
-    uint64 offset = 2;
-    int32  size = 3;
+message Update {
+    bytes sdimg = 1;
 }
 
-message WriteReg {
-    uint64 base_addr = 1;
-    uint64 offset = 2;
-    int32  size = 3;
-    uint64 value = 4;
+message Reboot {
+}
+
+/* Low level debug commands */
+
+message Peek {
+    uint64 addr = 1;
+}
+
+message Poke {
+    uint64 addr = 1;
+    uint32 value = 2;
 }
 
 /* CCM/SC/Monitoring commands */
@@ -40,10 +44,8 @@ message Empty {
 }
 
 message RegValue {
-    uint64 base_addr = 1;
-    uint64 offset = 2;
-    int32 size = 3;
-    uint64 value = 4;
+    uint64 addr = 1;
+    uint32 value = 2;
 }
 
 message Sensors {

@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     printf("wib_server will listen on port 1234\n");
     
     zmq::context_t context;
-    zmq::socket_t socket(context, ZMQ_PAIR);
+    zmq::socket_t socket(context, ZMQ_REP);
 
     socket.bind("tcp://*:1234");
     
@@ -34,34 +34,46 @@ int main(int argc, char **argv) {
         
         std::string reply_str;        
                 
-        if (command.cmd().Is<wib::ReadReg>()) {
-            wib::ReadReg read;
+        if (command.cmd().Is<wib::Peek>()) {
+            wib::Peek read;
             command.cmd().UnpackTo(&read);
-            printf("read %i bytes at %lx + %lx\n",read.size(),read.base_addr(),read.offset());
-            wib::RegValue value;   
-            value.set_size(read.size());
-            value.set_offset(read.offset());
-            value.set_base_addr(read.base_addr());       
-            value.set_value(0x0);
+            printf("peek 0x%lx\n",read.addr());
+            uint32_t rval = w.peek(read.addr());
+            wib::RegValue value;
+            value.set_addr(read.addr());    
+            value.set_value(rval);
             value.SerializeToString(&reply_str);
-        } else  if (command.cmd().Is<wib::WriteReg>()) {
-            wib::WriteReg write;
+        } else  if (command.cmd().Is<wib::Poke>()) {
+            wib::Poke write;
             command.cmd().UnpackTo(&write);
-            printf("write %i bytes at %lx + %lx = %lx\n",write.size(),write.base_addr(),write.offset(),write.value());
+            printf("poke 0x%lx = 0x%x\n",write.addr(),write.value());
+            uint32_t rval = w.poke(write.addr(),write.value());
             wib::RegValue value;   
-            value.set_size(write.size());
-            value.set_offset(write.offset());
-            value.set_base_addr(write.base_addr());       
+            value.set_addr(write.addr());        
             value.set_value(write.value());
             value.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSensors>()) {
+            printf("get_sensors\n");
             wib::Sensors sensors;    
             w.read_sensors(sensors);
             sensors.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::Initialize>()) {
+            printf("initialize\n");
             wib::Empty empty;    
             w.initialize();
             empty.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::Reboot>()) {
+            printf("reboot\n");
+            wib::Empty empty; 
+            empty.SerializeToString(&reply_str);   
+            w.reboot();
+        } else if (command.cmd().Is<wib::Update>()) {
+            printf("update\n");
+            wib::Update update;
+            command.cmd().UnpackTo(&update);
+            wib::Empty empty;
+            empty.SerializeToString(&reply_str);
+            w.update(update.sdimg().c_str());
         } /* else if (command.cmd().Is<wib::...>()) {
         
         } */
@@ -70,7 +82,7 @@ int main(int argc, char **argv) {
         memcpy((void*)reply.data(), reply_str.c_str(), reply_str.size());
         socket.send(reply);
         
-        printf("handled message %i\n",i+1);
+        printf("msg count: %i\n",i+1);
         
     }
 

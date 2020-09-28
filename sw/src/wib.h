@@ -7,6 +7,8 @@
 #include "i2c.h"
 #include "io_reg.h"
 
+#include <cstdint>
+
 class WIB {
 
 public:
@@ -14,6 +16,12 @@ public:
     ~WIB();
     
     bool initialize();
+    bool reboot();
+    bool update(const char *rootfs);
+    
+    uint32_t peek(size_t addr);
+    uint32_t poke(size_t addr, uint32_t value);
+    
     bool read_sensors(wib::Sensors &sensors);
     
 protected:
