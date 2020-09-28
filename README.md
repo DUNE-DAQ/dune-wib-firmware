@@ -19,8 +19,8 @@ Central repository for development of DUNE WIB firmware and software.
 
 ## Read First
 
-This project is migrating from the Xilinx 2019.1 distribution to 2020.1, however
-the 2020.1 PetaLinux project is not functional yet. 
+This project is based on PetaLinux 2020.1. 
+This seems to build a flawed FSBL by default, so a 2019.1 derived FSBL is provided precompiled.
 
 ## Development
 
