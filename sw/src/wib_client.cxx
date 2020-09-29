@@ -46,11 +46,28 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
             fprintf(stderr,"Usage: update root_archive boot_archive\n");
             return 0;
         }
+        
+        size_t length;
+        string root_archive, boot_archive;
+        
         ifstream in_root(argv[1], ios::binary);
-        std::string root_archive((istreambuf_iterator<char>(in_root)), istreambuf_iterator<char>());
+        in_root.ignore( numeric_limits<streamsize>::max() );
+        length = in_root.gcount();
+        in_root.clear();
+        in_root.seekg( 0, ios_base::beg );
+        root_archive.resize(length);
+        in_root.read((char*)root_archive.data(),length);
+        
         ifstream in_boot(argv[2], ios::binary);
-        std::string boot_archive((istreambuf_iterator<char>(in_boot)), istreambuf_iterator<char>());
+        in_boot.ignore( numeric_limits<streamsize>::max() );
+        length = in_boot.gcount();
+        in_boot.clear();
+        in_boot.seekg( 0, ios_base::beg );
+        boot_archive.resize(length);
+        in_boot.read((char*)boot_archive.data(),length);
+        
         wib::Update req;
+        printf("Sending root archive (%0.1f MB) and boot archive (%0.1f MB)\n",root_archive.size()/1024.0/1024.0,boot_archive.size()/1024.0/1024.0);
         req.set_root_archive(root_archive);
         req.set_boot_archive(boot_archive);
         wib::Empty rep;
