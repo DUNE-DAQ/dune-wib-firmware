@@ -31,6 +31,7 @@ firmware, a Linux kernel and distribution, and the software for the WIB.
 
 1. Install Vivado 2020.1
 2. Clone this repository
+3. Inititialize the `wib_sim` submodule with `git submodule update --init`
 3. Source `settings64.sh` from the Vivado install
 4. Build the Vivado project contained in the submodule `wib_sim`
 5. Follow remaining instructions to generate a bootable SD image for the WIB
