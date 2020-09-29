@@ -4,9 +4,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
+#include <fstream>
 #include <sys/mman.h>
 #include <fcntl.h>
 
+using namespace std;
 
 WIB::WIB() {
     io_reg_init(&this->regs,0xA0002000,32);
@@ -55,8 +57,16 @@ bool WIB::reboot() {
     return true;
 }
 
-bool WIB::update(const char *rootfs) {
+bool WIB::update(const string &root_archive, const string &boot_archive) {
+    ofstream out_boot("/home/root/boot_archive.tar.gz", ofstream::binary);
+    out_boot.write(boot_archive.c_str(),boot_archive.size());
+    system("wib_update.sh /home/root/boot_archive.tar.gz /boot");
     
+    ofstream out_root("/home/root/root_archive.tar.gz", ofstream::binary);
+    out_root.write(root_archive.c_str(),root_archive.size());
+    system("wib_update.sh /home/root/root_archive.tar.gz /");
+    
+    system("reboot");
     return true;
 }
 

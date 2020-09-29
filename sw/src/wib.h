@@ -17,7 +17,7 @@ public:
     
     bool initialize();
     bool reboot();
-    bool update(const char *rootfs);
+    bool update(const std::string &root_archive, const std::string &boot_archive);
     
     uint32_t peek(size_t addr);
     uint32_t poke(size_t addr, uint32_t value);

@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
             command.cmd().UnpackTo(&update);
             wib::Empty empty;
             empty.SerializeToString(&reply_str);
-            w.update(update.sdimg().c_str());
+            w.update(update.root_archive().c_str(),update.boot_archive().c_str());
         } /* else if (command.cmd().Is<wib::...>()) {
         
         } */

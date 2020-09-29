@@ -16,7 +16,8 @@ message Initialize {
 
 
 message Update {
-    bytes sdimg = 1;
+    bytes root_archive = 1;
+    bytes boot_archive = 2;
 }
 
 message Reboot {

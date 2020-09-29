@@ -1,9 +1,14 @@
-#include <zmq.hpp>
 #include <unistd.h>
+#include <fstream>
+#include <streambuf>
+
+#include <zmq.hpp>
 #include <readline/readline.h>
 #include <readline/history.h>
 
 #include "wib.pb.h"
+
+using namespace std;
 
 template <class R, class C>
 void send_command(zmq::socket_t &socket, const C &msg, R &repl) {
@@ -11,7 +16,7 @@ void send_command(zmq::socket_t &socket, const C &msg, R &repl) {
     wib::Command command;
     command.mutable_cmd()->PackFrom(msg);
     
-    std::string cmd_str;
+    string cmd_str;
     command.SerializeToString(&cmd_str);
     
     zmq::message_t request(cmd_str.size());
@@ -21,7 +26,7 @@ void send_command(zmq::socket_t &socket, const C &msg, R &repl) {
     zmq::message_t reply;
     socket.recv(&reply,0);
     
-    std::string reply_str(static_cast<char*>(reply.data()), reply.size());
+    string reply_str(static_cast<char*>(reply.data()), reply.size());
     repl.ParseFromString(reply_str);
     
 }
@@ -29,7 +34,7 @@ void send_command(zmq::socket_t &socket, const C &msg, R &repl) {
 int run_command(zmq::socket_t &s, int argc, char **argv) {
     if (argc < 1) return 1;
     
-    std::string cmd(argv[0]);
+    string cmd(argv[0]);
     if (cmd == "exit") { 
         return 255;
     } else if (cmd == "get_sensors") {
@@ -37,7 +42,17 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         wib::Sensors rep;
         send_command(s,req,rep);
     } else if (cmd == "update") {
+        if (argc != 3) {
+            fprintf(stderr,"Usage: update root_archive boot_archive\n");
+            return 0;
+        }
+        ifstream in_root(argv[1], ios::binary);
+        std::string root_archive((istreambuf_iterator<char>(in_root)), istreambuf_iterator<char>());
+        ifstream in_boot(argv[2], ios::binary);
+        std::string boot_archive((istreambuf_iterator<char>(in_boot)), istreambuf_iterator<char>());
         wib::Update req;
+        req.set_root_archive(root_archive);
+        req.set_boot_archive(boot_archive);
         wib::Empty rep;
         send_command(s,req,rep);
     } else if (cmd == "initialize") {
