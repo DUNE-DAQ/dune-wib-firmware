@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
     
     char *ip = (char*)"127.0.0.1";
     
-    char opt;
+    signed char opt;
     while ((opt = getopt(argc, argv, "w:")) != -1) {
        switch (opt) {
            case 'w':
