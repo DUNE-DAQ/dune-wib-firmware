@@ -101,6 +101,18 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         wib::RegValue rep;
         send_command(s,req,rep);
         printf("peek 0x%lX 0x%X\n",rep.addr(),rep.value());
+    } else if (cmd == "help") {
+        printf("Available commands:\n");
+        printf("\treboot\n");
+        printf("\t\tReboot the WIB\n");
+        printf("\tinitialize\n");
+        printf("\t\tInitialize the WIB hardware\n");
+        printf("\tpeek addr\n");
+        printf("\t\tRead a 32bit value from WIB address space\n");
+        printf("\tpoke addr value\n");
+        printf("\t\tWrite a 32bit value to WIB address space\n");
+        printf("\tupdate root_archive boot_archive\n");
+        printf("\t\tDeploy a new root and boot archive to the WIB\n");
     } else {
         fprintf(stderr,"Unrecognized Command: %s\n",argv[0]);
         return 0;
