@@ -25,11 +25,6 @@ do_compile() {
     oe_runmake
 }
 do_install() {
-    install -d ${D}/bin/
-    install -m 0755 ${S}/wib_server ${D}/bin/
-    install -m 0755 ${S}/wib_client ${D}/bin/
-    install -m 0755 ${S}/extras/wib_update.sh ${D}/bin/
-    install -d ${D}/etc/rc5.d/
-    install -m 0755 ${S}/extras/wib_init.sh ${D}/etc/rc5.d/S99wib_init.sh
+    make DESTDIR="${D}" install
 }
 

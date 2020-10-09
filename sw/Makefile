@@ -26,6 +26,15 @@ simulation: CXXFLAGS += -DSIMULATION
 simulation: CCFLAGS += -DSIMULATION
 simulation: $(BINS)
 
+install:
+	install -d "$(DESTDIR)/bin/"
+	install -m 0755 wib_server "$(DESTDIR)/bin/"
+	install -m 0755 wib_client "$(DESTDIR)/bin/"
+	install -m 0755 extras/wib_update.sh "$(DESTDIR)/bin/"
+	install -d "$(DESTDIR)/etc/rc5.d/"
+	install -m 0755 extras/wib_init.sh "$(DESTDIR)/etc/rc5.d/S99wib_init.sh"
+
+
 clean:
 	@rm -rf build $(PBGENS)
 
