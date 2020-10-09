@@ -5,7 +5,7 @@ SECTION = "PETALINUX/apps"
 DEPENDS = "glibc zeromq cppzmq protobuf protobuf-native readline"
 
 # -compiler and -dev packages are necessary only for building on the wib itself
-RDEPENDS_${PN} = "protobuf-compiler protobuf zeromq-dev cppzmq-dev protobuf-dev readline-dev git tar rsync"
+RDEPENDS_${PN} = "protobuf-compiler gdb protobuf zeromq-dev cppzmq-dev protobuf-dev readline-dev git tar rsync"
 
 #To disable hard failures from including -dev packages
 INSANE_SKIP_${PN} += "dev-deps"
