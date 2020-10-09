@@ -40,7 +40,7 @@ void FEMB::i2c_write(uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, u
     uint32_t ctrl = ((chip_addr & 0xF) << COLD_I2C_CHIP_ADDR)
                   | ((reg_page & 0x7) << COLD_I2C_REG_PAGE)
                   | (0x0 << COLD_I2C_RW)
-                  | ((reg_addr & 0xF) << COLD_I2C_REG_ADDR)
+                  | ((reg_addr & 0xFF) << COLD_I2C_REG_ADDR)
                   | ((data & 0xFF) << COLD_I2C_DATA);
     io_reg_write(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_CTRL,ctrl);
     io_reg_write(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_START,1);
@@ -54,11 +54,11 @@ uint8_t FEMB::i2c_read(uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page,
     uint32_t ctrl = ((chip_addr & 0xF) << COLD_I2C_CHIP_ADDR)
                   | ((reg_page & 0x7) << COLD_I2C_REG_PAGE)
                   | (0x1 << COLD_I2C_RW)
-                  | ((reg_addr & 0xF) << COLD_I2C_REG_ADDR);
+                  | ((reg_addr & 0xFF) << COLD_I2C_REG_ADDR);
     io_reg_write(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_CTRL,ctrl);
     io_reg_write(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_START,1);
     io_reg_write(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_START,0);
     usleep(27);
     ctrl = io_reg_read(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_CTRL);
-    return (ctrl >> COLD_I2C_DATA) & 0xF;
+    return (ctrl >> COLD_I2C_DATA) & 0xFF;
 }
