@@ -21,10 +21,10 @@ void send_command(zmq::socket_t &socket, const C &msg, R &repl) {
     
     zmq::message_t request(cmd_str.size());
     memcpy((void*)request.data(), cmd_str.c_str(), cmd_str.size());
-    socket.send(request);
+    socket.send(request,zmq::send_flags::none);
     
     zmq::message_t reply;
-    socket.recv(&reply,0);
+    socket.recv(reply,zmq::recv_flags::none);
     
     string reply_str(static_cast<char*>(reply.data()), reply.size());
     repl.ParseFromString(reply_str);
@@ -83,16 +83,18 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
     } else if (cmd == "peek") {
         if (argc != 2) {
             fprintf(stderr,"Usage: peek addr\n");
+            fprintf(stderr,"\t all arguments are base 16\n");
             return 0;
         }
         wib::Peek req;
         req.set_addr((size_t)strtoull(argv[1],NULL,16));
         wib::RegValue rep;
         send_command(s,req,rep);
-        printf("peek 0x%lX 0x%X\n",rep.addr(),rep.value());
+        printf("0x%X\n",rep.value());
     } else if (cmd == "poke") {
         if (argc != 3) {
             fprintf(stderr,"Usage: poke addr value\n");
+            fprintf(stderr,"\t all arguments are base 16\n");
             return 0;
         }
         wib::Poke req;
@@ -100,7 +102,36 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         req.set_value((uint32_t)strtoull(argv[2],NULL,16));
         wib::RegValue rep;
         send_command(s,req,rep);
-        printf("peek 0x%lX 0x%X\n",rep.addr(),rep.value());
+    } else if (cmd == "cdpeek") {
+        if (argc != 6) {
+            fprintf(stderr,"Usage: cdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
+            fprintf(stderr,"\t femb_idx and cd_idx are base 10, remaining args are base 16\n");
+            return 0;
+        }
+        wib::CDPeek req;
+        req.set_femb_idx((uint8_t)strtoull(argv[1],NULL,10));
+        req.set_coldata_idx((uint8_t)strtoull(argv[2],NULL,10));
+        req.set_chip_addr((uint8_t)strtoull(argv[3],NULL,16));
+        req.set_reg_page((uint8_t)strtoull(argv[4],NULL,16));
+        req.set_reg_addr((uint8_t)strtoull(argv[5],NULL,16));
+        wib::CDRegValue rep;
+        send_command(s,req,rep);
+        printf("0x%X\n",rep.data());
+    } else if (cmd == "cdpoke") {
+        if (argc != 7) {
+            fprintf(stderr,"Usage: cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
+            fprintf(stderr,"\t femb_idx and cd_idx are base 10, remaining args are base 16\n");
+            return 0;
+        }
+        wib::CDPoke req;
+        req.set_femb_idx((uint8_t)strtoull(argv[1],NULL,10));
+        req.set_coldata_idx((uint8_t)strtoull(argv[2],NULL,10));
+        req.set_chip_addr((uint8_t)strtoull(argv[3],NULL,16));
+        req.set_reg_page((uint8_t)strtoull(argv[4],NULL,16));
+        req.set_reg_addr((uint8_t)strtoull(argv[5],NULL,16));
+        req.set_data((uint8_t)strtoull(argv[6],NULL,16));
+        wib::CDRegValue rep;
+        send_command(s,req,rep);
     } else if (cmd == "help") {
         printf("Available commands:\n");
         printf("\treboot\n");
@@ -141,7 +172,9 @@ int main(int argc, char **argv) {
     zmq::socket_t socket(context, ZMQ_REQ);
     
     char *addr;
-    asprintf(&addr,"tcp://%s:1234",ip);
+    int len = asprintf(&addr,"tcp://%s:1234",ip);
+    if (len < 0) return 1;
+    
     socket.connect(addr);
     free(addr);
     
@@ -156,7 +189,7 @@ int main(int argc, char **argv) {
                 free(buf);
                 continue;
             }
-            char *delim = " ";   
+            char *delim = (char*)" ";   
             int count = 1;
             char *ptr = buf;
             while((ptr = strchr(ptr, delim[0])) != NULL) {
@@ -166,10 +199,11 @@ int main(int argc, char **argv) {
             if (count > 0) {
                 char **cmd = new char*[count];
                 cmd[0] = strtok(buf, delim);
-                for (int i = 1; cmd[i-1] != NULL; i++) {
+                int i;
+                for (i = 1; cmd[i-1] != NULL && i < count; i++) {
                     cmd[i] = strtok(NULL, delim);
                 }
-                int ret = run_command(socket,count,cmd);
+                int ret = run_command(socket,i,cmd);
                 delete [] cmd;
                 if (ret == 255) return 0;
                 if (ret != 0) return ret;

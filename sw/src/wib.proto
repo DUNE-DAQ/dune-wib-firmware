@@ -25,13 +25,34 @@ message Reboot {
 
 /* Low level debug commands */
 
+//peek wib memory
 message Peek {
     uint64 addr = 1;
 }
 
+//poke wib memory
 message Poke {
     uint64 addr = 1;
     uint32 value = 2;
+}
+
+//peek coldata i2c bus
+message CDPoke {
+    uint32 femb_idx = 1;
+    uint32 coldata_idx = 2;
+    uint32 chip_addr = 3;
+    uint32 reg_page = 4;
+    uint32 reg_addr = 5;
+    uint32 data = 6;
+}
+
+//poke coldata i2c bus
+message CDPeek {
+    uint32 femb_idx = 1;
+    uint32 coldata_idx = 2;
+    uint32 chip_addr = 3;
+    uint32 reg_page = 4;
+    uint32 reg_addr = 5;
 }
 
 /* CCM/SC/Monitoring commands */
@@ -47,6 +68,15 @@ message Empty {
 message RegValue {
     uint64 addr = 1;
     uint32 value = 2;
+}
+
+message CDRegValue {
+    uint32 femb_idx = 1;
+    uint32 coldata_idx = 2;
+    uint32 chip_addr = 3;
+    uint32 reg_page = 4;
+    uint32 reg_addr = 5;
+    uint32 data = 6;
 }
 
 message Sensors {

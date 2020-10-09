@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     for (int i = 0; ; i++) {
     
         zmq::message_t cmd;
-        socket.recv(&cmd,0);
+        socket.recv(cmd,zmq::recv_flags::none);
         
         wib::Command command;
         
@@ -43,14 +43,40 @@ int main(int argc, char **argv) {
             value.set_addr(read.addr());    
             value.set_value(rval);
             value.SerializeToString(&reply_str);
-        } else  if (command.cmd().Is<wib::Poke>()) {
+        } else if (command.cmd().Is<wib::Poke>()) {
             wib::Poke write;
             command.cmd().UnpackTo(&write);
             printf("poke 0x%lx = 0x%x\n",write.addr(),write.value());
-            uint32_t rval = w.poke(write.addr(),write.value());
+            w.poke(write.addr(),write.value());
             wib::RegValue value;   
             value.set_addr(write.addr());        
             value.set_value(write.value());
+            value.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::CDPeek>()) {
+            wib::CDPeek read;
+            command.cmd().UnpackTo(&read);
+            printf("cdpeek femb%u cd%u chip 0x%x page 0x%x addr 0x%x\n",read.femb_idx(),read.coldata_idx(),read.chip_addr(),read.reg_page(),read.reg_addr());
+            uint8_t rval = w.cdpeek((uint8_t)read.femb_idx(),(uint8_t)read.coldata_idx(),(uint8_t)read.chip_addr(),(uint8_t)read.reg_page(),(uint8_t)read.reg_addr());
+            wib::CDRegValue value;   
+            value.set_femb_idx(read.femb_idx());        
+            value.set_coldata_idx(read.coldata_idx());      
+            value.set_chip_addr(read.chip_addr());      
+            value.set_reg_page(read.reg_page());      
+            value.set_reg_addr(read.reg_addr());      
+            value.set_data(rval);
+            value.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::CDPoke>()) {
+            wib::CDPoke write;
+            command.cmd().UnpackTo(&write);
+            printf("cdpoke femb%u cd%u chip 0x%x page 0x%x addr 0x%x = 0x%x\n",write.femb_idx(),write.coldata_idx(),write.chip_addr(),write.reg_page(),write.reg_addr(),write.data());
+            w.cdpoke((uint8_t)write.femb_idx(),(uint8_t)write.coldata_idx(),(uint8_t)write.chip_addr(),(uint8_t)write.reg_page(),(uint8_t)write.reg_addr(),(uint8_t)write.data());
+            wib::CDRegValue value;   
+            value.set_femb_idx(write.femb_idx());        
+            value.set_coldata_idx(write.coldata_idx());      
+            value.set_chip_addr(write.chip_addr());      
+            value.set_reg_page(write.reg_page());      
+            value.set_reg_addr(write.reg_addr());      
+            value.set_data(write.data());
             value.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSensors>()) {
             printf("get_sensors\n");
@@ -80,7 +106,7 @@ int main(int argc, char **argv) {
         
         zmq::message_t reply(reply_str.size());
         memcpy((void*)reply.data(), reply_str.c_str(), reply_str.size());
-        socket.send(reply);
+        socket.send(reply,zmq::send_flags::none);
         
         printf("msg count: %i\n",i+1);
         

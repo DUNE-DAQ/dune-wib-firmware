@@ -11,9 +11,9 @@
 using namespace std;
 
 WIB::WIB() {
-    io_reg_init(&this->regs,0xA0002000,32);
-    io_reg_init(&this->regs,0xA000D000,32);
-    i2c_init(&this->i2c,"/dev/i2c-0");
+    io_reg_init(&this->regs,0xA0020000,32);
+    io_reg_init(&this->leds,0xA00D0000,32);
+    i2c_init(&this->i2c,(char*)"/dev/i2c-0");
     for (int i = 0; i < 4; i++) {
         this->femb[i] = new FEMB(i);
     }
@@ -29,47 +29,60 @@ WIB::~WIB() {
 
 bool WIB::initialize() {
     //setup the FEMBs and COLDATA chips
+    return false;
 }
 
 uint32_t WIB::peek(size_t addr) {
+    #ifndef SIMULATION
 	size_t page_addr = (addr & ~(sysconf(_SC_PAGESIZE)-1));
 	size_t page_offset = addr-page_addr;
 
     int fd = open("/dev/mem",O_RDWR);
 	void *ptr = mmap(NULL,sysconf(_SC_PAGESIZE),PROT_READ|PROT_WRITE,MAP_SHARED,fd,(addr & ~(sysconf(_SC_PAGESIZE)-1)));
 
-	return *((uint32_t*)(ptr+page_offset));
+	return *((uint32_t*)((char*)ptr+page_offset));
+	#else
+	return 0x0;
+	#endif
 }
 
-uint32_t WIB::poke(size_t addr, uint32_t val) {
+void WIB::poke(size_t addr, uint32_t val) {
+    #ifndef SIMULATION
 	size_t page_addr = (addr & ~(sysconf(_SC_PAGESIZE)-1));
 	size_t page_offset = addr-page_addr;
 
     int fd = open("/dev/mem",O_RDWR);
 	void *ptr = mmap(NULL,sysconf(_SC_PAGESIZE),PROT_READ|PROT_WRITE,MAP_SHARED,fd,(addr & ~(sysconf(_SC_PAGESIZE)-1)));
 
-	*((uint32_t*)(ptr+page_offset)) = val;
-	return val;
+	*((uint32_t*)((char*)ptr+page_offset)) = val;
+	#endif
+}
+
+uint8_t WIB::cdpeek(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr) {
+    return this->femb[femb_idx]->i2c_read(coldata_idx,chip_addr,reg_page,reg_addr);
+}
+
+void WIB::cdpoke(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data) {
+    this->femb[femb_idx]->i2c_write(coldata_idx,chip_addr,reg_page,reg_addr,data);
 }
 
 bool WIB::reboot() {
-    system("reboot");
-    return true;
+    int ret = system("reboot");
+    return WEXITSTATUS(ret) == 0;
 }
 
 bool WIB::update(const string &root_archive, const string &boot_archive) {
     ofstream out_boot("/home/root/boot_archive.tar.gz", ofstream::binary);
     out_boot.write(boot_archive.data(),boot_archive.size());
     printf("Expanding boot archive (%0.1f MB)\n",boot_archive.size()/1024.0/1024.0);
-    system("wib_update.sh /home/root/boot_archive.tar.gz /boot");
+    int ret1 = system("wib_update.sh /home/root/boot_archive.tar.gz /boot");
     
     ofstream out_root("/home/root/root_archive.tar.gz", ofstream::binary);
     out_root.write(root_archive.data(),root_archive.size());
     printf("Expanding root archive (%0.1f MB)\n",root_archive.size()/1024.0/1024.0);
-    system("wib_update.sh /home/root/root_archive.tar.gz /");
+    int ret2 = system("wib_update.sh /home/root/root_archive.tar.gz /");
     
-    //system("reboot");
-    return true;
+    return WEXITSTATUS(ret1) == 0 && WEXITSTATUS(ret2) == 0;
 }
 
 bool WIB::read_sensors(wib::Sensors &sensors) {

@@ -19,8 +19,13 @@ public:
     bool reboot();
     bool update(const std::string &root_archive, const std::string &boot_archive);
     
+    //Read/Write the WIB address space
     uint32_t peek(size_t addr);
-    uint32_t poke(size_t addr, uint32_t value);
+    void poke(size_t addr, uint32_t value);
+    
+    //Read/Write the COLDATA i2c address space for a particular (femb,coldata) index 
+    uint8_t cdpeek(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr);
+    void cdpoke(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
     
     bool read_sensors(wib::Sensors &sensors);
     

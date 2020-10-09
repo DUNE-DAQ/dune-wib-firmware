@@ -68,8 +68,9 @@ unsigned int axi_server(unsigned int cmd, unsigned int addr = 0, unsigned int da
     m->addr = addr;
     m->data = data;
   
-    axi_server_socket.send(zm,0);
-    axi_server_socket.recv(&zm,0);
+    fprintf(stderr,"Skipping AXI simulation!\n");
+    //axi_server_socket.send(zm,zmq::send_flags::none);
+    //axi_server_socket.recv(zm,zmq::recv_flags::none);
     
     m = (msg*) zm.data();
     return m->data;
