@@ -47,8 +47,13 @@ peek addr
 	Read a 32bit value from WIB address space
 poke addr value
 	Write a 32bit value to WIB address space
+cdpeek cdpoke femb_idx cd_idx chip_addr reg_page reg_addr
+	Read a 8bit value from COLDATA I2C address space
+cdpoke cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data
+	Write a 8bit value to COLDATA I2C address space
 update root_archive boot_archive
 	Deploy a new root and boot archive to the WIB
+
 
 ```
 
