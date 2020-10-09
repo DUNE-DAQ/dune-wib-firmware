@@ -41,7 +41,7 @@ void FEMB::i2c_write(uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, u
                   | ((reg_page & 0x7) << COLD_I2C_REG_PAGE)
                   | (0x0 << COLD_I2C_RW)
                   | ((reg_addr & 0xF) << COLD_I2C_REG_ADDR)
-                  | ((data & 0xF) << COLD_I2C_DATA);
+                  | ((data & 0xFF) << COLD_I2C_DATA);
     io_reg_write(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_CTRL,ctrl);
     io_reg_write(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_START,1);
     io_reg_write(&this->coldata_i2c[coldata_idx],REG_COLD_I2C_START,0);
