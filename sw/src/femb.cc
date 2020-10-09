@@ -29,9 +29,9 @@ void FEMB::fast_cmd(int coldata_idx, uint8_t cmd_code) {
 
 void FEMB::i2c_bugfix(int coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr) {
     if (last_coldata_i2c_chip[coldata_idx] != chip_addr) { // Bug #2
-        i2c_read(coldata_idx,chip_addr,reg_page,reg_addr);
-        i2c_read(coldata_idx,chip_addr,reg_page,reg_addr);
         last_coldata_i2c_chip[coldata_idx] = chip_addr;
+        i2c_read(coldata_idx,chip_addr,reg_page,reg_addr);
+        i2c_read(coldata_idx,chip_addr,reg_page,reg_addr);
     }
 }
 
