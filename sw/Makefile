@@ -1,6 +1,6 @@
 CCFLAGS = -g -O2 -Isrc
 CXXFLAGS = -g -O2 -Isrc
-LFLAGS = -lprotobuf -lzmq -lreadline
+LFLAGS = -lprotobuf -lzmq -lreadline -li2c
 
 # output binary for each of these (no headers)
 BSRC = src/wib_client.cxx src/wib_server.cxx

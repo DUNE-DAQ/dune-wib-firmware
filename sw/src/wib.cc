@@ -8,12 +8,19 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+
 using namespace std;
 
 WIB::WIB() {
     io_reg_init(&this->regs,0xA0020000,32);
-    io_reg_init(&this->leds,0xA00D0000,32);
+    io_reg_init(&this->leds,0xA00C0000,32);
     i2c_init(&this->i2c,(char*)"/dev/i2c-0");
+    i2c_init(&this->power_i2c,(char*)"/dev/i2c-2");
     for (int i = 0; i < 4; i++) {
         this->femb[i] = new FEMB(i);
     }
@@ -28,8 +35,180 @@ WIB::~WIB() {
 }
 
 bool WIB::initialize() {
-    //setup the FEMBs and COLDATA chips
+    clock_config();
+    femb_power_config();
+    femb_power_set(true);
+    femb_serial_reset();
     return false;
+}
+
+bool WIB::set_ip(string ip) {
+    struct ifreq ifr;
+    int fd;
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    ifr.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
+    struct sockaddr_in *addr = (struct sockaddr_in*)&ifr.ifr_addr;
+    inet_pton(AF_INET,ip.c_str(),&addr->sin_addr);
+    ioctl(fd, SIOCSIFADDR, &ifr);
+    close(fd);
+    return true;
+}
+
+#include "SI5344-RevD-WIB-Registers.h"
+
+bool WIB::clock_config() {
+	int bus = 0;
+	// i2c addresses for each synth
+	int chip[] = {0x6b};
+	// register arrays for each synth
+	const si5344_revd_register_t* regs[] = {si5344_revd_registers};
+
+	int i, j;
+	int dwords = sizeof(si5344_revd_registers)/sizeof(si5344_revd_register_t); // size of register dump
+	int page_now = -1, page_old = -2;
+
+	// FIXME need to select proper i2c device
+	i2c_select(I2C_SI5344);
+
+	for (j = 0; j < sizeof(chip)/sizeof(int); j++) {
+		page_now = -1;
+		page_old = -2;
+		for (i = 0; i < dwords; i ++) {
+			si5344_revd_register_t rd = regs[j][i];
+
+			// detect page switches
+			page_old = page_now;
+			page_now = (rd.address >> 8) & 0xff;
+			if (page_now != page_old)
+				i2c_reg_write(&this->i2c,chip[j],1,page_now);
+
+			i2c_reg_write(&this->i2c,chip[j],rd.address & 0xff,rd.value);
+			
+			if (i == 2) usleep(300000);
+		}
+		// set page back to 0
+		i2c_reg_write(&this->i2c,chip[j],1,0);
+	}
+	
+    return true;
+}
+
+bool WIB::femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage) {
+	uint8_t chip;
+	uint8_t reg;
+	uint8_t buffer[2];
+	uint32_t DAC_value;
+
+	switch (regulator_id) {
+	    case 0:
+	    case 1:
+	    case 2:
+	    case 3:
+		    i2c_select(I2C_PL_FEMB_PWR2);   // SET I2C mux to 0x06 for FEMB DC2DC DAC access
+		    DAC_value   = (uint32_t) ((voltage * -482.47267) + 2407.15);
+            reg         = (uint8_t) (0x10 | ((regulator_id & 0x0f) << 1));
+		    buffer[0]   = (uint8_t) (DAC_value >> 4) & 0xff;
+		    buffer[1]   = (uint8_t) (DAC_value << 4) & 0xf0;
+		    switch(femb_id) {
+                case 0:
+			        chip = 0x4C;
+			        break;  
+                case 1:
+			        chip = 0x4D;
+			        break;  
+                case 2:
+			        chip = 0x4E;
+			        break;  
+                case 3:
+			        chip = 0x4F;
+			        break;  
+			    default:
+        			return false;
+        	}
+        	break;
+	    case 4:
+		    i2c_select(I2C_PL_FEMB_PWR3);   // SET I2C mux to 0x08 for FEMB LDO DAC access
+		    chip = 0x4C;
+	        reg  = (0x10 | ((femb_id & 0x0f) << 1));
+		    DAC_value   = (uint32_t) ((voltage * -819.9871877) + 2705.465);
+		    buffer[0]   = (uint8_t) (DAC_value >> 4) & 0xff;
+		    buffer[1]   = (uint8_t) (DAC_value << 4) & 0xf0;
+		    break;
+	    case 5:
+		    i2c_select(I2C_PL_FEMB_PWR3);   // SET I2C mux to 0x08 for FEMB LDO DAC access
+		    chip = 0x4D;
+		    reg  = (0x10 | ((femb_id & 0x0f) << 1));
+		    DAC_value   = (uint32_t) ((voltage * -819.9871877) + 2705.465);
+		    buffer[0]   = (uint8_t) (DAC_value >> 4) & 0xff;
+		    buffer[1]   = (uint8_t) (DAC_value << 4) & 0xf0;
+		    break;
+	    default:
+	        return false;
+    }
+
+	i2c_block_write(&this->i2c,chip,reg,buffer,2);
+
+	return true;
+}
+
+bool WIB::femb_power_config() {
+	for (int i = 0; i <= 3; i++) {
+		femb_power_ctrl(i, 0, 4.0);
+		femb_power_ctrl(i, 1, 4.0);
+		femb_power_ctrl(i, 2, 4.0);
+		femb_power_ctrl(i, 3, 4.0);
+		femb_power_ctrl(i, 4, 2.5);
+		femb_power_ctrl(i, 5, 2.5);
+	}
+	
+	return true;
+}
+
+bool WIB::femb_power_set(bool on) {
+    if (on) {
+        // configure all pins as outputs
+        i2c_reg_write(&this->power_i2c, 0x22, 0xC, 0);
+        i2c_reg_write(&this->power_i2c, 0x22, 0xD, 0);
+        i2c_reg_write(&this->power_i2c, 0x22, 0xE, 0);
+        // set all ones on all outputs
+        i2c_reg_write(&this->power_i2c, 0x22, 0x4, 0xFF);
+        i2c_reg_write(&this->power_i2c, 0x22, 0x5, 0xFF);
+        i2c_reg_write(&this->power_i2c, 0x22, 0x6, 0xFF);
+        // configure all pins as outputs
+        i2c_reg_write(&this->power_i2c, 0x23, 0xC, 0);
+        i2c_reg_write(&this->power_i2c, 0x23, 0xD, 0);
+        i2c_reg_write(&this->power_i2c, 0x23, 0xE, 0);
+        // set all ones on all outputs
+        i2c_reg_write(&this->power_i2c, 0x23, 0x4, 0xFF);
+        i2c_reg_write(&this->power_i2c, 0x23, 0x5, 0xFF);
+        i2c_reg_write(&this->power_i2c, 0x23, 0x6, 0xFF);
+    } else {
+        // set all ones on all outputs
+        i2c_reg_write(&this->power_i2c, 0x22, 0x4, 0);
+        i2c_reg_write(&this->power_i2c, 0x22, 0x5, 0);
+        i2c_reg_write(&this->power_i2c, 0x22, 0x6, 0);
+        // set all ones on all outputs
+        i2c_reg_write(&this->power_i2c, 0x23, 0x4, 0);
+        i2c_reg_write(&this->power_i2c, 0x23, 0x5, 0);
+        i2c_reg_write(&this->power_i2c, 0x23, 0x6, 0);
+    }
+    return true;
+}
+
+bool WIB::femb_serial_reset() {
+    uint32_t value = io_reg_read(&this->regs,1);
+    value |= (1<<7);
+    io_reg_write(&this->regs,1,value);
+    value &= ~(1<<7);
+    io_reg_write(&this->regs,1,value);
+    return true;
+}
+
+void WIB::i2c_select(uint8_t device) {
+    uint32_t next = io_reg_read(&this->regs,1);
+    next = (next & 0xFFFFFFF0) | (device | 0xF);
+    io_reg_write(&this->regs,1,next);
 }
 
 uint32_t WIB::peek(size_t addr) {
@@ -89,7 +268,7 @@ bool WIB::read_sensors(wib::Sensors &sensors) {
 
    
    printf("Activating I2C_SENSOR bus\n");
-   io_reg_write(&this->regs,1,0x00000005); //reg1 = 0x5
+   i2c_select(I2C_SENSOR);
     
    printf("Enabling voltage sensors\n");
    uint8_t buf[1] = {0x7};

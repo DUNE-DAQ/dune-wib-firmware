@@ -2,6 +2,9 @@
 
 archive="$1"
 root="$2"
+
+( [ -f "$archive" ] && [ -d "$root" ] ) || exit 1
+
 ignore="/boot|/home|/proc|/run|/sys|/dev"
 manifest="${archive}.manifest"
 

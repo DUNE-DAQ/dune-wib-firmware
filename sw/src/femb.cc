@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 constexpr size_t CD_I2C_ADDR[] = { 0xA0010000, 0xA0040000, 0xA0050000, 0xA0060000, 0xA0070000, 0xA0080000, 0xA0090000, 0xA00A0000 };
-//FIXME only the 0th FC firmware interface exists, repeated here
+//FIXME only one coldata_fast_cmd exists, consider moving out of FEMB class
 constexpr size_t CD_FASTCMD_ADDR[] = { 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000 };
 
 FEMB::FEMB(int index) {

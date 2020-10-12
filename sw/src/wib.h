@@ -9,6 +9,18 @@
 
 #include <cstdint>
 
+#define I2C_SI5344          0
+#define I2C_SI5342          1
+#define I2C_QSFP            2
+#define I2C_PL_FEMB_PWR     3
+#define I2C_PL_FEMB_EN      4
+#define I2C_SENSOR          5
+#define I2C_PL_FEMB_PWR2    6
+#define I2C_LTC2977         7
+#define I2C_PL_FEMB_PWR3    8
+#define I2C_FLASH           9
+#define I2C_ADN2814         10
+
 class WIB {
 
 public:
@@ -16,8 +28,18 @@ public:
     ~WIB();
     
     bool initialize();
+    bool set_ip(std::string ip);
+    bool clock_config();
+    bool femb_power_config();
+    bool femb_power_set(bool on);
+    bool femb_serial_reset();
+    
+    bool femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage);
+    
     bool reboot();
     bool update(const std::string &root_archive, const std::string &boot_archive);
+    
+    void i2c_select(uint8_t device);
     
     //Read/Write the WIB address space
     uint32_t peek(size_t addr);
@@ -33,6 +55,7 @@ protected:
 
     FEMB* femb[4];
     i2c_t i2c;
+    i2c_t power_i2c;
     io_reg_t regs;
     io_reg_t leds;
 
