@@ -2,10 +2,10 @@ SUMMARY = "WIB applications"
 LICENSE="CLOSED"
 SECTION = "PETALINUX/apps"
 
-DEPENDS = "glibc zeromq cppzmq protobuf protobuf-native readline"
+DEPENDS = "glibc zeromq cppzmq protobuf protobuf-native readline i2c-tools"
 
 # -compiler and -dev packages are necessary only for building on the wib itself
-RDEPENDS_${PN} = "protobuf-compiler gdb protobuf zeromq-dev cppzmq-dev protobuf-dev readline-dev git tar rsync"
+RDEPENDS_${PN} = "protobuf-compiler gdb protobuf zeromq-dev cppzmq-dev protobuf-dev readline-dev i2c-tools-dev git tar rsync"
 
 #To disable hard failures from including -dev packages
 INSANE_SKIP_${PN} += "dev-deps"
