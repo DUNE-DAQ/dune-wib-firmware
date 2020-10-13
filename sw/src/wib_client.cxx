@@ -142,9 +142,9 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         printf("\t\tRead a 32bit value from WIB address space\n");
         printf("\tpoke addr value\n");
         printf("\t\tWrite a 32bit value to WIB address space\n");
-        printf("\tcdpeek cdpoke femb_idx cd_idx chip_addr reg_page reg_addr\n");
+        printf("\tcdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
         printf("\t\tRead a 8bit value from COLDATA I2C address space\n");
-        printf("\tcdpoke cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
+        printf("\tcdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
         printf("\t\tWrite a 8bit value to COLDATA I2C address space\n");
         printf("\tupdate root_archive boot_archive\n");
         printf("\t\tDeploy a new root and boot archive to the WIB\n");
