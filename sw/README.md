@@ -39,22 +39,25 @@ The `help` command for `wib_server` will provide a list of commands and a brief
 description of each:
 
 ```
-reboot
-	Reboot the WIB
-initialize
-	Initialize the WIB hardware
-peek addr
-	Read a 32bit value from WIB address space
-poke addr value
-	Write a 32bit value to WIB address space
-cdpeek femb_idx cd_idx chip_addr reg_page reg_addr
-	Read a 8bit value from COLDATA I2C address space
-cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data
-	Write a 8bit value to COLDATA I2C address space
-update root_archive boot_archive
-	Deploy a new root and boot archive to the WIB
-
-
+Available commands:
+  reboot
+    Reboot the WIB
+  initialize
+    Initialize the WIB hardware
+  peek addr
+    Read a 32bit value from WIB address space
+  poke addr value
+    Write a 32bit value to WIB address space
+  cdpeek femb_idx cd_idx chip_addr reg_page reg_addr
+    Read a 8bit value from COLDATA I2C address space
+  cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data
+    Write a 8bit value to COLDATA I2C address space
+  cdfastcmd cmd
+    Send the fast command cmd to all coldata chips
+  update root_archive boot_archive
+    Deploy a new root and boot archive to the WIB
+  exit
+    Closes the command interface
 ```
 
 ## Connecting to cocotb simulation

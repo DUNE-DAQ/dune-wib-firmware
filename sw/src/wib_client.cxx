@@ -7,8 +7,35 @@
 #include <readline/history.h>
 
 #include "wib.pb.h"
+#include "femb.h" //for fast command defines
 
 using namespace std;
+
+void print_usage(const char *prog) {
+    fprintf(stderr, "Usage: %s [-w ip] [cmd] \n", prog);
+}
+
+void print_help() {
+    printf("Available commands:\n");
+    printf("  reboot\n");
+    printf("    Reboot the WIB\n");
+    printf("  initialize\n");
+    printf("    Initialize the WIB hardware\n");
+    printf("  peek addr\n");
+    printf("    Read a 32bit value from WIB address space\n");
+    printf("  poke addr value\n");
+    printf("    Write a 32bit value to WIB address space\n");
+    printf("  cdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
+    printf("    Read a 8bit value from COLDATA I2C address space\n");
+    printf("  cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
+    printf("    Write a 8bit value to COLDATA I2C address space\n");
+    printf("  cdfastcmd cmd\n");
+    printf("    Send the fast command cmd to all coldata chips\n");
+    printf("  update root_archive boot_archive\n");
+    printf("    Deploy a new root and boot archive to the WIB\n");
+    printf("  exit\n");
+    printf("    Closes the command interface\n");
+}
 
 template <class R, class C>
 void send_command(zmq::socket_t &socket, const C &msg, R &repl) {
@@ -83,7 +110,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
     } else if (cmd == "peek") {
         if (argc != 2) {
             fprintf(stderr,"Usage: peek addr\n");
-            fprintf(stderr,"\t all arguments are base 16\n");
+            fprintf(stderr,"   all arguments are base 16\n");
             return 0;
         }
         wib::Peek req;
@@ -94,7 +121,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
     } else if (cmd == "poke") {
         if (argc != 3) {
             fprintf(stderr,"Usage: poke addr value\n");
-            fprintf(stderr,"\t all arguments are base 16\n");
+            fprintf(stderr,"   all arguments are base 16\n");
             return 0;
         }
         wib::Poke req;
@@ -105,7 +132,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
     } else if (cmd == "cdpeek") {
         if (argc != 6) {
             fprintf(stderr,"Usage: cdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
-            fprintf(stderr,"\t femb_idx and cd_idx are base 10, remaining args are base 16\n");
+            fprintf(stderr,"   femb_idx and cd_idx are base 10, remaining args are base 16\n");
             return 0;
         }
         wib::CDPeek req;
@@ -120,7 +147,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
     } else if (cmd == "cdpoke") {
         if (argc != 7) {
             fprintf(stderr,"Usage: cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
-            fprintf(stderr,"\t femb_idx and cd_idx are base 10, remaining args are base 16\n");
+            fprintf(stderr,"   femb_idx and cd_idx are base 10, remaining args are base 16\n");
             return 0;
         }
         wib::CDPoke req;
@@ -132,22 +159,35 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         req.set_data((uint8_t)strtoull(argv[6],NULL,16));
         wib::CDRegValue rep;
         send_command(s,req,rep);
+    } else if (cmd == "cdfastcmd") {
+        if (argc != 2) {
+            fprintf(stderr,"Usage: cdfastcmd cmd\n");
+            fprintf(stderr,"   cmd can be: reset, act, sync, edge, idle, edge_act\n");
+            return 0;
+        }
+        wib::CDFastCmd req;
+        string cmd(argv[1]);
+        if (cmd == "reset") {
+            req.set_cmd(FAST_CMD_RESET);
+        } else if (cmd == "act") {
+            req.set_cmd(FAST_CMD_ACT);
+        } else if (cmd == "sync") {
+            req.set_cmd(FAST_CMD_SYNC);
+        } else if (cmd == "edge") {
+            req.set_cmd(FAST_CMD_EDGE);
+        } else if (cmd == "idle") {
+            req.set_cmd(FAST_CMD_IDLE);
+        } else if (cmd == "edge_act") {
+            req.set_cmd(FAST_CMD_EDGE_ACT);
+        } else {
+            fprintf(stderr,"Unknown fast command: %s\n",argv[1]);
+            fprintf(stderr,"Valid fast commands: reset, act, sync, edge, idle, edge_act\n");
+            return 0;
+        }
+        wib::RegValue rep;
+        send_command(s,req,rep);
     } else if (cmd == "help") {
-        printf("Available commands:\n");
-        printf("\treboot\n");
-        printf("\t\tReboot the WIB\n");
-        printf("\tinitialize\n");
-        printf("\t\tInitialize the WIB hardware\n");
-        printf("\tpeek addr\n");
-        printf("\t\tRead a 32bit value from WIB address space\n");
-        printf("\tpoke addr value\n");
-        printf("\t\tWrite a 32bit value to WIB address space\n");
-        printf("\tcdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
-        printf("\t\tRead a 8bit value from COLDATA I2C address space\n");
-        printf("\tcdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
-        printf("\t\tWrite a 8bit value to COLDATA I2C address space\n");
-        printf("\tupdate root_archive boot_archive\n");
-        printf("\t\tDeploy a new root and boot archive to the WIB\n");
+        print_help();
     } else {
         fprintf(stderr,"Unrecognized Command: %s\n",argv[0]);
         return 0;
@@ -160,17 +200,20 @@ int main(int argc, char **argv) {
     char *ip = (char*)"127.0.0.1";
     
     signed char opt;
-    while ((opt = getopt(argc, argv, "w:")) != -1) {
+    while ((opt = getopt(argc, argv, "w:h")) != -1) {
        switch (opt) {
+           case 'h':
+               print_usage(argv[0]);
+               print_help();
+               return 1;
            case 'w':
                ip = optarg;
                break;
            default: /* '?' */
-               fprintf(stderr, "Usage: %s [-w ip] [cmd] \n", argv[0]);
+               print_usage(argv[0]);
                return 1;
        }
     }
-    
     
     zmq::context_t context(1);
     zmq::socket_t socket(context, ZMQ_REQ);

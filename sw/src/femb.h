@@ -36,7 +36,7 @@ public:
     FEMB(int index);
     ~FEMB();
     
-    void fast_cmd(uint8_t coldata_idx, uint8_t cmd_code);
+    static void fast_cmd(uint8_t cmd_code);
     
     void i2c_write(uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
     uint8_t i2c_read(uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page,  uint8_t reg_addr);
@@ -44,7 +44,8 @@ public:
 protected:
     int last_coldata_i2c_chip[2];
     io_reg_t coldata_i2c[2];
-    io_reg_t coldata_fast_cmd[2];
+    
+    static io_reg_t coldata_fast_cmd;
     
     void i2c_bugfix(uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr);
     

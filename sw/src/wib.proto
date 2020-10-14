@@ -55,6 +55,11 @@ message CDPeek {
     uint32 reg_addr = 5;
 }
 
+//fast command on all coldata chips
+message CDFastCmd {
+    uint32 cmd = 1;
+}
+
 /* CCM/SC/Monitoring commands */
 
 message GetSensors {

@@ -3,14 +3,14 @@
 #include <unistd.h>
 
 constexpr size_t CD_I2C_ADDR[] = { 0xA0010000, 0xA0040000, 0xA0050000, 0xA0060000, 0xA0070000, 0xA0080000, 0xA0090000, 0xA00A0000 };
-//FIXME only one coldata_fast_cmd exists, consider moving out of FEMB class
-constexpr size_t CD_FASTCMD_ADDR[] = { 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000, 0xA0030000 };
+
+// for all coldata chips
+constexpr size_t CD_FASTCMD_ADDR = 0xA0030000;
+io_reg_t FEMB::coldata_fast_cmd;
 
 FEMB::FEMB(int index) {
     for (int i = 0; i < 2; i++) {
         io_reg_init(&this->coldata_i2c[i],CD_I2C_ADDR[i+index*2],2);
-        io_reg_init(&this->coldata_fast_cmd[i],CD_FASTCMD_ADDR[i+2*index],2);
-        io_reg_write(&this->coldata_fast_cmd[i],REG_FAST_CMD_ACT_DELAY,19);
         last_coldata_i2c_chip[i] = -1;
     }
 }
@@ -18,13 +18,17 @@ FEMB::FEMB(int index) {
 FEMB::~FEMB() {
     for (int i = 0; i < 2; i++) {
         io_reg_free(&this->coldata_i2c[i]);
-        io_reg_free(&this->coldata_fast_cmd[i]);
     }
 }
 
-
-void FEMB::fast_cmd(uint8_t coldata_idx, uint8_t cmd_code) {
-    io_reg_write(&this->coldata_fast_cmd[coldata_idx],REG_FAST_CMD_CODE,cmd_code);
+void FEMB::fast_cmd(uint8_t cmd_code) {
+    static bool fast_cmd_init = false;
+    if (!fast_cmd_init) {
+        io_reg_init(&FEMB::coldata_fast_cmd,CD_FASTCMD_ADDR,2); //never free'd
+        io_reg_write(&FEMB::coldata_fast_cmd,REG_FAST_CMD_ACT_DELAY,19);
+        fast_cmd_init = true;
+    }
+    io_reg_write(&FEMB::coldata_fast_cmd,REG_FAST_CMD_CODE,cmd_code);
 }
 
 void FEMB::i2c_bugfix(uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr) {

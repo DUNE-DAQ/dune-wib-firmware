@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
         } else if (command.cmd().Is<wib::CDPeek>()) {
             wib::CDPeek read;
             command.cmd().UnpackTo(&read);
-            printf("cdpeek femb%u cd%u chip 0x%x page 0x%x addr 0x%x\n",read.femb_idx(),read.coldata_idx(),read.chip_addr(),read.reg_page(),read.reg_addr());
+            printf("cdpeek femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x\n",read.femb_idx(),read.coldata_idx(),read.chip_addr(),read.reg_page(),read.reg_addr());
             uint8_t rval = w.cdpeek((uint8_t)read.femb_idx(),(uint8_t)read.coldata_idx(),(uint8_t)read.chip_addr(),(uint8_t)read.reg_page(),(uint8_t)read.reg_addr());
             wib::CDRegValue value;   
             value.set_femb_idx(read.femb_idx());        
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
         } else if (command.cmd().Is<wib::CDPoke>()) {
             wib::CDPoke write;
             command.cmd().UnpackTo(&write);
-            printf("cdpoke femb%u cd%u chip 0x%x page 0x%x addr 0x%x = 0x%x\n",write.femb_idx(),write.coldata_idx(),write.chip_addr(),write.reg_page(),write.reg_addr(),write.data());
+            printf("cdpoke femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x = 0x%x\n",write.femb_idx(),write.coldata_idx(),write.chip_addr(),write.reg_page(),write.reg_addr(),write.data());
             w.cdpoke((uint8_t)write.femb_idx(),(uint8_t)write.coldata_idx(),(uint8_t)write.chip_addr(),(uint8_t)write.reg_page(),(uint8_t)write.reg_addr(),(uint8_t)write.data());
             wib::CDRegValue value;   
             value.set_femb_idx(write.femb_idx());        
@@ -78,6 +78,13 @@ int main(int argc, char **argv) {
             value.set_reg_addr(write.reg_addr());      
             value.set_data(write.data());
             value.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::CDFastCmd>()) {
+            wib::CDFastCmd fc;
+            command.cmd().UnpackTo(&fc);
+            printf("cdfastcmd 0x%x\n",fc.cmd());
+            FEMB::fast_cmd((uint8_t)fc.cmd());
+            wib::Empty empty;   
+            empty.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSensors>()) {
             printf("get_sensors\n");
             wib::Sensors sensors;    
