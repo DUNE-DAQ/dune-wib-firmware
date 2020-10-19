@@ -85,6 +85,14 @@ int main(int argc, char **argv) {
             FEMB::fast_cmd((uint8_t)fc.cmd());
             wib::Empty empty;   
             empty.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::Script>()) {
+            printf("script\n");
+            wib::Script script;    
+            command.cmd().UnpackTo(&script);
+            bool res = w.script(script.script(),script.file());
+            wib::Status status;
+            status.set_success(res);
+            status.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSensors>()) {
             printf("get_sensors\n");
             wib::Sensors sensors;    

@@ -68,6 +68,39 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         wib::GetSensors req;
         wib::Sensors rep;
         send_command(s,req,rep);
+    } else if (cmd == "script") {
+        if (argc != 2) {
+            fprintf(stderr,"Usage: script filename\n");
+            return 0;
+        }
+        string fname(argv[1]);
+        ifstream fin(fname);
+        if (fin.is_open()) {
+            printf("Executing local script... ");
+            string script((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
+            wib::Script req;
+            req.set_script(script);
+            req.set_file(false);
+            wib::Status rep;
+            send_command(s,req,rep);
+            if (rep.success()) {
+                printf("Success\n");
+            } else {
+                printf("Failure\n");
+            }
+        } else {
+            printf("Executing remote script... ");
+            wib::Script req;
+            req.set_script(fname);
+            req.set_file(true);
+            wib::Status rep;
+            send_command(s,req,rep);
+            if (rep.success()) {
+                printf("Success\n");
+            } else {
+                printf("Failure\n");
+            }
+        }
     } else if (cmd == "update") {
         if (argc != 3) {
             fprintf(stderr,"Usage: update root_archive boot_archive\n");
@@ -78,6 +111,10 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         string root_archive, boot_archive;
         
         ifstream in_root(argv[1], ios::binary);
+        if (!in_root.is_open()) {
+            fprintf(stderr,"Could not open root archive: %s\n",argv[1]);
+            return 0;
+        }
         in_root.ignore( numeric_limits<streamsize>::max() );
         length = in_root.gcount();
         in_root.clear();
@@ -86,6 +123,10 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         in_root.read((char*)root_archive.data(),length);
         
         ifstream in_boot(argv[2], ios::binary);
+        if (!in_boot.is_open()) {
+            fprintf(stderr,"Could not open boot archive: %s\n",argv[2]);
+            return 0;
+        }
         in_boot.ignore( numeric_limits<streamsize>::max() );
         length = in_boot.gcount();
         in_boot.clear();

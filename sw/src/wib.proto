@@ -8,6 +8,10 @@ message Command {
     google.protobuf.Any cmd = 1;
 }
 
+message Script {
+    bytes script = 1;
+    bool file = 2;
+}
 
 /* Initialization Commands */
 
@@ -68,6 +72,11 @@ message GetSensors {
 /* Command Replies */
 
 message Empty {
+}
+
+message Status {
+    bool success = 1;
+    bytes extra = 2;
 }
 
 message RegValue {

@@ -1,0 +1,3 @@
+# single FEMB connected to input 4 on test board
+mem 0xa00c0008 0xfff0
+

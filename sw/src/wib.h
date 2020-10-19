@@ -27,13 +27,16 @@ public:
     WIB();
     ~WIB();
     
+    
+    bool script_cmd(std::string line);
+    bool script(std::string script, bool file = true);
+    
     bool initialize();
     bool set_ip(std::string ip);
-    bool clock_config();
+    
     bool femb_power_config();
     bool femb_power_set(bool on);
     bool femb_serial_reset();
-    
     bool femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage);
     
     bool reboot();

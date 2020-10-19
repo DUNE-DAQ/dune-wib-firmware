@@ -3,6 +3,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
+#include <sstream>
 #include <unistd.h>
 #include <fstream>
 #include <sys/mman.h>
@@ -35,10 +37,6 @@ WIB::~WIB() {
 }
 
 bool WIB::initialize() {
-    clock_config();
-    femb_power_config();
-    femb_power_set(true);
-    femb_serial_reset();
     return false;
 }
 
@@ -52,45 +50,6 @@ bool WIB::set_ip(string ip) {
     inet_pton(AF_INET,ip.c_str(),&addr->sin_addr);
     ioctl(fd, SIOCSIFADDR, &ifr);
     close(fd);
-    return true;
-}
-
-#include "SI5344-RevD-WIB-Registers.h"
-
-bool WIB::clock_config() {
-    int bus = 0;
-    // i2c addresses for each synth
-    int chip[] = {0x6b};
-    // register arrays for each synth
-    const si5344_revd_register_t* regs[] = {si5344_revd_registers};
-
-    int i, j;
-    int dwords = sizeof(si5344_revd_registers)/sizeof(si5344_revd_register_t); // size of register dump
-    int page_now = -1, page_old = -2;
-
-    // FIXME need to select proper i2c device
-    i2c_select(I2C_SI5344);
-
-    for (j = 0; j < sizeof(chip)/sizeof(int); j++) {
-        page_now = -1;
-        page_old = -2;
-        for (i = 0; i < dwords; i ++) {
-            si5344_revd_register_t rd = regs[j][i];
-
-            // detect page switches
-            page_old = page_now;
-            page_now = (rd.address >> 8) & 0xff;
-            if (page_now != page_old)
-                i2c_reg_write(&this->i2c,chip[j],1,page_now);
-
-            i2c_reg_write(&this->i2c,chip[j],rd.address & 0xff,rd.value);
-            
-            if (i == 2) usleep(300000);
-        }
-        // set page back to 0
-        i2c_reg_write(&this->i2c,chip[j],1,0);
-    }
-    
     return true;
 }
 
@@ -202,6 +161,112 @@ bool WIB::femb_serial_reset() {
     io_reg_write(&this->regs,1,value);
     value &= ~(1<<7);
     io_reg_write(&this->regs,1,value);
+    return true;
+}
+
+bool WIB::script_cmd(string line) {
+    istringstream ss(line);
+    istream_iterator<string> begin(ss);
+    istream_iterator<string> end;
+    vector<string> tokens(begin, end);
+    if (tokens.size() == 0 || tokens[0][0] == '#') return true;
+    string cmd(tokens[0]);
+    if (cmd == "delay") {
+        if (tokens.size() != 2) {
+            fprintf(stderr,"Invalid delay\n");
+            return false;
+        }
+        size_t micros = (size_t) strtoull(tokens[1].c_str(),NULL,10);
+        usleep(micros);
+        return true;
+    } else if (cmd == "run") {
+        if (tokens.size() != 2) {
+            fprintf(stderr,"Invalid run\n");
+            return false;
+        }
+        return script(tokens[1]);
+    } else if (cmd == "i2c") {
+        string bus(tokens[1]);
+        if (bus == "cd") { // i2c cd femb coldata chip page addr data
+            uint8_t femb_idx = (uint8_t)strtoull(tokens[2].c_str(),NULL,10);
+            uint8_t coldata_idx = (uint8_t)strtoull(tokens[3].c_str(),NULL,10);
+            uint8_t chip_addr = (uint8_t)strtoull(tokens[4].c_str(),NULL,16);
+            uint8_t reg_page = (uint8_t)strtoull(tokens[5].c_str(),NULL,16);
+            uint8_t reg_addr = (uint8_t)strtoull(tokens[6].c_str(),NULL,16);
+            uint8_t data = (uint8_t)strtoull(tokens[7].c_str(),NULL,16);
+            cdpoke(femb_idx, coldata_idx, chip_addr, reg_page, reg_addr, data);
+            return true;
+        } else {
+            i2c_t *i2c_bus;
+            if (bus == "sel") {  // i2c sel chip addr data [...]
+                i2c_bus = &this->i2c;
+            } else if (bus == "pwr") { // i2c pwr chip addr data [...]
+                i2c_bus = &this->power_i2c;
+            } else {
+                fprintf(stderr,"Invalid i2c bus selection: %s\n", tokens[1].c_str());
+                return false;
+            }
+            uint8_t chip = (uint8_t)strtoull(tokens[2].c_str(),NULL,16);
+            uint8_t addr = (uint8_t)strtoull(tokens[3].c_str(),NULL,16);
+            if (tokens.size() < 5) {
+                fprintf(stderr,"Invalid arguments to `i2c sel`\n");
+            } else if (tokens.size() > 5) {
+                size_t size = tokens.size() - 4;
+                uint8_t *buf = new uint8_t[size];
+                for (size_t i = 0; i < size; i++) {
+                    buf[i] = (uint8_t)strtoull(tokens[4+i].c_str(),NULL,16);
+                }
+                i2c_block_write(i2c_bus, chip, addr, buf, size);
+                return true;
+            } else {
+                uint8_t data = (uint8_t)strtoull(tokens[4].c_str(),NULL,16);
+                i2c_reg_write(i2c_bus, chip, addr, data);
+                return true;
+            }
+        }
+    } else if (cmd == "mem") {
+        if (tokens.size() == 4) { // mem addr value
+            uint32_t addr = strtoull(tokens[1].c_str(),NULL,16);
+            uint32_t value = strtoull(tokens[2].c_str(),NULL,16);
+            poke(addr, value);
+            return true;
+        } else { // mem addr value mask
+            uint32_t addr = strtoull(tokens[1].c_str(),NULL,16);
+            uint32_t value = strtoull(tokens[2].c_str(),NULL,16);
+            uint32_t mask = strtoull(tokens[3].c_str(),NULL,16);
+            uint32_t prev = peek(addr);
+            poke(addr, (prev & (~mask)) | (value & mask));
+            return true;
+        }
+    } else {
+        fprintf(stderr,"Invalid script command: %s\n", tokens[0].c_str());
+    }
+    return false;
+}
+
+bool WIB::script(string script, bool file) {
+    if (file) {
+        ifstream fin(script);
+        if (!fin.is_open()) {
+            fin.clear();
+            fin.open("scripts/"+script);
+            if (!fin.is_open()) {
+                fin.clear();
+                fin.open("/etc/wib/"+script);        
+                if (!fin.is_open()) {
+                    return false;
+                }
+            }
+        }
+        string str((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
+        script = str;
+    }
+    istringstream iss(script);
+
+    for (string line; getline(iss, line); ) {
+        printf("%s\n",line.c_str());
+        if (!script_cmd(line)) return false;
+    }
     return true;
 }
 
