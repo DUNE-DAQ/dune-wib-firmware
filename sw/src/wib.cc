@@ -261,6 +261,29 @@ bool WIB::script_cmd(string line) {
         } else {
             fprintf(stderr,"Invalid arguments to mem\n");
         }
+    } else if (cmd == "fast") {
+        if (tokens.size() != 2) {
+            fprintf(stderr,"Invalid arguments to fast\n");
+            return false;
+        }
+        string fast(tokens[1]);
+        if (fast == "reset") {
+            FEMB::fast_cmd(FAST_CMD_RESET);
+        } else if (cmd == "act") {
+            FEMB::fast_cmd(FAST_CMD_ACT);
+        } else if (fast == "sync") {
+            FEMB::fast_cmd(FAST_CMD_SYNC);
+        } else if (fast == "edge") {
+            FEMB::fast_cmd(FAST_CMD_EDGE);
+        } else if (fast == "idle") {
+            FEMB::fast_cmd(FAST_CMD_IDLE);
+        } else if (fast == "edge_act") {
+            FEMB::fast_cmd(FAST_CMD_EDGE_ACT);
+        } else {
+            fprintf(stderr,"Unknown fast command: %s\n",fast.c_str());
+            return false;
+        }
+        return true;
     } else {
         fprintf(stderr,"Invalid script command: %s\n", tokens[0].c_str());
     }
