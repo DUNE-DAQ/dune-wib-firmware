@@ -82,6 +82,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         ifstream fin(fname);
         if (fin.is_open()) {
             printf("Executing local script... ");
+            fflush(stdout);
             string script((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
             wib::Script req;
             req.set_script(script);

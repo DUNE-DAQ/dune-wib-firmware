@@ -22,9 +22,15 @@ WIB::WIB() {
     io_reg_init(&this->regs,CTRL_REGS,0x10000/4);
     i2c_init(&this->selected_i2c,(char*)"/dev/i2c-0");
     i2c_init(&this->power_i2c,(char*)"/dev/i2c-2");
+    #ifdef SIMULATION
+    this->daq_spy_fd = -1;
+    this->daq_spy[0] = new char[DAQ_SPY_SIZE];
+    this->daq_spy[1] = new char[DAQ_SPY_SIZE];
+    #else
     this->daq_spy_fd = open("/dev/mem",O_RDWR);
     this->daq_spy[0] = mmap(NULL,DAQ_SPY_SIZE,PROT_READ,MAP_SHARED,this->daq_spy_fd,DAQ_SPY_0);
     this->daq_spy[1] = mmap(NULL,DAQ_SPY_SIZE,PROT_READ,MAP_SHARED,this->daq_spy_fd,DAQ_SPY_1);
+    #endif
     for (int i = 0; i < 4; i++) {
         this->femb[i] = new FEMB(i);
     }
@@ -33,6 +39,14 @@ WIB::WIB() {
 WIB::~WIB() {
     io_reg_free(&this->regs);
     i2c_free(&this->selected_i2c);
+    #ifdef SIMULATION
+    delete [] (char*)this->daq_spy[0];
+    delete [] (char*)this->daq_spy[1];
+    #else
+    munmap(this->daq_spy[0],DAQ_SPY_SIZE);
+    munmap(this->daq_spy[1],DAQ_SPY_SIZE);
+    close(this->daq_spy_fd);
+    #endif
     for (int i = 0; i < 4; i++) {
         delete this->femb[i];
     }
@@ -219,6 +233,7 @@ bool WIB::script_cmd(string line) {
                     buf[i] = (uint8_t)strtoull(tokens[4+i].c_str(),NULL,16);
                 }
                 i2c_block_write(i2c_bus, chip, addr, buf, size);
+                delete [] buf;
                 return true;
             } else {
                 uint8_t data = (uint8_t)strtoull(tokens[4].c_str(),NULL,16);
@@ -227,18 +242,20 @@ bool WIB::script_cmd(string line) {
             }
         }
     } else if (cmd == "mem") {
-        if (tokens.size() == 4) { // mem addr value
+        if (tokens.size() == 3) { // mem addr value
             uint32_t addr = strtoull(tokens[1].c_str(),NULL,16);
             uint32_t value = strtoull(tokens[2].c_str(),NULL,16);
             poke(addr, value);
             return true;
-        } else { // mem addr value mask
+        } else if (tokens.size() == 4) { // mem addr value mask
             uint32_t addr = strtoull(tokens[1].c_str(),NULL,16);
             uint32_t value = strtoull(tokens[2].c_str(),NULL,16);
             uint32_t mask = strtoull(tokens[3].c_str(),NULL,16);
             uint32_t prev = peek(addr);
             poke(addr, (prev & (~mask)) | (value & mask));
             return true;
+        } else {
+            fprintf(stderr,"Invalid arguments to mem\n");
         }
     } else {
         fprintf(stderr,"Invalid script command: %s\n", tokens[0].c_str());

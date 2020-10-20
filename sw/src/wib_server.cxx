@@ -104,6 +104,8 @@ int main(int argc, char **argv) {
             rep.set_buf0(buf0,DAQ_SPY_SIZE);
             rep.set_buf1(buf1,DAQ_SPY_SIZE);
             rep.SerializeToString(&reply_str);
+            if (req.buf0()) delete [] buf0;
+            if (req.buf1()) delete [] buf1;
         } else if (command.cmd().Is<wib::GetSensors>()) {
             printf("get_sensors\n");
             wib::Sensors sensors;    
