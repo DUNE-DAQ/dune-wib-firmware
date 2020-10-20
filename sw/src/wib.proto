@@ -13,6 +13,11 @@ message Script {
     bool file = 2;
 }
 
+message ReadDaqSpy {
+    bool buf0 = 1;
+    bool buf1 = 2;
+}
+
 /* Initialization Commands */
 
 message Initialize {
@@ -91,6 +96,11 @@ message CDRegValue {
     uint32 reg_page = 4;
     uint32 reg_addr = 5;
     uint32 data = 6;
+}
+
+message DaqSpy {
+    bytes buf0 = 1;
+    bytes buf1 = 2;
 }
 
 message Sensors {

@@ -8,6 +8,7 @@
 
 #include "wib.pb.h"
 #include "femb.h" //for fast command defines
+#include "wib.h" //for spy buffer defines
 
 using namespace std;
 
@@ -20,7 +21,11 @@ void print_help() {
     printf("  reboot\n");
     printf("    Reboot the WIB\n");
     printf("  initialize\n");
-    printf("    Initialize the WIB hardware\n");
+    printf("    Initialize the WIB hardware (TBD)\n");
+    printf("  script filename\n");
+    printf("    Run a WIB script (local file will be sent, otherwise filename is remote in /etc/wib/)\n");
+    printf("  daqspy filename\n");
+    printf("    Read 1MB from each daq spy buffer and write the 2MB data to filename\n");
     printf("  peek addr\n");
     printf("    Read a 32bit value from WIB address space\n");
     printf("  poke addr value\n");
@@ -88,6 +93,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
             } else {
                 printf("Failure\n");
             }
+            fin.close();
         } else {
             printf("Executing remote script... ");
             wib::Script req;
@@ -101,6 +107,21 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
                 printf("Failure\n");
             }
         }
+    } else if (cmd == "daqspy") {
+        if (argc != 2) {
+            fprintf(stderr,"Usage: daqspy filename\n");
+            return 0;
+        }
+        wib::ReadDaqSpy req;
+        req.set_buf0(true);
+        req.set_buf1(true);
+        wib::DaqSpy rep;
+        send_command(s,req,rep);
+        string fname(argv[1]);
+        ofstream fout(fname,ofstream::binary);
+        fout.write(rep.buf0().c_str(),DAQ_SPY_SIZE);
+        fout.write(rep.buf1().c_str(),DAQ_SPY_SIZE);
+        fout.close();
     } else if (cmd == "update") {
         if (argc != 3) {
             fprintf(stderr,"Usage: update root_archive boot_archive\n");
@@ -121,6 +142,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         in_root.seekg( 0, ios_base::beg );
         root_archive.resize(length);
         in_root.read((char*)root_archive.data(),length);
+        in_root.close();
         
         ifstream in_boot(argv[2], ios::binary);
         if (!in_boot.is_open()) {
@@ -133,6 +155,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         in_boot.seekg( 0, ios_base::beg );
         boot_archive.resize(length);
         in_boot.read((char*)boot_archive.data(),length);
+        in_boot.close();
         
         wib::Update req;
         printf("Sending root archive (%0.1f MB) and boot archive (%0.1f MB)\n",root_archive.size()/1024.0/1024.0,boot_archive.size()/1024.0/1024.0);

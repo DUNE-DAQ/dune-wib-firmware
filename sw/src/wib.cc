@@ -261,6 +261,7 @@ bool WIB::script(string script, bool file) {
             }
         }
         string str((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
+        fin.close();
         script = str;
     }
     istringstream iss(script);
@@ -338,11 +339,13 @@ bool WIB::reboot() {
 bool WIB::update(const string &root_archive, const string &boot_archive) {
     ofstream out_boot("/home/root/boot_archive.tar.gz", ofstream::binary);
     out_boot.write(boot_archive.data(),boot_archive.size());
+    out_boot.close();
     printf("Expanding boot archive (%0.1f MB)\n",boot_archive.size()/1024.0/1024.0);
     int ret1 = system("wib_update.sh /home/root/boot_archive.tar.gz /boot");
     
     ofstream out_root("/home/root/root_archive.tar.gz", ofstream::binary);
     out_root.write(root_archive.data(),root_archive.size());
+    out_root.close();
     printf("Expanding root archive (%0.1f MB)\n",root_archive.size()/1024.0/1024.0);
     int ret2 = system("wib_update.sh /home/root/root_archive.tar.gz /");
     

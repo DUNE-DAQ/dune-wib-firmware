@@ -93,6 +93,17 @@ int main(int argc, char **argv) {
             wib::Status status;
             status.set_success(res);
             status.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::ReadDaqSpy>()) {
+            printf("read_daq_spy\n");
+            wib::ReadDaqSpy req;    
+            command.cmd().UnpackTo(&req);
+            char *buf0 = req.buf0() ? new char[DAQ_SPY_SIZE] : NULL;
+            char *buf1 = req.buf1() ? new char[DAQ_SPY_SIZE] : NULL;
+            w.read_daq_spy(buf0,buf1);
+            wib::DaqSpy rep;
+            rep.set_buf0(buf0,DAQ_SPY_SIZE);
+            rep.set_buf1(buf1,DAQ_SPY_SIZE);
+            rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSensors>()) {
             printf("get_sensors\n");
             wib::Sensors sensors;    
