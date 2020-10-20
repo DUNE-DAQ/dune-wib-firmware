@@ -21,6 +21,11 @@
 #define I2C_FLASH           9
 #define I2C_ADN2814         10
 
+#define CTRL_REGS           0xA00C0000
+#define DAQ_SPY_0           0xA0100000
+#define DAQ_SPY_1           0xA0200000
+#define DAQ_SPY_SIZE        0x00100000
+
 class WIB {
 
 public:
@@ -44,6 +49,8 @@ public:
     
     void i2c_select(uint8_t device);
     
+    void read_daq_spy(void *buf0, void *buf1);
+    
     //Read/Write the WIB address space
     uint32_t peek(size_t addr);
     void poke(size_t addr, uint32_t value);
@@ -55,12 +62,15 @@ public:
     bool read_sensors(wib::Sensors &sensors);
     
 protected:
-
+    
     FEMB* femb[4];
-    i2c_t i2c;
+    
+    i2c_t selected_i2c;
     i2c_t power_i2c;
     io_reg_t regs;
-    io_reg_t leds;
+
+    int daq_spy_fd;
+    void *daq_spy[2];
 
 };
 
