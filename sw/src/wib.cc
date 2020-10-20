@@ -26,6 +26,10 @@ WIB::WIB() {
     this->daq_spy_fd = -1;
     this->daq_spy[0] = new char[DAQ_SPY_SIZE];
     this->daq_spy[1] = new char[DAQ_SPY_SIZE];
+    for (size_t i = 0; i < DAQ_SPY_SIZE; i++) {
+        ((char*)this->daq_spy[0])[i] = 'A';
+        ((char*)this->daq_spy[1])[i] = 'B';
+    }
     #else
     this->daq_spy_fd = open("/dev/mem",O_RDWR);
     this->daq_spy[0] = mmap(NULL,DAQ_SPY_SIZE,PROT_READ,MAP_SHARED,this->daq_spy_fd,DAQ_SPY_0);
@@ -296,16 +300,24 @@ void WIB::i2c_select(uint8_t device) {
     io_reg_write(&this->regs,0x04/4,next);
 }
 
-void WIB::read_daq_spy(void *buf0, void *buf1) {
+bool WIB::read_daq_spy(void *buf0, void *buf1) {
     uint32_t next = io_reg_read(&this->regs,0x04/4);
     uint32_t mask = 0;
     if (buf0) mask |= (1 << 0);
     if (buf1) mask |= (1 << 1);
     next |= (mask << 6);
     io_reg_write(&this->regs,0x04/4,next);
-    while (io_reg_read(&this->regs,0x80/4) & mask != mask) usleep(1000);
+    bool success = false;
+    for (size_t i = 0; i < 10; i++) { // try for 10 ms (should take max 4)
+        usleep(1000);
+        if ((io_reg_read(&this->regs,0x80/4) & mask) == mask) {
+            success = true;
+            break;
+        }
+    }
     if (buf0) memcpy(buf0,this->daq_spy[0],DAQ_SPY_SIZE);
     if (buf1) memcpy(buf1,this->daq_spy[1],DAQ_SPY_SIZE);
+    return success;
 }
 
 uint32_t WIB::peek(size_t addr) {

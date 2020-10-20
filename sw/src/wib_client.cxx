@@ -97,6 +97,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
             fin.close();
         } else {
             printf("Executing remote script... ");
+            fflush(stdout);
             wib::Script req;
             req.set_script(fname);
             req.set_file(true);
@@ -117,12 +118,19 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         req.set_buf0(true);
         req.set_buf1(true);
         wib::DaqSpy rep;
+        printf("Acquiring DAQ spy buffer...");
+        fflush(stdout);
         send_command(s,req,rep);
         string fname(argv[1]);
         ofstream fout(fname,ofstream::binary);
-        fout.write(rep.buf0().c_str(),DAQ_SPY_SIZE);
-        fout.write(rep.buf1().c_str(),DAQ_SPY_SIZE);
+        fout.write(rep.buf0().c_str(),rep.buf0().size());
+        fout.write(rep.buf1().c_str(),rep.buf0().size());
         fout.close();
+        if (rep.success()) {
+            printf("Success\n");
+        } else {
+            printf("Failure\n");
+        }
     } else if (cmd == "update") {
         if (argc != 3) {
             fprintf(stderr,"Usage: update root_archive boot_archive\n");
@@ -315,6 +323,7 @@ int main(int argc, char **argv) {
                 for (i = 1; cmd[i-1] != NULL && i < count; i++) {
                     cmd[i] = strtok(NULL, delim);
                 }
+                if (cmd[i-1] == NULL) i--;
                 int ret = run_command(socket,i,cmd);
                 delete [] cmd;
                 if (ret == 255) return 0;

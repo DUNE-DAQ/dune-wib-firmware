@@ -99,13 +99,14 @@ int main(int argc, char **argv) {
             command.cmd().UnpackTo(&req);
             char *buf0 = req.buf0() ? new char[DAQ_SPY_SIZE] : NULL;
             char *buf1 = req.buf1() ? new char[DAQ_SPY_SIZE] : NULL;
-            w.read_daq_spy(buf0,buf1);
+            bool success = w.read_daq_spy(buf0,buf1);
             wib::DaqSpy rep;
-            rep.set_buf0(buf0,DAQ_SPY_SIZE);
-            rep.set_buf1(buf1,DAQ_SPY_SIZE);
+            rep.set_success(success);
+            if (buf0) rep.set_buf0(buf0,DAQ_SPY_SIZE); else rep.set_buf0("");
+            if (buf1) rep.set_buf1(buf1,DAQ_SPY_SIZE); else rep.set_buf1("");
             rep.SerializeToString(&reply_str);
-            if (req.buf0()) delete [] buf0;
-            if (req.buf1()) delete [] buf1;
+            if (buf0) delete [] buf0;
+            if (buf1) delete [] buf1;
         } else if (command.cmd().Is<wib::GetSensors>()) {
             printf("get_sensors\n");
             wib::Sensors sensors;    
@@ -132,11 +133,10 @@ int main(int argc, char **argv) {
         
         } */
         
+        printf("sending message %i size %lu bytes\n",i+1,reply_str.size());
         zmq::message_t reply(reply_str.size());
         memcpy((void*)reply.data(), reply_str.c_str(), reply_str.size());
         socket.send(reply,zmq::send_flags::none);
-        
-        printf("msg count: %i\n",i+1);
         
     }
 

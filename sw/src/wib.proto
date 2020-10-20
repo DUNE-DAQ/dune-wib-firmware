@@ -101,6 +101,7 @@ message CDRegValue {
 message DaqSpy {
     bytes buf0 = 1;
     bytes buf1 = 2;
+    bool success = 3;
 }
 
 message Sensors {
