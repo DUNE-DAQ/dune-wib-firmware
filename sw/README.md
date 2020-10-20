@@ -99,27 +99,27 @@ in a script must be remote files. Full paths to files can also be given, as the
 
 Scripts are a series of newline-separated commands with space-separated 
 arguments. Lines starting with `#` will be ignored, as will empty lines. See 
-the (scripts)[scripts] directory for example scripts.
+the [scripts](scripts) directory for example scripts.
 
 The following commands are valid:
 
-* `i2c` with arguments `bus chip register data [data...]` - Perform an onboard I2C write.
- + An `i2c_reg_write` is performed if only one `data` is specified, or an `i2c_block_write` if there are multiple data (see `i2c.h`).
- + `bus` can be either `sel` or `pwr` to correspond to the WIB selectable I2C bus (see `wib.h`) or power I2C bus.
- + `chip` `register` and `data` are all hex values and single bytes.  
-* `i2c cd` with arguments `femb coldata chip page addr data` - Perform a COLDATA I2C write.
- +  `cd` is a literal value (a specific `bus` above, but with different syntax).
- + `femb` should be 0-3 and `coldata` should be 0-1 to specify a specific COLDATA.
- +  `chip`, `page`, `addr`, and `data` are all hex values and single bytes.
-* `mem` with arguments `addr value [mask]` - Perform a write to the WIB's address space
- + If `mask` is specified, the `addr` will first be read, and only the bits in `mask` will be set from `value`.
- + `addr`, `value`, and `mask` (if specified) are all 32 bit hex values.
- + This always performs a 32bit write.
-* `fast` with arguments `cmd` - Perform a fast command on all COLDATA chips
- + `cmd` can be one of: `reset`, `act`, `sync`, `edge`, `idle`, `edge_act`
-* `delay` with arguments `micros` - Sleep (at least) a specified number of microseconds
-* `run` with argument `script` - Execute another script
- + `script` must either be a full path on the WIB, or a script in `/etc/wib/` on the WIB
+- `i2c` with arguments `bus chip register data [data...]` - Perform an onboard I2C write.
+  * An `i2c_reg_write` is performed if only one `data` is specified, or an `i2c_block_write` if there are multiple data (see `i2c.h`).
+  * `bus` can be either `sel` or `pwr` to correspond to the WIB selectable I2C bus (see `wib.h`) or power I2C bus.
+  * `chip` `register` and `data` are all hex values and single bytes.  
+- `i2c cd` with arguments `femb coldata chip page addr data` - Perform a COLDATA I2C write.
+  *  `cd` is a literal value (a specific `bus` above, but with different syntax).
+  * `femb` should be 0-3 and `coldata` should be 0-1 to specify a specific COLDATA.
+  *  `chip`, `page`, `addr`, and `data` are all hex values and single bytes.
+- `mem` with arguments `addr value [mask]` - Perform a write to the WIB's address space
+  * If `mask` is specified, the `addr` will first be read, and only the bits in `mask` will be set from `value`.
+  * `addr`, `value`, and `mask` (if specified) are all 32 bit hex values.
+  * This always performs a 32bit write.
+- `fast` with arguments `cmd` - Perform a fast command on all COLDATA chips
+  * `cmd` can be one of: `reset`, `act`, `sync`, `edge`, `idle`, `edge_act`
+- `delay` with arguments `micros` - Sleep (at least) a specified number of microseconds
+- `run` with argument `script` - Execute another script
+  * `script` must either be a full path on the WIB, or a script in `/etc/wib/` on the WIB
 
 ### DAQ spy buffer readout
 
