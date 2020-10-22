@@ -57,20 +57,26 @@ WIB::~WIB() {
 }
 
 bool WIB::initialize() {
-    return false;
+    bool success = true;
+    int ret;
+    ret = system("ip link set eth0 up");
+    if (WEXITSTATUS(ret) != 0) {
+        fprintf(stderr,"failed to bring up eth0\n");
+        success = false;
+    }
+    string eth0_conf("ip link addr add "+crate_ip()+" dev eth0");
+    ret = system(eth0_conf.c_str());
+    if (WEXITSTATUS(ret) != 0) {
+        fprintf(stderr,"failed to assign IP to eth0\n");
+        success = false;
+    }
+    success &= script("startup"); //FIXME this should be the correct initial setup
+    return success;
 }
 
-bool WIB::set_ip(string ip) {
-    struct ifreq ifr;
-    int fd;
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    ifr.ifr_addr.sa_family = AF_INET;
-    strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
-    struct sockaddr_in *addr = (struct sockaddr_in*)&ifr.ifr_addr;
-    inet_pton(AF_INET,ip.c_str(),&addr->sin_addr);
-    ioctl(fd, SIOCSIFADDR, &ifr);
-    close(fd);
-    return true;
+string WIB::crate_ip() {
+    printf("FIXME: using default IP: 192.168.8.1/24\n");
+    return "192.168.8.1/24"; //FIXME pull from firmware
 }
 
 bool WIB::femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage) {
@@ -402,6 +408,17 @@ bool WIB::update(const string &root_archive, const string &boot_archive) {
     int ret2 = system("wib_update.sh /home/root/root_archive.tar.gz /");
     
     return WEXITSTATUS(ret1) == 0 && WEXITSTATUS(ret2) == 0;
+}
+
+
+bool WIB::configure_wib(wib::ConfigureWIB &conf) {
+    return false; //FIXME do stuff in this method
+}
+
+bool WIB::configure_femb(wib::ConfigureFEMB &conf) {
+    uint8_t femb_idx = conf.index();
+    bool enabled = conf.enabled();
+    return false; //FIXME do stuff in this method
 }
 
 bool WIB::read_sensors(wib::Sensors &sensors) {

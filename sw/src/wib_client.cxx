@@ -172,10 +172,6 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         req.set_boot_archive(boot_archive);
         wib::Empty rep;
         send_command(s,req,rep);
-    } else if (cmd == "initialize") {
-        wib::Initialize req;
-        wib::Empty rep;
-        send_command(s,req,rep);
     } else if (cmd == "reboot") {
         wib::Reboot req;
         wib::Empty rep;

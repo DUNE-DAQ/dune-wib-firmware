@@ -38,11 +38,11 @@ public:
     // Execute a script. Either a filename to be opened (file = true) or a script lines (file = false)
     bool script(std::string script, bool file = true);
     
-    // Startup initialization (TBD, just returns false now)
+    // Startup initialization
     bool initialize();
     
-    // Binds the specified IP to eth0 (assumes eth0 is UP)
-    bool set_ip(std::string ip);
+    // Reads determins IP from backplane, else returns default 192.168.8.1
+    std::string crate_ip();
     
     // Sets the default voltage configurations for FEMB power controller
     bool femb_power_config();
@@ -73,6 +73,12 @@ public:
     // Read/Write the COLDATA i2c address space for a particular (femb,coldata) index 
     uint8_t cdpeek(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr);
     void cdpoke(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
+    
+    // Configure this WIB
+    bool configure_wib(wib::ConfigureWIB &conf);
+    
+    // Configure a FEMB
+    bool configure_femb(wib::ConfigureFEMB &conf);
     
     // Read the onboard I2C sensors and fill the sensor structure
     bool read_sensors(wib::Sensors &sensors);

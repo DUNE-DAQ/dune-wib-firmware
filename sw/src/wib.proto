@@ -20,7 +20,14 @@ message ReadDaqSpy {
 
 /* Initialization Commands */
 
-message Initialize {
+message ConfigureWIB {
+    //add as necessary
+}
+
+message ConfigureFEMB {
+    int32 index = 1;
+    bool enabled = 2;
+    //add as necessary
 }
 
 

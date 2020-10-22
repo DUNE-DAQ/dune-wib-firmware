@@ -112,11 +112,22 @@ int main(int argc, char **argv) {
             wib::Sensors sensors;    
             w.read_sensors(sensors);
             sensors.SerializeToString(&reply_str);
-        } else if (command.cmd().Is<wib::Initialize>()) {
-            printf("initialize\n");
-            wib::Empty empty;    
-            w.initialize();
-            empty.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::ConfigureWIB>()) {
+            printf("configure_wib\n");
+            wib::ConfigureWIB req;
+            command.cmd().UnpackTo(&req);
+            wib::Status rep;    
+            bool success = w.configure_wib(req);
+            rep.set_success(success);
+            rep.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::ConfigureFEMB>()) {
+            printf("configure_femb\n");
+            wib::ConfigureFEMB req;
+            command.cmd().UnpackTo(&req);
+            wib::Status rep;    
+            bool success = w.configure_femb(req);
+            rep.set_success(success);
+            rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::Reboot>()) {
             printf("reboot\n");
             wib::Empty empty; 
