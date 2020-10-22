@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
     printf("wib_server preparing hardware interface\n");
     
     WIB w;
+    w.initialize();
     
     printf("wib_server will listen on port 1234\n");
     

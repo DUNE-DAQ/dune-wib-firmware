@@ -64,7 +64,7 @@ bool WIB::initialize() {
         fprintf(stderr,"failed to bring up eth0\n");
         success = false;
     }
-    string eth0_conf("ip link addr add "+crate_ip()+" dev eth0");
+    string eth0_conf("ip addr add "+crate_ip()+" dev eth0");
     ret = system(eth0_conf.c_str());
     if (WEXITSTATUS(ret) != 0) {
         fprintf(stderr,"failed to assign IP to eth0\n");
@@ -310,14 +310,17 @@ bool WIB::script(string script, bool file) {
                 }
             }
         }
+        printf("Running script: %s\n",script.c_str());
         string str((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
         fin.close();
         script = str;
+    } else {
+        printf("Running remote/generated script\n");
     }
     istringstream iss(script);
 
     for (string line; getline(iss, line); ) {
-        printf("%s\n",line.c_str());
+        //printf("%s\n",line.c_str());
         if (!script_cmd(line)) return false;
     }
     return true;
