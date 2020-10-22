@@ -1,0 +1,4 @@
+auto lo
+iface lo inet loopback
+
+#wib_server sets up eth0
