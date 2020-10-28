@@ -141,9 +141,9 @@ int main(int argc, char **argv) {
             wib::Empty empty;
             empty.SerializeToString(&reply_str);
             w.update(update.root_archive().c_str(),update.boot_archive().c_str());
-        } /* else if (command.cmd().Is<wib::...>()) {
-        
-        } */
+        } else {
+	        fprintf(stderr,"Received an unknown message!\n");
+	    }
         
         printf("sending message %i size %lu bytes\n",i+1,reply_str.size());
         zmq::message_t reply(reply_str.size());

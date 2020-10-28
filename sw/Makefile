@@ -1,6 +1,6 @@
 CCFLAGS = -g -O2 -Isrc
 CXXFLAGS = -g -O2 -Isrc
-LFLAGS = -lprotobuf -lzmq -lreadline -li2c
+LFLAGS = -lprotobuf -lzmq -lreadline 
 
 # output binary for each of these (no headers)
 BSRC = src/wib_client.cxx src/wib_server.cxx
@@ -19,6 +19,7 @@ PBGENS   := $(PBSRCS:.proto=.pb.cc) $(PBSRCS:.proto=.pb.h)
 
 BINS = $(notdir $(basename $(BSRC))) 
 
+all: LFLAGS += -li2c
 all: $(BINS)
 	@echo Finished building
 
@@ -53,13 +54,13 @@ $(BINS): %: build/%.o $(LOBJ) $(PGOBJS)
 $(BDEP): build/%.d: src/%.cxx $(PBGENS)
 	@mkdir -p build
 	@set -e; rm -f $@
-	$(CXX) $(DEFINES) -M $(CXXFLAGS) -MT $(<:.cxx=.o) $< > $@
+	$(CXX) -M $(CXXFLAGS) -MT $(<:.cxx=.o) $< > $@
 	@sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' -i $@
 
 $(LDEP): build/%.d: src/%.cc src/%.h $(PBGENS)
 	@mkdir -p build
 	@set -e; rm -f $@
-	$(CXX) $(DEFINES) -M $(CXXFLAGS) -MT $(<:.cc=.o) $< > $@
+	$(CXX) -M $(CXXFLAGS) -MT $(<:.cc=.o) $< > $@
 	@sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' -i $@
 
 # these won't exist the first build

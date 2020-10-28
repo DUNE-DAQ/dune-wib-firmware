@@ -4,7 +4,9 @@
 #include <linux/i2c.h>
 extern "C" { //That's a bug!
     #include <linux/i2c-dev.h>
+	#ifndef SIMULATION
     #include <i2c/smbus.h>
+	#endif
 }
 #include <sys/ioctl.h>
 #include <fcntl.h>

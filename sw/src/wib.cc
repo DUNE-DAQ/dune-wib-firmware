@@ -415,13 +415,15 @@ bool WIB::update(const string &root_archive, const string &boot_archive) {
 
 
 bool WIB::configure_wib(wib::ConfigureWIB &conf) {
-    return false; //FIXME do stuff in this method
+	fprintf(stderr,"The configure_wib method currently does nothing!\n");
+    return true; //FIXME do stuff in this method
 }
 
 bool WIB::configure_femb(wib::ConfigureFEMB &conf) {
     uint8_t femb_idx = conf.index();
     bool enabled = conf.enabled();
-    return false; //FIXME do stuff in this method
+	fprintf(stderr,"The configure_femb method currently does nothing!\n");
+    return true; //FIXME do stuff in this method
 }
 
 bool WIB::read_sensors(wib::Sensors &sensors) {
