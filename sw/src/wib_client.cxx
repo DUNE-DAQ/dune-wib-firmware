@@ -124,7 +124,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         string fname(argv[1]);
         ofstream fout(fname,ofstream::binary);
         fout.write(rep.buf0().c_str(),rep.buf0().size());
-        fout.write(rep.buf1().c_str(),rep.buf0().size());
+        fout.write(rep.buf1().c_str(),rep.buf1().size());
         fout.close();
         if (rep.success()) {
             printf("Success\n");
