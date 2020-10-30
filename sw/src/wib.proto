@@ -21,15 +21,29 @@ message ReadDaqSpy {
 /* Initialization Commands */
 
 message ConfigureWIB {
-    //add as necessary
+    message ConfigureFEMB {
+        bool enabled = 1; // FEMB serial receiver enabled
+        
+        // LArASIC channel
+        bool test_cap = 2; // test capacitor enabled
+        uint32 gain = 3; // 14, 25, 7.8, 4.7 mV/fC (0 - 3)
+        uint32 peak_time = 4; // 1.0, 0.5, 3, 2 us (0 - 3)
+        uint32 baseline = 5; // 0 (900 mV), 1 (200 mV)
+        uint32 pulse_dac = 6; // 6bit dac value
+        
+        // LArASIC global
+        uint32 leak = 7; // 0 (500 pA), 1 (100 pA)
+        bool leak_10x = 8; // multiply leak by 10 if true
+        bool ac_couple = 9; // false (DC coupling), true (AC coupling)
+        uint32 buffer = 10; // 0 (no buffer), 1 (se buffer), 2 (sedc buffer)
+        
+        // COLDATA calibration strobe
+        uint32 strobe_skip = 11; // 2MHz periods to skip after strobe
+        uint32 strobe_delay = 12; // offset from 2MHz to start strobe in 64MHz periods
+        uint32 strobe_length = 13; // length of strobe in 64MHz periods
+    }
+    repeated ConfigureFEMB fembs = 1; //must supply 4
 }
-
-message ConfigureFEMB {
-    int32 index = 1;
-    bool enabled = 2;
-    //add as necessary
-}
-
 
 message Update {
     bytes root_archive = 1;

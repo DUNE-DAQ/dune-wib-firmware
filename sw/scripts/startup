@@ -4,5 +4,3 @@ run si5344_config
 run femb_voltages
 run coldata_power_on
 delay 1000000
-run coldata_rx_mask
-run coldata_rx_reset

@@ -48,8 +48,10 @@ public:
     bool femb_power_config();
     // Turns femb power on or off (all at once)
     bool femb_power_set(bool on);
-    // Resets the FEMB serial transmitters
-    bool femb_serial_reset();
+    // Set the FEMB serial receiver mask value
+    bool femb_rx_mask(uint32_t value, uint32_t mask = 0xFFFF);
+    // Resets the FEMB serial receivers
+    bool femb_rx_reset();
     // Adjust FEMB power settings (does not enable or disable)
     bool femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage);
     
@@ -76,9 +78,6 @@ public:
     
     // Configure this WIB
     bool configure_wib(wib::ConfigureWIB &conf);
-    
-    // Configure a FEMB
-    bool configure_femb(wib::ConfigureFEMB &conf);
     
     // Read the onboard I2C sensors and fill the sensor structure
     bool read_sensors(wib::Sensors &sensors);

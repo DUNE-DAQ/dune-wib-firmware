@@ -70,7 +70,28 @@ bool WIB::initialize() {
         fprintf(stderr,"failed to assign IP to eth0\n");
         success = false;
     }
-    success &= script("startup"); //FIXME this should be the correct initial setup
+    success &= script("startup"); //Default initial setup and power on
+    printf("Resetting COLDATA\n");
+    FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
+    for (int i = 0; i < 4; i++) { // Configure COLDATA
+        printf("Program FEMB%i COLDATA\n",i);
+        femb[i]->configure_coldata(); // Sets ACT to ACT_RESET_COLDADC
+    }
+    printf("Resetting COLDACD\n");
+    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+    for (int i = 0; i < 4; i++) { // Configure COLADCs
+        femb[i]->configure_coldadc();
+    }
+    printf("Resetting LArASIC\n");
+    larasic_conf c;
+    memset(&c,0,sizeof(larasic_conf));
+    for (int i = 0; i < 4; i++) { // Configure LArASIC regs
+        femb[i]->configure_larasic(c); // Sets ACT to ACT_PROGRAM_LARASIC
+    }
+    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+    printf("Resetting FEMB receiver\n");
+    femb_rx_mask(0xFFFF); //all disabled
+    femb_rx_reset();
     return success;
 }
 
@@ -181,7 +202,14 @@ bool WIB::femb_power_set(bool on) {
     return true;
 }
 
-bool WIB::femb_serial_reset() {
+bool WIB::femb_rx_mask(uint32_t value, uint32_t mask) {
+    uint32_t prev = io_reg_read(&this->regs,0x08/4);
+    value = (prev & (~mask)) | (value & mask);
+    io_reg_write(&this->regs,0x04/4,value);
+    return true;
+}
+
+bool WIB::femb_rx_reset() {
     uint32_t value = io_reg_read(&this->regs,0x04/4);
     value |= (1<<7);
     io_reg_write(&this->regs,0x04/4,value);
@@ -415,15 +443,59 @@ bool WIB::update(const string &root_archive, const string &boot_archive) {
 
 
 bool WIB::configure_wib(wib::ConfigureWIB &conf) {
-	fprintf(stderr,"The configure_wib method currently does nothing!\n");
-    return true; //FIXME do stuff in this method
-}
-
-bool WIB::configure_femb(wib::ConfigureFEMB &conf) {
-    uint8_t femb_idx = conf.index();
-    bool enabled = conf.enabled();
-	fprintf(stderr,"The configure_femb method currently does nothing!\n");
-    return true; //FIXME do stuff in this method
+    
+    if (conf.fembs_size() != 4) {
+        fprintf(stderr,"Must supply exactly 4 FEMB configurations\n");
+        return false;
+    }
+    
+    printf("Reconfiguring WIB\n");
+    
+    FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
+    for (int i = 0; i < 4; i++) { // Configure COLDATA
+        femb[i]->configure_coldata(); // Sets ACT to ACT_RESET_COLDADC
+    }
+    printf("COLDATA configured\n");
+    
+    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+    for (int i = 0; i < 4; i++) { // Configure COLDADCs
+        femb[i]->configure_coldadc();
+    }
+    printf("COLDADC configured\n");
+    
+    uint32_t rx_mask = 0x0000;
+    for (int i = 0; i < 4; i++) {
+        larasic_conf c;
+        memset(&c,0,sizeof(larasic_conf));
+        
+        const wib::ConfigureWIB::ConfigureFEMB &femb_conf = conf.fembs(i);
+        
+        c.sdd = femb_conf.buffer() == 2;
+        c.sdc = femb_conf.ac_couple() == true;
+        c.slkh = femb_conf.leak_10x() == true;
+        c.slk = femb_conf.leak() == 1;
+        c.sdac = femb_conf.leak() & 0x3F;
+        
+        c.sts = femb_conf.test_cap() == true;
+        c.snc = femb_conf.baseline() == 1;
+        c.gain = femb_conf.gain() & 0x3;
+        c.peak_time = femb_conf.peak_time() & 0x3;
+        c.sdf = femb_conf.buffer() == 1;        
+        
+        femb[i]->configure_larasic(c); // Sets ACT to ACT_PROGRAM_LARASIC
+        
+        if (!femb_conf.enabled()) {
+            rx_mask |= (0xF << (i*4));
+        }
+    }
+    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+    printf("LArASIC configured\n");
+        
+    femb_rx_mask(rx_mask); 
+    femb_rx_reset();
+    printf("FEMB receivers reset\n");
+    
+    return true;
 }
 
 bool WIB::read_sensors(wib::Sensors &sensors) {

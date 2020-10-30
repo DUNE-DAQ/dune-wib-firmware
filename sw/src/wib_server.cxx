@@ -121,14 +121,6 @@ int main(int argc, char **argv) {
             bool success = w.configure_wib(req);
             rep.set_success(success);
             rep.SerializeToString(&reply_str);
-        } else if (command.cmd().Is<wib::ConfigureFEMB>()) {
-            printf("configure_femb\n");
-            wib::ConfigureFEMB req;
-            command.cmd().UnpackTo(&req);
-            wib::Status rep;    
-            bool success = w.configure_femb(req);
-            rep.set_success(success);
-            rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::Reboot>()) {
             printf("reboot\n");
             wib::Empty empty; 
