@@ -7,6 +7,7 @@ import pickle
 import argparse
 import numpy as np
 import zmq
+import json
 from collections import deque
 
 import wib_pb2 as wib
@@ -326,6 +327,16 @@ class EvDisp(QtWidgets.QMainWindow):
         
         nav_layout = QtWidgets.QHBoxLayout()
         
+        button = QtWidgets.QPushButton('Configure')
+        nav_layout.addWidget(button)
+        button.setToolTip('Configure WIB and front end')
+        button.clicked.connect(self.configure_wib)
+        
+        button = QtWidgets.QPushButton('Toggle Pulser')
+        nav_layout.addWidget(button)
+        button.setToolTip('Toggle calibration pulser')
+        button.clicked.connect(self.toggle_pulser)
+        
         button = QtWidgets.QPushButton('Acquire')
         nav_layout.addWidget(button)
         button.setToolTip('Read WIB Spy Buffer')
@@ -441,6 +452,47 @@ class EvDisp(QtWidgets.QMainWindow):
     def plot_selected(self):
         for view in self.views:
             view.plot_signals()
+            
+    @QtCore.pyqtSlot()
+    def configure_wib(self):
+        print('Loading config')
+        with open('default.json','rb') as fin:
+            config = json.load(fin)
+            
+        print('Configuring FEMBs')
+        req = wib.ConfigureWIB()
+        for i in range(4):
+            femb_conf = req.fembs.add();
+            
+            femb_conf.enabled = config['enabled_fembs'][i]
+            
+            fconfig = config['femb_configs'][i]
+            
+            #see wib.proto for meanings
+            femb_conf.test_cap = fconfig['test_cap']
+            femb_conf.gain = fconfig['gain']
+            femb_conf.peak_time = fconfig['peak_time']
+            femb_conf.baseline = fconfig['baseline']
+            femb_conf.pulse_dac = fconfig['pulse_dac']
+
+            femb_conf.leak = fconfig['leak']
+            femb_conf.leak_10x = fconfig['leak_10x']
+            femb_conf.ac_couple = fconfig['ac_couple']
+            femb_conf.buffer = fconfig['buffer']
+
+            femb_conf.strobe_skip = fconfig['strobe_skip']
+            femb_conf.strobe_delay = fconfig['strobe_delay']
+            femb_conf.strobe_length = fconfig['strobe_length']
+        
+        print('Sending ConfigureWIB command')
+        rep = wib.Status()
+        self.send_command(req,rep);
+        
+    @QtCore.pyqtSlot()
+    def toggle_pulser(self):
+        req = wib.Pulser()
+        rep = wib.Status()
+        self.send_command(req,rep);
 
 
 if __name__ == "__main__":
