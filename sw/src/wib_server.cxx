@@ -1,6 +1,7 @@
 #include <zmq.hpp>
 #include "wib.pb.h"
 
+#include "unpack.h"
 #include "sensors.h"
 #include "wib.h"
 
@@ -101,16 +102,87 @@ int main(int argc, char **argv) {
             char *buf0 = req.buf0() ? new char[DAQ_SPY_SIZE] : NULL;
             char *buf1 = req.buf1() ? new char[DAQ_SPY_SIZE] : NULL;
             bool success = w.read_daq_spy(buf0,buf1);
-            wib::DaqSpy rep;
-            rep.set_success(success);
-            if (buf0) rep.set_buf0(buf0,DAQ_SPY_SIZE); else rep.set_buf0("");
-            if (buf1) rep.set_buf1(buf1,DAQ_SPY_SIZE); else rep.set_buf1("");
-            rep.SerializeToString(&reply_str);
+            if (!req.deframe()) {
+                wib::ReadDaqSpy::DaqSpy rep;
+                rep.set_success(success);
+                if (buf0) rep.set_buf0(buf0,DAQ_SPY_SIZE); else rep.set_buf0("");
+                if (buf1) rep.set_buf1(buf1,DAQ_SPY_SIZE); else rep.set_buf1("");
+                rep.SerializeToString(&reply_str);
+            } else {
+                const size_t nframes = DAQ_SPY_SIZE/sizeof(felix_data);
+                wib::ReadDaqSpy::DeframedDaqSpy rep;
+                rep.set_success(success);
+                rep.set_num_samples(nframes);
+                std::string *sample_buffer = rep.mutable_deframed_samples();
+                sample_buffer->resize(4*128*nframes*sizeof(uint16_t));
+                char *sample_ptr = (char*)sample_buffer->data();
+                std::string *timestamp_buffer = rep.mutable_deframed_samples();
+                timestamp_buffer->resize(4*nframes*sizeof(uint64_t));
+                char *timestamp_ptr = (char*)sample_buffer->data();
+                if (req.channels()) {
+                    channel_data dch;
+                    const size_t ch_len = nframes*sizeof(uint16_t);
+                    if (buf0) {
+                        deframe_data((felix_frame*)buf0,nframes,dch);
+                        for (size_t i = 0; i < 2; i++) {
+                            for (size_t j = 0; j < 128; j++) {
+                                memcpy(sample_ptr+(i*128*ch_len)+j*ch_len,dch.channels[i][j].data(),ch_len);
+                            }
+                        }
+                        memcpy(timestamp_ptr+(i*nframes*sizeof(uint64_t)),dch.timestamp.data(),ch_len);
+                        
+                    }
+                    if (buf1) {
+                        deframe_data((felix_frame*)buf1,nframes,dch);
+                        for (size_t i = 0; i < 2; i++) {
+                            for (size_t j = 0; j < 128; j++) {
+                                memcpy(sample_ptr+((i+2)*128*ch_len)+j*ch_len,dch.channels[i][j].data(),ch_len);
+                            }
+                        }
+                        memcpy(timestamp_ptr+((i+2)*nframes*sizeof(uint64_t)),dch.timestamp.data(),ch_len);
+                    }
+                    rep.set_crate_num(dch.crate_num);
+                    rep.set_wib_num(dch.wib_num);
+                } else {
+                    uvx_data duvx;
+                    const size_t ch_len = nframes*sizeof(uint16_t);
+                    if (buf0) {
+                        deframe_data((felix_frame*)buf0,nframes,duvx);
+                        for (size_t i = 0; i < 2; i++) {
+                            for (size_t j = 0; j < 48; j++) {
+                                if (j < 40) {
+                                    memcpy(sample_ptr+(i*128*ch_len)+j*ch_len,duvx.u[i][j].data(),ch_len);
+                                    memcpy(sample_ptr+(i*128*ch_len)+(j+40)*ch_len,duvx.v[i][j].data(),ch_len);
+                                }
+                                memcpy(sample_ptr+(i*128*ch_len)+(j+80)*ch_len,duvx.x[i][j].data(),ch_len);
+                            }
+                        }
+                        memcpy(timestamp_ptr+(i*nframes*sizeof(uint64_t)),duvx.timestamp.data(),ch_len);
+                        
+                    }
+                    if (buf1) {
+                        deframe_data((felix_frame*)buf1,nframes,duvx);
+                        for (size_t i = 0; i < 2; i++) {
+                            for (size_t j = 0; j < 128; j++) {
+                                if (j < 40) {
+                                    memcpy(sample_ptr+((i+2)*128*ch_len)+j*ch_len,duvx.u[i][j].data(),ch_len);
+                                    memcpy(sample_ptr+((i+2)*128*ch_len)+(j+40)*ch_len,duvx.v[i][j].data(),ch_len);
+                                }
+                                memcpy(sample_ptr+((i+2)*128*ch_len)+(j+80)*ch_len,duvx.x[i][j].data(),ch_len);
+                            }
+                        }
+                        memcpy(timestamp_ptr+((i+2)*nframes*sizeof(uint64_t)),duvx.timestamp.data(),ch_len);
+                    }
+                    rep.set_crate_num(duvx.crate_num);
+                    rep.set_wib_num(duvx.wib_num);
+                }
+                rep.SerializeToString(&reply_str);
+            }
             if (buf0) delete [] buf0;
             if (buf1) delete [] buf1;
         } else if (command.cmd().Is<wib::GetSensors>()) {
             printf("get_sensors\n");
-            wib::Sensors sensors;    
+            wib::GetSensors::Sensors sensors;    
             w.read_sensors(sensors);
             sensors.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::ConfigureWIB>()) {

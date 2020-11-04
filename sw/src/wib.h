@@ -80,7 +80,7 @@ public:
     bool configure_wib(wib::ConfigureWIB &conf);
     
     // Read the onboard I2C sensors and fill the sensor structure
-    bool read_sensors(wib::Sensors &sensors);
+    bool read_sensors(wib::GetSensors::Sensors &sensors);
     
 protected:
     

@@ -14,8 +14,25 @@ message Script {
 }
 
 message ReadDaqSpy {
-    bool buf0 = 1;
-    bool buf1 = 2;
+    bool buf0 = 1; //read buffer 0 (FEMB0+FEMB1)
+    bool buf1 = 2; //read buffer 1 (FEMB2+FEMB3)
+    bool deframe = 3; //return deframed data if true, frames if false
+    bool channels = 4; //if deframe is true, returns channels if true, uvx if false
+    
+    message DaqSpy {
+        bytes buf0 = 1;
+        bytes buf1 = 2;
+        bool success = 3;
+    }
+
+    message DeframedDaqSpy {
+        uint32 crate_num = 1;
+        uint32 wib_num = 2;
+        uint32 num_samples = 4;
+        bytes deframed_samples = 5;
+        bytes deframed_timestamps = 6;
+        bool success = 7;
+    }
 }
 
 /* Initialization Commands */
@@ -93,9 +110,19 @@ message CDFastCmd {
 /* CCM/SC/Monitoring commands */
 
 message GetSensors {
+
+    message Sensors {
+        repeated double ltc2990_4E_voltages = 1;
+        repeated double ltc2990_4C_voltages = 2;
+        repeated double ltc2991_48_voltages = 3;
+        repeated double ad7414_49_temps = 4;
+        repeated double ad7414_4D_temps = 5;
+        repeated double ad7414_4A_temps = 6;
+        repeated double ltc2499_15_temps = 7;
+    }
 }
 
-/* Command Replies */
+/* Generic Command Replies */
 
 message Empty {
 }
@@ -117,20 +144,4 @@ message CDRegValue {
     uint32 reg_page = 4;
     uint32 reg_addr = 5;
     uint32 data = 6;
-}
-
-message DaqSpy {
-    bytes buf0 = 1;
-    bytes buf1 = 2;
-    bool success = 3;
-}
-
-message Sensors {
-    repeated double ltc2990_4E_voltages = 1;
-    repeated double ltc2990_4C_voltages = 2;
-    repeated double ltc2991_48_voltages = 3;
-    repeated double ad7414_49_temps = 4;
-    repeated double ad7414_4D_temps = 5;
-    repeated double ad7414_4A_temps = 6;
-    repeated double ltc2499_15_temps = 7;
 }

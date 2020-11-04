@@ -71,7 +71,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         return 255;
     } else if (cmd == "get_sensors") {
         wib::GetSensors req;
-        wib::Sensors rep;
+        wib::GetSensors::Sensors rep;
         send_command(s,req,rep);
     } else if (cmd == "script") {
         if (argc != 2) {
@@ -117,7 +117,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         wib::ReadDaqSpy req;
         req.set_buf0(true);
         req.set_buf1(true);
-        wib::DaqSpy rep;
+        wib::ReadDaqSpy::DaqSpy rep;
         printf("Acquiring DAQ spy buffer...");
         fflush(stdout);
         send_command(s,req,rep);

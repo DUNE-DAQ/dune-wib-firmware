@@ -498,7 +498,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     return true;
 }
 
-bool WIB::read_sensors(wib::Sensors &sensors) {
+bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
    
    printf("Activating I2C_SENSOR bus\n");
    i2c_select(I2C_SENSOR);
