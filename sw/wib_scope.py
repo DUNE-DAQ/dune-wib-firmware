@@ -453,6 +453,7 @@ if __name__ == "__main__":
     
     
     qapp = QtWidgets.QApplication([])
+    qapp.setApplicationName('WIB Scope (%s)'%args.wib_server)
     app = EvDisp(**vars(args))
     app.show()
     qapp.exec_()
