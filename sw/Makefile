@@ -27,6 +27,9 @@ simulation: CXXFLAGS += -DSIMULATION
 simulation: CCFLAGS += -DSIMULATION
 simulation: $(BINS)
 
+python:
+	protoc -I=src/ --python_out=. src/wib.proto
+
 install:
 	install -d "$(DESTDIR)/bin/"
 	install -m 0755 wib_server "$(DESTDIR)/bin/"

@@ -62,6 +62,10 @@ message ConfigureWIB {
     repeated ConfigureFEMB fembs = 1; //must supply 4
 }
 
+message Pulser {
+    bool start = 1; // true to start, false to stop
+}
+
 message Update {
     bytes root_archive = 1;
     bytes boot_archive = 2;

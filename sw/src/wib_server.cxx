@@ -109,19 +109,23 @@ int main(int argc, char **argv) {
                 if (buf1) rep.set_buf1(buf1,DAQ_SPY_SIZE); else rep.set_buf1("");
                 rep.SerializeToString(&reply_str);
             } else {
-                const size_t nframes = DAQ_SPY_SIZE/sizeof(felix_data);
+                const size_t nframes = DAQ_SPY_SIZE/sizeof(felix_frame);
                 wib::ReadDaqSpy::DeframedDaqSpy rep;
                 rep.set_success(success);
                 rep.set_num_samples(nframes);
+                
+                const size_t ch_len = nframes*sizeof(uint16_t);
                 std::string *sample_buffer = rep.mutable_deframed_samples();
-                sample_buffer->resize(4*128*nframes*sizeof(uint16_t));
+                sample_buffer->resize(4*128*ch_len);
                 char *sample_ptr = (char*)sample_buffer->data();
-                std::string *timestamp_buffer = rep.mutable_deframed_samples();
-                timestamp_buffer->resize(4*nframes*sizeof(uint64_t));
-                char *timestamp_ptr = (char*)sample_buffer->data();
+                
+                const size_t ts_len = nframes*sizeof(uint64_t);
+                std::string *timestamp_buffer = rep.mutable_deframed_timestamps();
+                timestamp_buffer->resize(2*ts_len);
+                char *timestamp_ptr = (char*)timestamp_buffer->data();
+                
                 if (req.channels()) {
                     channel_data dch;
-                    const size_t ch_len = nframes*sizeof(uint16_t);
                     if (buf0) {
                         deframe_data((felix_frame*)buf0,nframes,dch);
                         for (size_t i = 0; i < 2; i++) {
@@ -129,8 +133,7 @@ int main(int argc, char **argv) {
                                 memcpy(sample_ptr+(i*128*ch_len)+j*ch_len,dch.channels[i][j].data(),ch_len);
                             }
                         }
-                        memcpy(timestamp_ptr+(i*nframes*sizeof(uint64_t)),dch.timestamp.data(),ch_len);
-                        
+                        memcpy(timestamp_ptr+(0*ts_len),dch.timestamp.data(),ts_len);
                     }
                     if (buf1) {
                         deframe_data((felix_frame*)buf1,nframes,dch);
@@ -139,7 +142,7 @@ int main(int argc, char **argv) {
                                 memcpy(sample_ptr+((i+2)*128*ch_len)+j*ch_len,dch.channels[i][j].data(),ch_len);
                             }
                         }
-                        memcpy(timestamp_ptr+((i+2)*nframes*sizeof(uint64_t)),dch.timestamp.data(),ch_len);
+                        memcpy(timestamp_ptr+(1*ts_len),dch.timestamp.data(),ts_len);
                     }
                     rep.set_crate_num(dch.crate_num);
                     rep.set_wib_num(dch.wib_num);
@@ -157,7 +160,7 @@ int main(int argc, char **argv) {
                                 memcpy(sample_ptr+(i*128*ch_len)+(j+80)*ch_len,duvx.x[i][j].data(),ch_len);
                             }
                         }
-                        memcpy(timestamp_ptr+(i*nframes*sizeof(uint64_t)),duvx.timestamp.data(),ch_len);
+                        memcpy(timestamp_ptr+(0*ts_len),duvx.timestamp.data(),ts_len);
                         
                     }
                     if (buf1) {
@@ -171,7 +174,7 @@ int main(int argc, char **argv) {
                                 memcpy(sample_ptr+((i+2)*128*ch_len)+(j+80)*ch_len,duvx.x[i][j].data(),ch_len);
                             }
                         }
-                        memcpy(timestamp_ptr+((i+2)*nframes*sizeof(uint64_t)),duvx.timestamp.data(),ch_len);
+                        memcpy(timestamp_ptr+(1*ts_len),duvx.timestamp.data(),ts_len);
                     }
                     rep.set_crate_num(duvx.crate_num);
                     rep.set_wib_num(duvx.wib_num);
