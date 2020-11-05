@@ -16,6 +16,10 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 
+#ifdef SIMULATION
+#include <cmath>
+#endif
+
 using namespace std;
 
 WIB::WIB() {
@@ -27,8 +31,8 @@ WIB::WIB() {
     this->daq_spy[0] = new char[DAQ_SPY_SIZE];
     this->daq_spy[1] = new char[DAQ_SPY_SIZE];
     for (size_t i = 0; i < DAQ_SPY_SIZE; i++) {
-        ((char*)this->daq_spy[0])[i] = 'A';
-        ((char*)this->daq_spy[1])[i] = 'B';
+        ((char*)this->daq_spy[0])[i] = 128+256*sin(i/97.0/4.0);
+        ((char*)this->daq_spy[1])[i] = 128+256*cos(i/97.0/4.0);
     }
     #else
     this->daq_spy_fd = open("/dev/mem",O_RDWR);
@@ -554,6 +558,7 @@ bool WIB::set_pulser(bool on) {
     bool res = true;
     for (int i = 0; i < 4; i++) res &= femb[i]->set_fast_act(ACT_LARASIC_PULSE);
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+    pulser_on = on;
     return res;
 }
 

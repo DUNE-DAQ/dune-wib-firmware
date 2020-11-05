@@ -58,12 +58,16 @@ class CustomNavToolbar(NavigationToolbar):
 from matplotlib.figure import Figure
 
 class SignalSelector(QtWidgets.QDialog):
-    def __init__(self,parent=None,selected=None,raw_adc=False,raw_time=False,pedestal=None,distribute=None):
+    def __init__(self,parent=None,selected=None,raw_adc=False,raw_time=False,pedestal=None,distribute=None,fft=False,**ignored):
         super().__init__(parent)
         
         self._layout = QtWidgets.QVBoxLayout(self)
         
         self.set_selected(selected)
+        
+        self.fft_checkbox = QtWidgets.QCheckBox('Plot FFT')
+        self.fft_checkbox.setCheckState(QtCore.Qt.Checked if fft else QtCore.Qt.Unchecked)
+        self._layout.addWidget(self.fft_checkbox)
         
         self.raw_checkbox = QtWidgets.QCheckBox('Plot raw ADC counts')
         self.raw_checkbox.setCheckState(QtCore.Qt.Checked if raw_adc else QtCore.Qt.Unchecked)
@@ -115,6 +119,9 @@ class SignalSelector(QtWidgets.QDialog):
         
     def get_raw_time(self):
         return self.raw_time_checkbox.checkState() == QtCore.Qt.Checked
+        
+    def get_fft(self):
+        return self.fft_checkbox.checkState() == QtCore.Qt.Checked
     
     def get_selected(self):
         selected = []
@@ -182,9 +189,10 @@ class SignalView(QtWidgets.QWidget):
         self.raw_time = True
         self.pedestal = None
         self.distribute = None
+        self.fft = False
         self.selected = None
         
-        self.save_props = ['legend','selected','raw_adc','raw_time','pedestal','distribute']
+        self.save_props = ['legend','selected','raw_adc','raw_time','pedestal','distribute','fft']
         
         self.times,self.data = None,None
         
@@ -227,7 +235,8 @@ class SignalView(QtWidgets.QWidget):
                 times = np.arange(self.data_source.timestamps.shape[-1])
             else:
                 times = self.data_source.timestamps[femb//2]
-            self.times.append(times)
+            if not self.fft:
+                self.times.append(times)
             samples = self.data_source.samples[femb,adc*16+ch]
             if self.pedestal is not None:
                 ped_min,ped_max = self.pedestal
@@ -241,16 +250,26 @@ class SignalView(QtWidgets.QWidget):
                     pass
             if self.distribute is not None:
                 samples = samples + sig_idx*self.distribute
-            self.data.append(samples)
+            if not self.fft:
+                self.data.append(samples)
+            if self.fft:
+                fft = np.fft.fft(samples)
+                freq = np.fft.fftfreq(len(samples),1)
+                idx = np.argsort(freq)[len(freq)//2::]
+                
+                self.times.append(freq[idx])
+                self.data.append(np.square(np.abs(fft[idx])))
         
     def select_signals(self):
-        selector = SignalSelector(parent=self, selected=self.selected, raw_adc=self.raw_adc, raw_time=self.raw_time, pedestal=self.pedestal, distribute=self.distribute)
+        current_props = {x:self.__dict__[x] for x in self.save_props}
+        selector = SignalSelector(parent=self, **current_props)
         result = selector.exec_()
         self.selected = selector.get_selected()
         self.raw_adc = selector.get_raw_adc()
         self.raw_time = selector.get_raw_time()
         self.pedestal = selector.get_pedestal()
         self.distribute = selector.get_distribute()
+        self.fft = selector.get_fft()
         self._load_data()
         self.plot_signals()
         
@@ -271,10 +290,15 @@ class SignalView(QtWidgets.QWidget):
         
             for t,v,(femb,adc,ch) in zip(self.times,self.data,self.selected):
                 label = 'FEMB%i ADC%i CH%i (%i)'%(femb,adc,ch,adc*16+ch)
-                ax.plot(t,v,drawstyle='steps',label=label)
+                ax.plot(t,v,drawstyle='steps' if not self.fft else None,label=label)
                         
-        ax.set_xlabel('Sample' if self.raw_time else 'Time (ns)')
-        ax.set_ylabel('ADC Counts' if self.raw_adc else ('Voltage (mV)' if not self.distribute else 'Arb. Shifted Voltage (mV)'))
+        if self.fft:
+            ax.set_yscale('log')
+            ax.set_xlabel('Frequency (1/sample)')
+            ax.set_ylabel('Power Spectrum')
+        else:
+            ax.set_xlabel('Sample' if self.raw_time else 'Timestamp')
+            ax.set_ylabel('ADC Counts' if self.raw_adc else ('Voltage (mV)' if not self.distribute else 'Arb. Shifted Voltage (mV)'))
         if not autoscale:
             ax.set_autoscale_on(False)
             ax.set_xlim(*xlim)
@@ -286,13 +310,15 @@ class SignalView(QtWidgets.QWidget):
         
 
 class EvDisp(QtWidgets.QMainWindow):
-    def __init__(self,wib_server='tcp://localhost:1234',rows=1,cols=1,layout=None):
+    def __init__(self,wib_server='127.0.0.1',config='default.json',rows=1,cols=1,layout=None):
         super().__init__()
         plot_layout = layout
         
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect(wib_server)
+        self.socket.connect('tcp://%s:1234'%wib_server)
+        self.config = config
+        
         self.samples = None
         self.timestamps = None
         
@@ -332,15 +358,25 @@ class EvDisp(QtWidgets.QMainWindow):
         button.setToolTip('Configure WIB and front end')
         button.clicked.connect(self.configure_wib)
         
-        button = QtWidgets.QPushButton('Toggle Pulser')
+        button = QtWidgets.QPushButton('Enable Pulser')
         nav_layout.addWidget(button)
         button.setToolTip('Toggle calibration pulser')
         button.clicked.connect(self.toggle_pulser)
+        self.pulser_button = button
         
         button = QtWidgets.QPushButton('Acquire')
         nav_layout.addWidget(button)
         button.setToolTip('Read WIB Spy Buffer')
         button.clicked.connect(self.acquire_data)
+        
+        button = QtWidgets.QPushButton('Continuious')
+        nav_layout.addWidget(button)
+        button.setToolTip('Repeat acquisitions until stopped')
+        button.clicked.connect(self.toggle_continuious)
+        self.continuious_button = button
+        
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.acquire_data)
         
         layout.addLayout(nav_layout)
         
@@ -429,6 +465,15 @@ class EvDisp(QtWidgets.QMainWindow):
             settings['views'] = [v.get_state() for v in self.views]
             with open(fname,'wb') as f:
                 pickle.dump(settings,f)
+                
+    @QtCore.pyqtSlot()
+    def toggle_continuious(self):
+        if self.continuious_button.text() == 'Continuious':
+            self.continuious_button.setText('Stop')
+            self.timer.start(1000)
+        else:
+            self.continuious_button.setText('Continuious')
+            self.timer.stop()
     
     @QtCore.pyqtSlot()
     def acquire_data(self):
@@ -456,8 +501,12 @@ class EvDisp(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def configure_wib(self):
         print('Loading config')
-        with open('default.json','rb') as fin:
-            config = json.load(fin)
+        try:
+            with open(self.config,'rb') as fin:
+                config = json.load(fin)
+        except Exception as e:
+            print('Failed to load config:',e)
+            return
             
         print('Configuring FEMBs')
         req = wib.ConfigureWIB()
@@ -491,13 +540,20 @@ class EvDisp(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def toggle_pulser(self):
         req = wib.Pulser()
+        if self.pulser_button.text() == "Enable Pulser":
+            req.start = True
+            self.pulser_button.setText('Disable Pulser')
+        else:
+            req.start = False
+            self.pulser_button.setText('Enable Pulser')
         rep = wib.Status()
         self.send_command(req,rep);
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Visually display data from a WIB')
-    parser.add_argument('--wib_server','-w',default='tcp://127.0.0.1:1234',help='proto://host:port of wib_server to read from')
+    parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
+    parser.add_argument('--config','-C',default='default.json',help='WIB configuration to load [default.json]')
     parser.add_argument('--rows','-r',default=1,type=int,help='Rows of plots [1]')
     parser.add_argument('--cols','-c',default=1,type=int,help='Columns of plots [1]')
     parser.add_argument('--layout','-l',default=None,help='Load a saved layout')

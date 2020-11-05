@@ -20,8 +20,6 @@ void print_help() {
     printf("Available commands:\n");
     printf("  reboot\n");
     printf("    Reboot the WIB\n");
-    printf("  initialize\n");
-    printf("    Initialize the WIB hardware (TBD)\n");
     printf("  script filename\n");
     printf("    Run a WIB script (local file will be sent, otherwise filename is remote in /etc/wib/)\n");
     printf("  daqspy filename\n");
