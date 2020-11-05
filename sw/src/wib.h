@@ -79,10 +79,17 @@ public:
     // Configure this WIB
     bool configure_wib(wib::ConfigureWIB &conf);
     
+    // Turn pulser on or of for all FEMBs
+    bool set_pulser(bool on);
+    bool get_pulser();
+    
     // Read the onboard I2C sensors and fill the sensor structure
     bool read_sensors(wib::GetSensors::Sensors &sensors);
     
 protected:
+    
+    // Pulser status, because can't read from COLDATA
+    bool pulser_on = false;
     
     // Interface to each of the 4 FEMBs 
     FEMB* femb[4];

@@ -31,7 +31,6 @@ constexpr uint8_t ACT_RESET_LARASIC = 0x06;
 constexpr uint8_t ACT_RESET_LARASIC_SPI = 0x07;
 constexpr uint8_t ACT_PROGRAM_LARASIC = 0x08;
 
-
 // COLDATA I2C control bit packing scheme
 constexpr uint32_t COLD_I2C_CHIP_ADDR   = 23; //4 //0x07800000;
 constexpr uint32_t COLD_I2C_REG_PAGE    = 20; //3 // 0x00700000;
@@ -54,6 +53,12 @@ constexpr uint8_t CHIP_CD_TOP_ADC1  = 0x9;
 constexpr uint8_t CHIP_CD_TOP_ADC2  = 0xa;
 constexpr uint8_t CHIP_CD_TOP_ADC3  = 0xb;
 
+enum FrameType {
+    FRAME_DD,
+    FRAME_12,
+    FRAME_14
+};
+
 //LArASIC configuration (assumes all channels the same)
 typedef struct {
     bool sdd,sdc,slkh,s16,stb,stb1,slk; //global reg 1
@@ -68,9 +73,12 @@ public:
     FEMB(int index);
     ~FEMB();
     
-    void configure_coldata();
-    void configure_coldadc();
-    void configure_larasic(const larasic_conf &c);
+    // Front end I2C configuration
+    bool configure_coldata(bool cold, FrameType frame);
+    bool configure_coldadc();
+    bool configure_larasic(const larasic_conf &c);
+    bool set_fast_act(uint8_t act_cmd);
+    bool read_spi_status(); // requires ACT_SAVE_STATUS first
     
     // Send a fast command to all FEMBs
     static void fast_cmd(uint8_t cmd_code);
@@ -78,6 +86,8 @@ public:
     // Read/Write to the specified COLDATA's I2C on this FEMB
     void i2c_write(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
     uint8_t i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page,  uint8_t reg_addr);
+    // Perform a Write and a Read, returning read == data
+    bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
 
 protected:
     

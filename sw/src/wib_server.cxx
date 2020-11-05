@@ -183,6 +183,13 @@ int main(int argc, char **argv) {
             }
             if (buf0) delete [] buf0;
             if (buf1) delete [] buf1;
+        } else if (command.cmd().Is<wib::Pulser>()) {
+            printf("pulser\n");
+            wib::Pulser req;    
+            command.cmd().UnpackTo(&req);
+            w.set_pulser(req.start());
+            wib::Empty rep;    
+            rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSensors>()) {
             printf("get_sensors\n");
             wib::GetSensors::Sensors sensors;    

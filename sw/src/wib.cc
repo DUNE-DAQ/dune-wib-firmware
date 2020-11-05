@@ -75,7 +75,7 @@ bool WIB::initialize() {
     FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
     for (int i = 0; i < 4; i++) { // Configure COLDATA
         printf("Program FEMB%i COLDATA\n",i);
-        femb[i]->configure_coldata(); // Sets ACT to ACT_RESET_COLDADC
+        femb[i]->configure_coldata(false,FRAME_14); // Sets ACT to ACT_RESET_COLDADC
     }
     printf("Resetting COLDACD\n");
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
@@ -361,12 +361,14 @@ void WIB::i2c_select(uint8_t device) {
 }
 
 bool WIB::read_daq_spy(void *buf0, void *buf1) {
-    uint32_t next = io_reg_read(&this->regs,0x04/4);
+    uint32_t prev = io_reg_read(&this->regs,0x04/4);
     uint32_t mask = 0;
     if (buf0) mask |= (1 << 0);
     if (buf1) mask |= (1 << 1);
-    next |= (mask << 6);
+    prev &= (~(mask << 6));
+    uint32_t next = prev | (mask << 6);
     io_reg_write(&this->regs,0x04/4,next);
+    io_reg_write(&this->regs,0x04/4,prev);
     bool success = false;
     for (size_t i = 0; i < 10; i++) { // try for 10 ms (should take max 4)
         usleep(1000);
@@ -450,53 +452,111 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     }
     
     printf("Reconfiguring WIB\n");
-    
+
+    bool coldata_res = true;
     FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
     for (int i = 0; i < 4; i++) { // Configure COLDATA
-        femb[i]->configure_coldata(); // Sets ACT to ACT_RESET_COLDADC
+        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),FRAME_14); // Sets ACT to ACT_RESET_COLDADC
     }
-    printf("COLDATA configured\n");
+    if (coldata_res) {
+        printf("COLDATA configured\n");
+    } else {
+        printf("COLDATA configuration failed!\n");
+    }
     
+    bool coldadc_res = true;
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
-        femb[i]->configure_coldadc();
+         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc();
     }
-    printf("COLDADC configured\n");
+    if (coldadc_res) {
+        printf("COLDADC configured\n");
+    } else {
+        printf("COLDADC configuration failed!\n");
+    }
     
+    bool larasic_res = true;
     uint32_t rx_mask = 0x0000;
     for (int i = 0; i < 4; i++) {
-        larasic_conf c;
-        memset(&c,0,sizeof(larasic_conf));
-        
-        const wib::ConfigureWIB::ConfigureFEMB &femb_conf = conf.fembs(i);
-        
-        c.sdd = femb_conf.buffer() == 2;
-        c.sdc = femb_conf.ac_couple() == true;
-        c.slkh = femb_conf.leak_10x() == true;
-        c.slk = femb_conf.leak() == 1;
-        c.sdac = femb_conf.leak() & 0x3F;
-        
-        c.sts = femb_conf.test_cap() == true;
-        c.snc = femb_conf.baseline() == 1;
-        c.gain = femb_conf.gain() & 0x3;
-        c.peak_time = femb_conf.peak_time() & 0x3;
-        c.sdf = femb_conf.buffer() == 1;        
-        
-        femb[i]->configure_larasic(c); // Sets ACT to ACT_PROGRAM_LARASIC
-        
-        if (!femb_conf.enabled()) {
+        if (conf.fembs(i).enabled()) {
+            larasic_conf c;
+            memset(&c,0,sizeof(larasic_conf));
+            
+            const wib::ConfigureWIB::ConfigureFEMB &femb_conf = conf.fembs(i);
+            
+            c.sdd = femb_conf.buffer() == 2;
+            c.sdc = femb_conf.ac_couple() == true;
+            c.slkh = femb_conf.leak_10x() == true;
+            c.slk = femb_conf.leak() == 1;
+            c.sdac = femb_conf.leak() & 0x3F;
+            
+            c.sts = femb_conf.test_cap() == true;
+            c.snc = femb_conf.baseline() == 1;
+            c.gain = femb_conf.gain() & 0x3;
+            c.peak_time = femb_conf.peak_time() & 0x3;
+            c.sdf = femb_conf.buffer() == 1;        
+            
+            larasic_res &= femb[i]->configure_larasic(c); // Sets ACT to ACT_PROGRAM_LARASIC
+        } else {
             rx_mask |= (0xF << (i*4));
         }
     }
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
-    printf("LArASIC configured\n");
+    if (larasic_res) {
+        printf("LArASIC configured\n");
+    } else {
+        printf("LArASIC configuration failed!\n");
+    }
+    
+    bool spi_verified = false;
+    for (int i = 0; i < 10; i++) {
+        usleep(10000);
+        bool verify_res = true;
+        for (int i = 0; i < 4; i++) {
+            if (conf.fembs(i).enabled()) {
+                verify_res &= femb[i]->set_fast_act(ACT_SAVE_STATUS);
+            }
+        }
+        if (!verify_res) continue;
+        FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+        for (int i = 0; i < 4; i++) {
+            if (conf.fembs(i).enabled()) {
+                verify_res &= femb[i]->read_spi_status();
+            }
+        }
+        if (verify_res) {
+            spi_verified = true;
+            break;
+        }
+    }
+    if (spi_verified) {
+        printf("LArASIC SPI verified\n");
+    } else {
+        printf("LArASIC SPI verification failed!\n");
+    }
         
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
     printf("FEMB receivers reset\n");
     
-    return true;
+    return coldata_res && coldadc_res && larasic_res && spi_verified;
 }
+
+bool WIB::get_pulser() {
+    return pulser_on;
+}
+
+bool WIB::set_pulser(bool on) {
+    if (pulser_on == on) {
+        printf("Pulser already %s\n",on?"enabled":"disabled");
+        return true;
+    }
+    bool res = true;
+    for (int i = 0; i < 4; i++) res &= femb[i]->set_fast_act(ACT_LARASIC_PULSE);
+    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+    return res;
+}
+
 
 bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
    

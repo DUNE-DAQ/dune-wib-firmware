@@ -60,6 +60,7 @@ message ConfigureWIB {
         uint32 strobe_length = 13; // length of strobe in 64MHz periods
     }
     repeated ConfigureFEMB fembs = 1; //must supply 4
+    bool cold = 2; // True if front end is COLD (77k)
 }
 
 message Pulser {
