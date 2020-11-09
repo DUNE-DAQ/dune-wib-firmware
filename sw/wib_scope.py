@@ -29,13 +29,13 @@ class CustomNavToolbar(NavigationToolbar):
         ('Signals','Choose signal traces to show', 'choose', 'choose'),
         ('Autoscale', 'Autoscale axes for each new event', 'autoscale','autoscale'),
         ('Legend', 'Toggle legend', 'legend','legend'),
+        (None, None, None, None),
         ('Home', 'Reset original view', 'home', 'home'),
         ('Back', 'Back to previous view', 'back', 'back'),
         ('Forward', 'Forward to next view', 'forward', 'forward'),
         (None, None, None, None),
         ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
         ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),
-        ('Subplots', 'Configure subplots', 'subplots', 'configure_subplots'),
         (None, None, None, None),
         ('Save', 'Save the figure', 'filesave', 'save_figure')
     )
@@ -52,8 +52,7 @@ class CustomNavToolbar(NavigationToolbar):
         self.canvas.parent().plot_signals()
         
     def autoscale(self):
-        self.canvas.parent().fig_ax.set_autoscale_on(True)
-        self.canvas.parent().plot_signals()
+        self.canvas.parent().plot_signals(rescale=True)
         
 from matplotlib.figure import Figure
 
@@ -174,14 +173,22 @@ class SignalView(QtWidgets.QWidget):
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.figure = figure
         self.data_source=data_source
-        #self.figure.tight_layout()
         self.fig_ax = self.figure.subplots()
         self.fig_canvas = FigureCanvas(self.figure)
-        self.fig_toolbar = CustomNavToolbar(self.fig_canvas, self)
+        self.fig_canvas.draw()
+        
+        self.fig_toolbar = CustomNavToolbar(self.fig_canvas,self,coordinates=False)
+        self.fig_toolbar.setParent(self.fig_canvas)
+        self.fig_toolbar.setMinimumWidth(300)
+        
+        self.fig_canvas.mpl_connect("resize_event", self.resize)
+        self.resize(None)
         
         self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.fig_toolbar)
+        self.layout.setContentsMargins(0,0,0,0)
+        self.layout.setSpacing(0)
         self.layout.addWidget(self.fig_canvas)
+        
         self.toolbar_shown(False)
         
         self.legend = False
@@ -194,10 +201,20 @@ class SignalView(QtWidgets.QWidget):
         
         self.save_props = ['legend','selected','raw_adc','raw_time','pedestal','distribute','fft']
         
+        self.autoscale = True
+        self.last_lims = None
+        
         self.times,self.data = None,None
+    
+    def resize(self, event):
+        x,y = self.figure.axes[0].transAxes.transform((0,0.0))
+        figw, figh = self.figure.get_size_inches()
+        ynew = figh*self.figure.dpi-y - self.fig_toolbar.frameGeometry().height()
+        self.fig_toolbar.move(int(x),int(ynew))
         
     def focusInEvent(self, *args, **kwargs):
         super().focusInEvent(*args, **kwargs)
+        self.resize(None)
         self.toolbar_shown(True)
         
     def focusOutEvent(self, *args, **kwargs):
@@ -220,13 +237,12 @@ class SignalView(QtWidgets.QWidget):
             if prop in all_props:
                 setattr(self,prop,val)
             
-    def _load_data(self):
-        print('Loading data...')
+    def load_data(self):
         self.times = []
         self.data = []
         self.raw_data = []
         
-        if self.data_source.timestamps is None or self.data_source.samples is None:
+        if self.data_source.timestamps is None or self.data_source.samples is None or self.selected is None:
             return
         
         for sig_idx,sel in enumerate(self.selected):
@@ -270,20 +286,21 @@ class SignalView(QtWidgets.QWidget):
         self.pedestal = selector.get_pedestal()
         self.distribute = selector.get_distribute()
         self.fft = selector.get_fft()
-        self._load_data()
+        self.load_data()
         self.plot_signals()
         
-    def plot_signals(self):
+    def plot_signals(self,rescale=False):
         ax = self.fig_ax
-        autoscale = ax.get_autoscale_on()
-        if not autoscale:
-            xlim = ax.get_xlim()
-            ylim = ax.get_ylim()
+        if rescale:
+            self.autoscale = True
+        else:
+            next_lims = (ax.get_xlim(), ax.get_ylim())
+            self.autoscale = self.autoscale and (next_lims == self.last_lims or self.last_lims is None)
         ax.clear()
         
         if self.selected:
             if not self.times or not self.data:
-                self._load_data()
+                self.load_data()
             
             if not self.times or not self.data:
                 return
@@ -299,14 +316,15 @@ class SignalView(QtWidgets.QWidget):
         else:
             ax.set_xlabel('Sample' if self.raw_time else 'Timestamp')
             ax.set_ylabel('ADC Counts' if self.raw_adc else ('Voltage (mV)' if not self.distribute else 'Arb. Shifted Voltage (mV)'))
-        if not autoscale:
-            ax.set_autoscale_on(False)
-            ax.set_xlim(*xlim)
-            ax.set_ylim(*ylim)
+        if not self.autoscale:
+            ax.set_xlim(*next_lims[0])
+            ax.set_ylim(*next_lims[1])
+        self.last_lims = (ax.get_xlim(), ax.get_ylim())
         if self.legend:
             ax.legend()
             
         ax.figure.canvas.draw()
+        self.resize(None)
         
 
 class EvDisp(QtWidgets.QMainWindow):
@@ -369,7 +387,7 @@ class EvDisp(QtWidgets.QMainWindow):
         button.setToolTip('Read WIB Spy Buffer')
         button.clicked.connect(self.acquire_data)
         
-        button = QtWidgets.QPushButton('Continuious')
+        button = QtWidgets.QPushButton('Continuous')
         nav_layout.addWidget(button)
         button.setToolTip('Repeat acquisitions until stopped')
         button.clicked.connect(self.toggle_continuious)
@@ -433,23 +451,16 @@ class EvDisp(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def load_layout(self,fname=None):
         if fname is None:
-            fname,_ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open settings', '.','WIBScope Plot Layouts (*.ply);;All files (*.*)')
+            fname,_ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open settings', '.','WIB Scope Plot Layouts (*.ply);;All files (*.*)')
         if fname:
             try:
                 with open(fname,'rb') as f:            
                     settings = pickle.load(f)
                 rows = settings['rows']
                 cols = settings['cols']
-                views = [SignalView() for i in range(rows*cols)]
+                views = [SignalView(data_source=self) for i in range(rows*cols)]
                 for view,state in zip(views,settings['views']):
-                    if type(state) == tuple: #old format
-                        raw_adc,selected,pedestal,distribute = state
-                        view.raw_adc = raw_adc
-                        view.selected = selected   
-                        view.pedestal = pedestal  
-                        view.distribute = distribute 
-                    else:
-                        view.set_state(state)         
+                    view.set_state(state)         
                 self.views = views
                 self.reshape(rows,cols)
             except:
@@ -457,7 +468,7 @@ class EvDisp(QtWidgets.QMainWindow):
     
     @QtCore.pyqtSlot()
     def save_layout(self):
-        fname,_ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save settings', '.','WbLSdaq Plot Layouts (*.ply);;All files (*.*)')
+        fname,_ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save settings', '.','WIB Scope Plot Layouts (*.ply);;All files (*.*)')
         if fname:
             if not fname.endswith('.ply'):
                 fname = fname + '.ply'
@@ -468,15 +479,17 @@ class EvDisp(QtWidgets.QMainWindow):
                 
     @QtCore.pyqtSlot()
     def toggle_continuious(self):
-        if self.continuious_button.text() == 'Continuious':
+        if self.continuious_button.text() == 'Continuous':
             self.continuious_button.setText('Stop')
-            self.timer.start(1000)
+            print('Starting continuous acquisition')
+            self.timer.start(500)
         else:
-            self.continuious_button.setText('Continuious')
+            self.continuious_button.setText('Continuous')
             self.timer.stop()
     
     @QtCore.pyqtSlot()
     def acquire_data(self):
+        print('Reading out WIB spy buffer')
         req = wib.ReadDaqSpy()
         req.buf0 = True
         req.buf1 = True
@@ -491,6 +504,9 @@ class EvDisp(QtWidgets.QMainWindow):
         self.samples = np.frombuffer(rep.deframed_samples,dtype=np.uint16).reshape((4,128,num))
         self.timestamps = np.frombuffer(rep.deframed_timestamps,dtype=np.uint64).reshape((2,num))
         
+        for view in self.views:
+            view.load_data()
+            
         self.plot_selected()
         
     @QtCore.pyqtSlot()
@@ -543,9 +559,11 @@ class EvDisp(QtWidgets.QMainWindow):
         if self.pulser_button.text() == "Enable Pulser":
             req.start = True
             self.pulser_button.setText('Disable Pulser')
+            print("Starting pulser")
         else:
             req.start = False
             self.pulser_button.setText('Enable Pulser')
+            print("Stopping pulser")
         rep = wib.Status()
         self.send_command(req,rep);
 

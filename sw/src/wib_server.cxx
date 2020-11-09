@@ -31,12 +31,13 @@ int main(int argc, char **argv) {
         
         wib::Command command;
         
-        std::string cmd_str(static_cast<char*>(cmd.data()), cmd.size());
-        command.ParseFromString(cmd_str);
         
-        std::string reply_str;        
-                
-        if (command.cmd().Is<wib::Peek>()) {
+        std::string reply_str; 
+        
+        std::string cmd_str((char*)cmd.data(), cmd.size());
+        if (!command.ParseFromString(cmd_str)) {
+            fprintf(stderr,"Could not parse message %i size %li",i,cmd.size());
+        } else if (command.cmd().Is<wib::Peek>()) {
             wib::Peek read;
             command.cmd().UnpackTo(&read);
             printf("peek 0x%lx\n",read.addr());

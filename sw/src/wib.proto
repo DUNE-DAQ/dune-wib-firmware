@@ -4,40 +4,63 @@ package wib;
 
 import "google/protobuf/any.proto";
 
+/***
+   wib_server, the ZeroMQ REP server listening on port tcp 1234 of the WIB, 
+   will respond only to Command messages encapsulating particular messages, 
+   and will return one message in response.
+   
+   Any other content sent to wib_server will result in an empty reply.
+***/
+
 message Command {
     google.protobuf.Any cmd = 1;
 }
 
+
+/*** Valid `cmd` message options ***/
+
+/** High level commands **/
+
+// Executes a script, which is either 
+//  - a file name or path to a file on the WIB (file=false) 
+//  - bytes representing a script (file=true)
 message Script {
-    bytes script = 1;
-    bool file = 2;
+    bytes script = 1; //file[name] on WIB or contents of local file
+    bool file = 2; //interpret script as file[name]
+    
+    //replies Status
 }
 
+// Fill and readout the DAQ spy buffers on the WIB
 message ReadDaqSpy {
     bool buf0 = 1; //read buffer 0 (FEMB0+FEMB1)
     bool buf1 = 2; //read buffer 1 (FEMB2+FEMB3)
     bool deframe = 3; //return deframed data if true, frames if false
     bool channels = 4; //if deframe is true, returns channels if true, uvx if false
     
+    //replies DaqSpy if deframe is false
     message DaqSpy {
-        bytes buf0 = 1;
-        bytes buf1 = 2;
-        bool success = 3;
+        bytes buf0 = 1; //contents of spy buffer 0 (1MB)
+        bytes buf1 = 2; //contents of spy buffer 1 (1MB)
+        bool success = 3; //whether the wib's spy_buffer_full bits were set
     }
 
+    //replies DaqSpy if deframe is true
     message DeframedDaqSpy {
-        uint32 crate_num = 1;
-        uint32 wib_num = 2;
-        uint32 num_samples = 4;
+        uint32 crate_num = 1; //crate number from last frame
+        uint32 wib_num = 2; //wib_number from last frame
+        uint32 num_samples = 4; //number of frames/samples deframed
+        // an series of 4*128 (num_femb*num_channels) arrays of uint16 representing the 2D array samples[4][128][num_samples]
         bytes deframed_samples = 5;
-        bytes deframed_timestamps = 6;
-        bool success = 7;
+        // a series of 2 (num_buffers) flat array of uint64 representing the 2D array timestamps[2][num_samples]
+        bytes deframed_timestamps = 6; 
+        bool success = 7; //whether the wib's spy_buffer_full bits were set
     }
 }
-
-/* Initialization Commands */
-
+ 
+// Perform a full frontend configuration with settings for each FEMB
 message ConfigureWIB {
+    // Settings applied to all channels on a FEMB
     message ConfigureFEMB {
         bool enabled = 1; // FEMB serial receiver enabled
         
@@ -59,63 +82,89 @@ message ConfigureWIB {
         uint32 strobe_delay = 12; // offset from 2MHz to start strobe in 64MHz periods
         uint32 strobe_length = 13; // length of strobe in 64MHz periods
     }
+
     repeated ConfigureFEMB fembs = 1; //must supply 4
     bool cold = 2; // True if front end is COLD (77k)
+    
+    //replies Status
 }
 
+//Start or stop the pulser
 message Pulser {
     bool start = 1; // true to start, false to stop
+    
+    //replies Empty
 }
 
+/** System control commands **/
+
+// Deploy new root and boot archives to the WIB (send reboot after!)
 message Update {
-    bytes root_archive = 1;
-    bytes boot_archive = 2;
+    bytes root_archive = 1; //tar.gz archive of root filesystem
+    bytes boot_archive = 2; //tar.gz archive of boot filesystem
+    
+    //replies Status
 }
 
+// Reboot the WIB (after replying)
 message Reboot {
+    
+    //replies Empty
 }
 
 /* Low level debug commands */
 
 //peek wib memory
 message Peek {
-    uint64 addr = 1;
+    uint64 addr = 1; //address in WIB memory
+    
+    //replies RegValue
 }
 
 //poke wib memory
 message Poke {
-    uint64 addr = 1;
-    uint32 value = 2;
+    uint64 addr = 1; //address in WIB memory
+    uint32 value = 2; //32 bit value 
+    
+    //replies RegValue
 }
 
 //peek coldata i2c bus
 message CDPoke {
-    uint32 femb_idx = 1;
-    uint32 coldata_idx = 2;
-    uint32 chip_addr = 3;
-    uint32 reg_page = 4;
-    uint32 reg_addr = 5;
-    uint32 data = 6;
+    uint32 femb_idx = 1; // which femb to address (0-3)
+    uint32 coldata_idx = 2; // which coldata on femb to address (0-1)
+    uint32 chip_addr = 3; // chip address to send over i2c
+    uint32 reg_page = 4; // register page to send over i2c
+    uint32 reg_addr = 5; // register address to send over i2c
+    uint32 data = 6; // byte to write to i2c location (0-255)
+    
+    //replies CDRegValue
 }
 
 //poke coldata i2c bus
 message CDPeek {
-    uint32 femb_idx = 1;
-    uint32 coldata_idx = 2;
-    uint32 chip_addr = 3;
-    uint32 reg_page = 4;
-    uint32 reg_addr = 5;
+    uint32 femb_idx = 1; // which femb to address (0-3)
+    uint32 coldata_idx = 2; // which coldata on femb to address (0-1)
+    uint32 chip_addr = 3; // chip address to send over i2c
+    uint32 reg_page = 4; // register page to send over i2c
+    uint32 reg_addr = 5; // register address to send over i2c
+    
+    //replies CDRegValue
 }
 
 //fast command on all coldata chips
 message CDFastCmd {
-    uint32 cmd = 1;
+    uint32 cmd = 1; //hex value of fast command to send
+    
+    //replies Empty
 }
 
-/* CCM/SC/Monitoring commands */
+/** CCM/SC/Monitoring commands **/
 
+// reads data from the WIB onboard sensors
 message GetSensors {
 
+    //replies Sensors
     message Sensors {
         repeated double ltc2990_4E_voltages = 1;
         repeated double ltc2990_4C_voltages = 2;
@@ -127,16 +176,19 @@ message GetSensors {
     }
 }
 
-/* Generic Command Replies */
+/*** Generic Command Replies (not valid `cmd` options) ***/
 
+// Nothing
 message Empty {
 }
 
+// Success of command with optional extra info
 message Status {
     bool success = 1;
     bytes extra = 2;
 }
 
+// 
 message RegValue {
     uint64 addr = 1;
     uint32 value = 2;
