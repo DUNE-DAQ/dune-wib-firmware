@@ -48,6 +48,7 @@ the WIB itself, or remotely by specifying the WIB's IPv4 address.
 
 The C++ components (`wib_client` and `wib_server`) both require C++ development 
 packages and runtime libraries for:
+
 * protobuf
 * zeromq
 * cppzmq
@@ -55,14 +56,17 @@ packages and runtime libraries for:
 * i2c-tools
 * rsync (`wib_server` runtime only)
 * tar (`wib_server` runtime only)
+
 See the [bitbake for the PetaLinux distribution](../linux-2020.1/project-spec/meta-user/recipes-apps/wib/wib.bb)
 for more installation installation. Build with `make` or `make simulation`
 
 The python components (`wib_scope.py`) requires the following python3 packages:
+
 * protobuf
 * pyzmq
 * matplotlib
 * pyqt5 (pyqt4 may work)
+
 Generate the python protobuf library with `make python`.
 
 ## Components
