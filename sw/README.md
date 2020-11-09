@@ -32,15 +32,41 @@ Read-Evaluate-Print Loop (REPL) implemented with readline. This provides a
 command line interface to control the WIB, which can either be run locally on 
 the WIB itself, or remotely by specifying the WIB's IPv4 address.
 
-## Basic Usage
+## Dependencies and Building
 
-### `wib_server`
+The C++ components (`wib_client` and `wib_server`) both require C++ development 
+packages and runtime libraries for:
+* protobuf
+* zeromq
+* cppzmq
+* readline
+* i2c-tools
+* rsync (`wib_server` runtime only)
+* tar (`wib_server` runtime only)
+See the [bitbake for the PetaLinux distribution](../linux-2020.1/project-spec/meta-user/recipes-apps/wib/wib.bb)
+for more installation installation. Build with `make` or `make simulation`
+
+The python components (`wib_scope.py`) requires the following python3 packages:
+* protobuf
+* pyzmq
+* matplotlib
+* pyqt5 (pyqt4 may work)
+Generate the python protobuf library with `make python`.
+
+## Components
+
+### wib_server
 
 The `wib_server` takes no arguments, and is usually started on boot by the init
 system with `/etc/rc5.d/wib_init.sh` derived from `extras/wib_init.sh`.
 You should not have to run this directly.
 
-### `wib_client`
+When running on the WIB, the `wib_server` acts as an interface to the WIB
+hardware. It will listen on TCP port `1234` for `Command` protobuf messages 
+defined in [`wib.proto`](src/wib.proto). The `wib_server` will respond with 
+messages as described in the comments of [`wib.proto`](src/wib.proto).
+
+### wib_client
 
 Usage: `./wib_client [-w ip] [cmd]`
 
@@ -56,10 +82,8 @@ description of each:
 
 ```
 Available commands:
-   reboot
+  reboot
     Reboot the WIB
-  initialize
-    Initialize the WIB hardware (TBD)
   script filename
     Run a WIB script (local file will be sent, otherwise filename is remote in /etc/wib/)
   daqspy filename
@@ -77,8 +101,75 @@ Available commands:
   update root_archive boot_archive
     Deploy a new root and boot archive to the WIB
   exit
-    Closes the command interfac
+    Closes the command interface
 ```
+
+### wib_scope.py
+
+This is a pyqt5 GUI interface to the WIB frontend configuration, calibration,
+and daq spy buffer readout functionality. Build the protobuf python library 
+for the WIB with `make python` before running it.
+
+#### Help
+```
+usage: wib_scope.py [-h] [--wib_server WIB_SERVER] [--config CONFIG]
+                    [--rows ROWS] [--cols COLS] [--layout LAYOUT]
+
+
+Visually display data from a WIB
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --wib_server WIB_SERVER, -w WIB_SERVER
+                        IP of wib_server to connect to [127.0.0.1]
+  --config CONFIG, -C CONFIG
+                        WIB configuration to load [default.json]
+  --rows ROWS, -r ROWS  Rows of plots [1]
+  --cols COLS, -c COLS  Columns of plots [1]
+  --layout LAYOUT, -l LAYOUT
+                        Load a saved layout
+```
+
+#### Configuration
+
+The `Configure` button on the GUI will load the front end configuration 
+described in the `config` JSON document. See the comments in the `ConfigureWIB`
+message of [`wib.proto`](src/wib.proto).
+
+#### Pulser
+
+The `Enable Pulser` or `Disable Pulser` buttons will start or stop the COLDATA
+calibration strobe. Assumes the strobe parameters have already been configured.
+
+#### Acquire
+
+The `Acquire` button will read the contents of the WIB daq spy buffer, deframe
+the data on the WIB, and transfer it to the `wib_scope.py` program for
+plotting.
+
+#### Plotting data
+
+After clicking a plot, a set of configuration options will appear in the lower
+left of that plot's axes. The `Signals` button allow channels from the WIB and
+various features (such as performing a FFT or baseline correction) to be 
+changed. The remaining buttons have informative tooltip text.
+
+#### Creating useful display
+
+The buttons along the top relate to the number of plots visible on the display
+and their configurations. `Reshape` will change the size of the grid of plots.
+`Load Layout` and `Save Layout` will reload or save the window setup, but not
+the data.
+
+After creating a grid, select the signals and featureson each plot after 
+clicking it.
+
+## Functionality Overview
+
+### Low level functions
+
+The `wib_server` will respond to requests to read and write onboard memory
+and also the frontend I2C bus.
 
 ### WIB scripts
 
@@ -129,6 +220,9 @@ the `wib_client` and saved in the specified file. Both buffers will be returned
 regardless of success, as success only indicates that the spy buffer filled 
 within at 10ms timeout period.
 
+The WIB `wib_server` can also deframe this data, and the `wib_scope.py` 
+program can visualize it.
+
 ### Updating the WIB
 
 The `wib_client` update command can take a tar archive of the root and boot
@@ -141,4 +235,7 @@ system.
 The `Makefile` can build a `simulation` target which builds fake hardware 
 interfaces into the `wib_server` software. This fake interface is a ZeroMQ 
 socket which sends register read/write commands to a cocotb simulation of 
-the WIB firmware in real time.
+the WIB firmware in real time (if such a thing were to exist). 
+
+Without an AXI simulation, this just prints register reads and writes that 
+would have happened instead of performing them.
