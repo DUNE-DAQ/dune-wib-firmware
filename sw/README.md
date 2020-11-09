@@ -1,11 +1,13 @@
 # WIB Software
 
-This serves as documentation for the WIB software.
+This serves as documentation for the WIB software stack.
 
 The software is usually built by the Peta Linux project and included in the WIB 
 root file system image, however for testing `wib_server` this can be compiled on 
 any system with the included `Makefile`. The `wib_client` is a standalone
-program, and can be used to remote control a WIB running `wib_server`.
+program, and can be used to remote control a WIB running `wib_server`. The 
+`wib_scope.py` program is a python3 Qt GUI diagnostic interface to the WIB.
+These are described in the following 
 
 - [WIB Software](#wib-software)
   * [Client / Server Overview](#client---server-overview)
