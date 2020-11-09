@@ -64,6 +64,7 @@ The python components (`wib_scope.py`) requires the following python3 packages:
 
 * protobuf
 * pyzmq
+* numpy
 * matplotlib
 * pyqt5 (pyqt4 may work)
 
