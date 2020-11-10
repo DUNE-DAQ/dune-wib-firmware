@@ -41,6 +41,9 @@ constexpr uint32_t COLD_I2C_ACK2        = 9; //1 // 0x00000200;
 constexpr uint32_t COLD_I2C_DATA        = 1; //8 // 0x000001FE;
 constexpr uint32_t COLD_I2C_ACK3        = 0; //1 // 0x00000001;
 
+// COLDATA I2C delay
+constexpr uint32_t COLD_I2C_DELAY = 27; //microseconds
+
 // COLDATA Chip Addresses (unused...)
 constexpr uint8_t CHIP_CD_BOT       = 0x2;
 constexpr uint8_t CHIP_CD_TOP       = 0x3;
