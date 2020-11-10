@@ -219,7 +219,7 @@ bool FEMB::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page
     i2c_write(bus_idx,chip_addr,reg_page,reg_addr,data);
     uint8_t read = i2c_read(bus_idx,chip_addr,reg_page,reg_addr);
     if (read != data) {
-        fprintf(stderr,"i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X = 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data);
+        fprintf(stderr,"i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X :: 0x%X != 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
         return false;
     }
     return true;
