@@ -127,8 +127,8 @@ bool FEMB::configure_larasic(const larasic_conf &c) {
                         | ((c.snc ? 1 : 0) << 1) // 0 = 900 mV baseline;1 = 200 mV baseline
                         | ((c.gain & 0x3) << 2) // 14, 25, 7.8, 4.7 mV/fC (0 - 3)
                         | ((c.peak_time & 0x3) << 4) // 1.0, 0.5, 3, 2 us (0 - 3)
-                        | ((c.smn ? 1 : 0) << 1) // 1 = monitor enable
-                        | ((c.sdf ? 1 : 0) << 1); // 1 = "SE" buffer enable
+                        | ((c.smn ? 1 : 0) << 6) // 1 = monitor enable
+                        | ((c.sdf ? 1 : 0) << 7); // 1 = "SE" buffer enable
                         
     // See COLDATA datasheet
     // MSB goes first
