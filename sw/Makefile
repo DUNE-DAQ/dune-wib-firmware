@@ -26,6 +26,13 @@ all: $(BINS)
 simulation: CXXFLAGS += -DSIMULATION
 simulation: CCFLAGS += -DSIMULATION
 simulation: $(BINS)
+	@echo Finished building
+
+# Use SIMULATION define to avoid building hardware interfaces
+client: CXXFLAGS += -DSIMULATION
+client: CCFLAGS += -DSIMULATION
+client: wib_client
+	@echo Finished building
 
 python:
 	protoc -I=src/ --python_out=. src/wib.proto

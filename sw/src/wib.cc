@@ -74,6 +74,11 @@ bool WIB::initialize() {
         fprintf(stderr,"failed to assign IP to eth0\n");
         success = false;
     }
+    return success;
+}
+
+bool WIB::start_frontend() {
+    bool success = true;
     success &= script("startup"); //Default initial setup and power on
     printf("Resetting COLDATA\n");
     FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
@@ -457,6 +462,14 @@ bool WIB::update(const string &root_archive, const string &boot_archive) {
 
 
 bool WIB::configure_wib(wib::ConfigureWIB &conf) {
+
+    if (!frontend_initialized) {
+        if (!start_frontend()) {
+            fprintf(stderr,"Failed to power on front end electronics\n");
+            return false;
+        }
+        frontend_initialized = true;
+    }
     
     if (conf.fembs_size() != 4) {
         fprintf(stderr,"Must supply exactly 4 FEMB configurations\n");

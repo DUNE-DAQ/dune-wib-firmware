@@ -88,6 +88,9 @@ public:
     
 protected:
     
+    // Front end initialized
+    bool frontend_initialized = false;
+    
     // Pulser status, because can't read from COLDATA
     bool pulser_on = false;
     
@@ -107,6 +110,9 @@ protected:
     int daq_spy_fd;
     // Pointers to the daq spy firmware buffers
     void *daq_spy[2];
+    
+    // Power on and reset the frontend (called on first configure_wib)
+    bool start_frontend();
 
 };
 
