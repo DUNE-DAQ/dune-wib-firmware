@@ -90,6 +90,9 @@ public:
     bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
 
 protected:
+
+    // The index'th FEMB connected to this WIB
+    int index;
     
     // The last chip address accessed via each I2C bus
     int last_coldata_i2c_chip[2];

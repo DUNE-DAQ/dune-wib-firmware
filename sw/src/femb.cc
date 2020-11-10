@@ -9,7 +9,7 @@ constexpr size_t CD_I2C_ADDR[] = { 0xA0010000, 0xA0040000, 0xA0050000, 0xA006000
 constexpr size_t CD_FASTCMD_ADDR = 0xA0030000;
 io_reg_t FEMB::coldata_fast_cmd;
 
-FEMB::FEMB(int index) {
+FEMB::FEMB(int _index) : index(_index) {
     for (uint8_t i = 0; i < 2; i++) {
         io_reg_init(&this->coldata_i2c[i],CD_I2C_ADDR[i+index*2],2);
         last_coldata_i2c_chip[i] = -1;
@@ -217,7 +217,7 @@ bool FEMB::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page
     i2c_write(bus_idx,chip_addr,reg_page,reg_addr,data);
     uint8_t read = i2c_read(bus_idx,chip_addr,reg_page,reg_addr);
     if (read != data) {
-        fprintf(stderr,"i2c_write_verify failed 0x%X 0x%X 0x%X = 0x%X\n",chip_addr,reg_page,reg_addr,data);
+        fprintf(stderr,"i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X = 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data);
         return false;
     }
     return true;
