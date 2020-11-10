@@ -58,7 +58,9 @@ packages and runtime libraries for:
 * tar (`wib_server` runtime only)
 
 See the [bitbake for the PetaLinux distribution](../linux-2020.1/project-spec/meta-user/recipes-apps/wib/wib.bb)
-for more installation installation. Build with `make` or `make simulation`
+for more installation instructions. Build with `make` or `make simulation`
+depending on whether a real or simulated hardware interface is desired in 
+`wib_server`. (NOTE: do not switch between these without `make clean`!)
 
 The python components (`wib_scope.py`) requires the following python3 packages:
 
