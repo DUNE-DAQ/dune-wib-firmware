@@ -1,6 +1,7 @@
 #include "unpack.h"
 
 #include <cstdio>
+#include <cstring>
 
 void unpack14(const uint32_t *packed, uint16_t *unpacked) {
     for (size_t i = 0; i < 128; i++) { // i == n'th U,V,X value
@@ -59,6 +60,32 @@ void unpack_frame(const frame14 *frame, frame14_unpacked *data) {
     data->flex12 = (frame->wib_post[0] >> 20) & 0xFFF;
     data->flex24 = (frame->wib_post[1] >> 8) & 0xFFFFFF;
 }
+
+void repack_frame(const frame14_unpacked *data, frame14 *frame) {
+    memset(frame,0,sizeof(frame14)); //zero out frame
+    frame->start_frame = 0x3C;
+    frame->wib_pre[0] |= (data->crate_num & 0xFF);
+    frame->wib_pre[0] |= (data->frame_version & 0xF) << 8;
+    frame->wib_pre[0] |= (data->wib_num & 0x7) << 12;
+    frame->wib_pre[0] |= (data->fiber_num & 0x1) << 15;
+    frame->wib_pre[0] |= (data->femb_valid & 0x3) << 16;
+    frame->wib_pre[0] |= (data->link_mask & 0xFF) << 18;
+    
+    frame->wib_pre[1] = 0xbabeface;
+    
+    frame->wib_pre[2] = (uint32_t)(data->timestamp & 0xFFFFFFFF);
+    frame->wib_pre[3] = (uint32_t)((data->timestamp >> 32) & 0xFFFFFFFF);
+    
+    repack14((uint16_t*)&data->femb[0],frame->femb_a_seg);
+    repack14((uint16_t*)&data->femb[1],frame->femb_b_seg);
+    
+    frame->wib_post[0] |= data->crc20 & 0xFFFFF; // FIXME calculate crc of something
+    frame->wib_post[0] |= (data->flex12 & 0xFFF) << 20;
+    frame->wib_post[1] |= 0xDC;
+    frame->wib_post[1] |= (data->flex24 & 0xFFFFFF) << 8;
+    frame->idle_frame = 0xBC;
+}
+
 
 size_t u_to_ch[40] = {20, 59, 19, 60, 18, 61, 17, 62, 16, 63, 4, 43, 3, 44, 2, 
                       45, 1, 46, 0, 47, 68, 107, 67, 108, 66, 109, 65, 110, 64, 
@@ -127,8 +154,55 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data) {
             data.x[0][j][i] = frame_data.femb[0].x[j];
             data.x[1][j][i] = frame_data.femb[1].x[j];
         }
-        data.timestamp[i] = frame_data.timestamp;;
+        data.timestamp[i] = frame_data.timestamp;
     }
     data.crate_num = frame_data.crate_num;
     data.wib_num = frame_data.wib_num;
+    //FIXME frame_version femb_valid link_mask fiber_num
+}
+
+void reframe_data(frame14 *frame_buf, size_t nframes, const channel_data &data) {
+    frame14_unpacked frame_data;
+    for (size_t i = 0; i < nframes; i++) {
+        for (size_t j = 0; j < 48; j++) {
+            int k;
+            if (j < 40) {
+                k = u_to_ch[j];
+                frame_data.femb[0].u[j] = data.channels[0][k][i];
+                frame_data.femb[1].u[j] = data.channels[1][k][i];
+                k = v_to_ch[j];
+                frame_data.femb[0].v[j] = data.channels[0][k][i];
+                frame_data.femb[1].v[j] = data.channels[1][k][i];
+            } 
+            k = x_to_ch[j];
+            frame_data.femb[0].x[j] = data.channels[0][k][i];
+            frame_data.femb[1].x[j] = data.channels[1][k][i];
+        }
+        frame_data.timestamp = data.timestamp[i];
+        frame_data.crate_num = data.crate_num;
+        frame_data.wib_num = data.wib_num;
+        //FIXME frame_version femb_valid link_mask fiber_num
+        repack_frame(&frame_data, frame_buf+i);
+    }
+}
+
+#include <cmath>
+
+void fake_data(frame14 *buffer, size_t nframes) {
+    channel_data data; 
+    data.samples = nframes;
+    data.wib_num = 37;
+    data.crate_num = 57;
+    for (size_t i = 0; i < 128; i++) {
+        data.channels[0][i].resize(nframes);
+        data.channels[1][i].resize(nframes);
+        int phase = rand()%500;
+        for (size_t j = 0; j < nframes; j++) { 
+            data.channels[0][i][j] = 16384.0*(sin(2*3.1415926*j/(i*5+100.0)+phase)+1.0)/2.0;
+            data.channels[1][i][j] = 16384.0*(cos(2*3.1415926*j/(i*5+100.0)+phase)+1.0)/2.0;
+        }
+    }
+    data.timestamp.resize(nframes);
+    for (size_t i = 0; i < nframes; i++) data.timestamp[i] = i;
+    reframe_data(buffer,nframes,data);
 }

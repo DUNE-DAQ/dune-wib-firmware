@@ -3,7 +3,7 @@ CXXFLAGS = -g -O2 -Isrc
 LFLAGS = -lprotobuf -lzmq -lreadline 
 
 # output binary for each of these (no headers)
-BSRC = src/wib_client.cxx src/wib_server.cxx
+BSRC = $(wildcard src/*.cxx)
 BOBJ = $(addprefix build/,$(notdir $(BSRC:.cxx=.o)))
 BDEP = $(BOBJ:.o=.d)
 
@@ -33,6 +33,7 @@ client: CXXFLAGS += -DSIMULATION
 client: CCFLAGS += -DSIMULATION
 client: wib_client
 	@echo Finished building
+
 
 python:
 	protoc -I=src/ --python_out=. src/wib.proto

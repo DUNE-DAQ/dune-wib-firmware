@@ -1,4 +1,5 @@
 #include "wib.h"
+#include "unpack.h"
 #include "sensors.h"
 
 #include <cstdio>
@@ -30,10 +31,8 @@ WIB::WIB() {
     this->daq_spy_fd = -1;
     this->daq_spy[0] = new char[DAQ_SPY_SIZE];
     this->daq_spy[1] = new char[DAQ_SPY_SIZE];
-    for (size_t i = 0; i < DAQ_SPY_SIZE; i++) {
-        ((char*)this->daq_spy[0])[i] = 128+256*sin(2.0*3.1415926*i/120.01/4.0);
-        ((char*)this->daq_spy[1])[i] = 128+256*cos(2.0*3.1415926*i/120.01/4.0);
-    }
+    fake_data((frame14*)this->daq_spy[0],DAQ_SPY_SIZE/sizeof(frame14));
+    fake_data((frame14*)this->daq_spy[1],DAQ_SPY_SIZE/sizeof(frame14));
     #else
     this->daq_spy_fd = open("/dev/mem",O_RDWR);
     this->daq_spy[0] = mmap(NULL,DAQ_SPY_SIZE,PROT_READ,MAP_SHARED,this->daq_spy_fd,DAQ_SPY_0);
@@ -390,11 +389,8 @@ bool WIB::read_daq_spy(void *buf0, void *buf1) {
     if (buf1) memcpy(buf1,this->daq_spy[1],DAQ_SPY_SIZE);
     #ifdef SIMULATION
     //generate more "random" data for simulation
-    int phase = rand()%480;
-    for (size_t i = 0; i < DAQ_SPY_SIZE; i++) {
-        ((char*)this->daq_spy[0])[i] = 128+256*sin(2.0*3.1415926*(i+phase)/120.01/4.0);
-        ((char*)this->daq_spy[1])[i] = 128+256*cos(2.0*3.1415926*(i+phase)/120.01/4.0);
-    }
+    fake_data((frame14*)this->daq_spy[0],DAQ_SPY_SIZE/sizeof(frame14));
+    fake_data((frame14*)this->daq_spy[1],DAQ_SPY_SIZE/sizeof(frame14));
     #endif
     return success;
 }

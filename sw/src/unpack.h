@@ -57,10 +57,19 @@ void repack14(const uint16_t *unpacked, uint32_t *packed);
 // Unpacks the data in a frame14 struct to a frame14_unpacked struct
 void unpack_frame(const frame14 *frame, frame14_unpacked *data);
 
+// Repacks the data in a frame14_unpacked struct to a frame14 struct
+void repack_frame(const frame14_unpacked *data, frame14 *frame);
+
 // Converts a buffer of felix_frame in memory to time ordered data from each channel
 void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data);
 
 // Converts a buffer of felix_frame in memory to time ordered data from each U,V,X mapping
 void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data);
+
+// Convert time ordered data from each channel back into frame14 dataWW
+void reframe_data(frame14 *frame_buf, size_t nframes, const channel_data &data);
+
+// Fill a buffer of frame14 with fake data sin on even (cos on odd) period 10+2*ch samples
+void fake_data(frame14 *buffer, size_t nframes);
 
 #endif
