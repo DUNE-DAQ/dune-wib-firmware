@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
                 if (buf1) rep.set_buf1(buf1,DAQ_SPY_SIZE); else rep.set_buf1("");
                 rep.SerializeToString(&reply_str);
             } else {
-                const size_t nframes = DAQ_SPY_SIZE/sizeof(felix_frame);
+                const size_t nframes = DAQ_SPY_SIZE/sizeof(frame14);
                 wib::ReadDaqSpy::DeframedDaqSpy rep;
                 rep.set_success(success);
                 rep.set_num_samples(nframes);
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
                 if (req.channels()) {
                     channel_data dch;
                     if (buf0) {
-                        deframe_data((felix_frame*)buf0,nframes,dch);
+                        deframe_data((frame14*)buf0,nframes,dch);
                         for (size_t i = 0; i < 2; i++) {
                             for (size_t j = 0; j < 128; j++) {
                                 memcpy(sample_ptr+(i*128*ch_len)+j*ch_len,dch.channels[i][j].data(),ch_len);
@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
                         memcpy(timestamp_ptr+(0*ts_len),dch.timestamp.data(),ts_len);
                     }
                     if (buf1) {
-                        deframe_data((felix_frame*)buf1,nframes,dch);
+                        deframe_data((frame14*)buf1,nframes,dch);
                         for (size_t i = 0; i < 2; i++) {
                             for (size_t j = 0; j < 128; j++) {
                                 memcpy(sample_ptr+((i+2)*128*ch_len)+j*ch_len,dch.channels[i][j].data(),ch_len);
@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
                     uvx_data duvx;
                     const size_t ch_len = nframes*sizeof(uint16_t);
                     if (buf0) {
-                        deframe_data((felix_frame*)buf0,nframes,duvx);
+                        deframe_data((frame14*)buf0,nframes,duvx);
                         for (size_t i = 0; i < 2; i++) {
                             for (size_t j = 0; j < 48; j++) {
                                 if (j < 40) {
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
                         
                     }
                     if (buf1) {
-                        deframe_data((felix_frame*)buf1,nframes,duvx);
+                        deframe_data((frame14*)buf1,nframes,duvx);
                         for (size_t i = 0; i < 2; i++) {
                             for (size_t j = 0; j < 128; j++) {
                                 if (j < 40) {

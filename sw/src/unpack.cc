@@ -2,20 +2,16 @@
 
 #include <cstdio>
 
-bool verify_frame(const felix_frame *frame) {
-    return true; //FIXME verify the crc20 maybe
-}
-
-void frame14(const uint32_t *packed, uint16_t *unpacked) {
+void unpack14(const uint32_t *packed, uint16_t *unpacked) {
     for (size_t i = 0; i < 128; i++) { // i == n'th U,V,X value
         const size_t low_bit = i*14;
         const size_t low_word = low_bit / 32;
         const size_t high_bit = (i+1)*14-1;
         const size_t high_word = high_bit / 32;
         //printf("word %li :: low %li (%li[%li]) high %li (%li[%li])\n",i,low_bit,low_word,low_bit%32,high_bit,high_word,high_bit%32);
-        if (low_word == high_word) {
+        if (low_word == high_word) { //all the bits are in the same word
             unpacked[i] = (packed[low_word] >> (low_bit%32)) & 0x3FFF;
-        } else {
+        } else { //some of the bits are in the next word
             size_t high_off = high_word*32-low_bit;
             //printf("pre_mask 0x%X post_mask 0x%X\n", (0x3FFF >> (14-high_off)), ((0x3FFF << high_off) & 0x3FFF) );
             unpacked[i] = (packed[low_word] >> (low_bit%32)) & (0x3FFF >> (14-high_off));
@@ -24,7 +20,27 @@ void frame14(const uint32_t *packed, uint16_t *unpacked) {
     }
 }
 
-void unpack_frame(const felix_frame *frame, felix_data *data) {
+void repack14(const uint16_t *unpacked, uint32_t *packed) {
+    //zero packed data first
+    for (size_t i = 0; i < 56; i++) packed[i] = 0;
+    for (size_t i = 0; i < 128; i++) { // i == n'th U,V,X value
+        const size_t low_bit = i*14;
+        const size_t low_word = low_bit / 32;
+        const size_t high_bit = (i+1)*14-1;
+        const size_t high_word = high_bit / 32;
+        //printf("word %li :: low %li (%li[%li]) high %li (%li[%li])\n",i,low_bit,low_word,low_bit%32,high_bit,high_word,high_bit%32);
+        if (low_word == high_word) { //all the bits are in the same word
+            packed[low_word] |= (unpacked[i] & 0x3FFF) << (low_bit%32);
+        } else { //some of the bits are in the next word
+            size_t high_off = high_word*32-low_bit;
+            //printf("pre_mask 0x%X post_mask 0x%X\n", (0x3FFF >> (14-high_off)), ((0x3FFF << high_off) & 0x3FFF) );
+            packed[low_word] |= (unpacked[i] & (0x3FFF >> (14-high_off))) << (low_bit%32);
+            packed[high_word] |= (unpacked[i] & ((0x3FFF << high_off) & 0x3FFF)) >> high_off;
+        }
+    }
+}
+
+void unpack_frame(const frame14 *frame, frame14_unpacked *data) {
     data->crate_num = frame->wib_pre[0] & 0xFF;
     data->frame_version = (frame->wib_pre[0] >> 8) & 0xF;
     data->wib_num = (frame->wib_pre[0] >> 12) & 0x7;
@@ -36,8 +52,8 @@ void unpack_frame(const felix_frame *frame, felix_data *data) {
     
     data->timestamp = (((uint64_t)frame->wib_pre[3])<<32) | ((uint64_t)frame->wib_pre[2]);
     
-    frame14(frame->femb_a_seg,(uint16_t*)&data->femb[0]);
-    frame14(frame->femb_b_seg,(uint16_t*)&data->femb[1]);
+    unpack14(frame->femb_a_seg,(uint16_t*)&data->femb[0]);
+    unpack14(frame->femb_b_seg,(uint16_t*)&data->femb[1]);
     
     data->crc20 = frame->wib_post[0] & 0xFFFFF;
     data->flex12 = (frame->wib_post[0] >> 20) & 0xFFF;
@@ -55,14 +71,14 @@ size_t x_to_ch[48] = {31, 48, 30, 49, 29, 50, 28, 51, 27, 52, 26, 53, 15, 32,
                       77, 98, 76, 99, 75, 100, 74, 101, 95, 112, 94, 113, 93, 
                       114, 92, 115, 91, 116, 90, 117};
 
-void deframe_data(const felix_frame *frame_buf, size_t nframes, channel_data &data) {
+void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data) {
     data.samples = nframes;
     for (size_t i = 0; i < 128; i++) {
         data.channels[0][i].resize(nframes);
         data.channels[1][i].resize(nframes);
     }
     data.timestamp.resize(nframes);
-    felix_data frame_data;
+    frame14_unpacked frame_data;
     for (size_t i = 0; i < nframes; i++) {
         unpack_frame(frame_buf+i,&frame_data);
         for (size_t j = 0; j < 48; j++) {
@@ -85,7 +101,7 @@ void deframe_data(const felix_frame *frame_buf, size_t nframes, channel_data &da
     data.wib_num = frame_data.wib_num;
 }
 
-void deframe_data(const felix_frame *frame_buf, size_t nframes, uvx_data &data) {
+void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data) {
     data.samples = nframes;
     for (size_t i = 0; i < 48; i++) {
         if (i < 40) {
@@ -98,7 +114,7 @@ void deframe_data(const felix_frame *frame_buf, size_t nframes, uvx_data &data) 
         data.x[1][i].resize(nframes);
     }
     data.timestamp.resize(nframes);
-    felix_data frame_data;
+    frame14_unpacked frame_data;
     for (size_t i = 0; i < nframes; i++) {
         unpack_frame(frame_buf+i,&frame_data);
         for (size_t j = 0; j < 48; j++) {
