@@ -75,14 +75,14 @@ bool FEMB::configure_coldata(bool cold, FrameType frame) {
 		res &= i2c_write_verify(i, 2, 0, 3, 0x3c);  // normal operation
 		res &= i2c_write_verify(i, 2, 0, 0x20, ACT_RESET_COLDADC); // ACT = COLDADC reset
 	}
-    if (!res) fprintf(stderr,"COLDATA configuration failed!\n");
+    if (!res) fprintf(stderr,"COLDATA configuration failed for FEMB:%i!\n",index);
     return res;
 }
 
 bool FEMB::configure_coldadc() {
     bool res = true;
     //See COLDADC datasheet
-    //FIXME do these options need to be configurable?S
+    //FIXME do these options need to be configurable?
     for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
         for (uint8_t j = 4; j <= 7; j++) { // For each COLADC attached to COLDATA
             res &= i2c_write_verify(i, j, 2, 0x01, 0x0c);  //start_data
@@ -103,7 +103,7 @@ bool FEMB::configure_coldadc() {
             res &= i2c_write_verify(i, j, 1, 0x89, 0x08);  //offset_binary_output_data_format
         }
     }
-    if (!res) fprintf(stderr,"COLADC configuration failed!\n");
+    if (!res) fprintf(stderr,"COLADC configuration failed for FEMB:%i!\n",index);
     return res;
 }
 
@@ -146,7 +146,7 @@ bool FEMB::configure_larasic(const larasic_conf &c) {
 		res &= i2c_write_verify(i, 2, 0, 0x20, ACT_PROGRAM_LARASIC); // ACT = Program LArASIC SPI
     }
     
-    if (!res) printf("Failed to store LArASIC configuration!\n");
+    if (!res) printf("Failed to store LArASIC configuration for FEMB:%i!\n",index);
     return res;
 }
 
@@ -155,7 +155,7 @@ bool FEMB::set_fast_act(uint8_t act_cmd) {
     for (uint8_t i = 0; i < 2; i++) {
     	res &= i2c_write_verify(i, 2, 0, 0x20, act_cmd);
 	}
-    if (!res) printf("Failed to set fast act!\n");
+    if (!res) printf("Failed to set fast act for FEMB:%i!\n",index);
 	return res;
 }
 
