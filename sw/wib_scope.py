@@ -327,7 +327,7 @@ class SignalView(QtWidgets.QWidget):
         self.resize(None)
         
 
-class EvDisp(QtWidgets.QMainWindow):
+class WIBScope(QtWidgets.QMainWindow):
     def __init__(self,wib_server='127.0.0.1',config='default.json',rows=1,cols=1,layout=None):
         super().__init__()
         plot_layout = layout
@@ -567,7 +567,6 @@ class EvDisp(QtWidgets.QMainWindow):
         rep = wib.Status()
         self.send_command(req,rep);
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Visually display data from a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
@@ -580,6 +579,6 @@ if __name__ == "__main__":
     
     qapp = QtWidgets.QApplication([])
     qapp.setApplicationName('WIB Scope (%s)'%args.wib_server)
-    app = EvDisp(**vars(args))
+    app = WIBScope(**vars(args))
     app.show()
     qapp.exec_()
