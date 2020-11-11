@@ -73,6 +73,12 @@ bool WIB::initialize() {
         fprintf(stderr,"failed to assign IP to eth0\n");
         success = false;
     }
+    string route_conf("route add default gw "+gateway_ip()+" eth0");
+    ret = system(route_conf.c_str());
+    if (WEXITSTATUS(ret) != 0) {
+        fprintf(stderr,"failed to assigne default route\n");
+        success = false;
+    }
     return success;
 }
 
@@ -98,6 +104,11 @@ bool WIB::start_frontend() {
 string WIB::crate_ip() {
     printf("FIXME: using default IP: 192.168.8.1/24\n");
     return "192.168.8.1/24"; //FIXME pull from firmware
+}
+
+string WIB::gateway_ip() {
+    printf("FIXME: using default IP: 192.168.8.254\n");
+    return "192.168.8.254"; //FIXME pull from somewhere
 }
 
 bool WIB::femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage) {

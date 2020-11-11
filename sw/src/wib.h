@@ -41,8 +41,10 @@ public:
     // Startup initialization
     bool initialize();
     
-    // Reads determins IP from backplane, else returns default 192.168.8.1
+    // Reads determines IP from backplane, else returns default 192.168.8.1
     std::string crate_ip();
+    // Reads determines IP for the default gateway, else returns default 192.168.8.254
+    std::string gateway_ip();
     
     // Sets the default voltage configurations for FEMB power controller
     bool femb_power_config();
