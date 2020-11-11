@@ -76,7 +76,7 @@ bool WIB::initialize() {
     string route_conf("route add default gw "+gateway_ip()+" eth0");
     ret = system(route_conf.c_str());
     if (WEXITSTATUS(ret) != 0) {
-        fprintf(stderr,"failed to assigne default route\n");
+        fprintf(stderr,"failed to assign default route\n");
         success = false;
     }
     return success;
