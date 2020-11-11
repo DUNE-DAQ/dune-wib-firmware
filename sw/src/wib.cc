@@ -205,7 +205,7 @@ bool WIB::femb_power_set(bool on) {
 bool WIB::femb_rx_mask(uint32_t value, uint32_t mask) {
     uint32_t prev = io_reg_read(&this->regs,0x08/4);
     value = (prev & (~mask)) | (value & mask);
-    io_reg_write(&this->regs,0x04/4,value);
+    io_reg_write(&this->regs,0x08/4,value);
     return true;
 }
 
