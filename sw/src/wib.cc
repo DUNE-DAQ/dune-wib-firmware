@@ -77,27 +77,19 @@ bool WIB::initialize() {
 }
 
 bool WIB::start_frontend() {
+    printf("Starting front end...\n");
     bool success = true;
-    success &= script("startup"); //Default initial setup and power on
-    printf("Resetting COLDATA\n");
+    printf("  Disabling front end power\n");
+    femb_power_set(false);
+    printf("  Configuring front end power\n");
+    femb_power_config();
+    success &= script("prestart");
+    printf("  Powering on FEMBs\n");
+    femb_power_set(true);
+    usleep(1000000);
+    printf("  Resetting COLDATA\n");
     FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
-    for (int i = 0; i < 4; i++) { // Configure COLDATA
-        printf("Program FEMB%i COLDATA\n",i);
-        femb[i]->configure_coldata(false,FRAME_14); // Sets ACT to ACT_RESET_COLDADC
-    }
-    printf("Resetting COLDACD\n");
-    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
-    for (int i = 0; i < 4; i++) { // Configure COLADCs
-        femb[i]->configure_coldadc();
-    }
-    printf("Resetting LArASIC\n");
-    larasic_conf c;
-    memset(&c,0,sizeof(larasic_conf));
-    for (int i = 0; i < 4; i++) { // Configure LArASIC regs
-        femb[i]->configure_larasic(c); // Sets ACT to ACT_PROGRAM_LARASIC
-    }
-    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
-    printf("Resetting FEMB receiver\n");
+    printf("  Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
     return success;
