@@ -1,3 +1,2 @@
 # Configures hardware necessary before the FEMB turns on
-run rx_timing_sel_sfp_si5344
 run si5344_config

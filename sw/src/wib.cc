@@ -79,17 +79,17 @@ bool WIB::initialize() {
 bool WIB::start_frontend() {
     printf("Starting front end...\n");
     bool success = true;
-    printf("  Disabling front end power\n");
+    printf("Disabling front end power\n");
     femb_power_set(false);
-    printf("  Configuring front end power\n");
+    printf("Configuring front end power\n");
     femb_power_config();
     success &= script("prestart");
-    printf("  Powering on FEMBs\n");
+    printf("Powering on FEMBs\n");
     femb_power_set(true);
     usleep(1000000);
-    printf("  Resetting COLDATA\n");
+    printf("Resetting COLDATA\n");
     FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
-    printf("  Resetting FEMB receiver\n");
+    printf("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
     return success;
@@ -335,8 +335,14 @@ bool WIB::script(string script, bool file) {
                 fin.open("/etc/wib/"+script);        
                 if (!fin.is_open()) {
                     return false;
+                } else {
+                    printf("Found /etc/wib/%s on WIB\n",script.c_str());
                 }
+            } else {
+                printf("Found scripts/%s on WIB\n",script.c_str());
             }
+        } else {
+            printf("Found full or relative path %s on WIB\n",script.c_str());
         }
         printf("Running script: %s\n",script.c_str());
         string str((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
