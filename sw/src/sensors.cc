@@ -13,16 +13,17 @@ double read_ltc2499_temp(i2c_t *i2c, uint8_t ch) {
     usleep(300000);
     uint32_t value;
     i2c_read(i2c,0x15,(uint8_t*)&value,4);
-    double volts = ((value>>6) & 0xFFFFFF)*1.25/pow(2,23);
+    double volts = ((value>>6) & 0x1FFFFFF)*1.25/pow(2,24);
     return volts > 1.25 ? volts-2*1.25 : volts;
 }
 
-uint8_t read_ad7414_temp(i2c_t *i2c, uint8_t slave) {
-    uint8_t read_cmd[1] = { 0x00 };
+uint16_t read_ad7414_temp(i2c_t *i2c, uint8_t slave) {
+    uint8_t read_cmd[2] = { 0x00, 0x00 };
     i2c_write(i2c,slave,read_cmd,2);
-    uint8_t val;
-    i2c_read(i2c,slave,&val,1);
-    return val;
+    uint8_t val[2] = {0xCA,0xFE};
+    int r = i2c_read(i2c,slave,val,2);
+    printf("ad7414 %i %X %X\n",r,val[0],val[1]);
+    return (val[0]<<2) | ((val[1]>>6)&0x3);
 }
 
 void enable_ltc2990(i2c_t *i2c, uint8_t slave) {

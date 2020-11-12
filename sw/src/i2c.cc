@@ -1,5 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cerrno>
 #include <unistd.h>
 #include <linux/i2c.h>
 extern "C" { //That's a bug!
@@ -48,7 +50,11 @@ int i2c_read(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len) {
         ioctl(i2c->fd, I2C_SLAVE, slave);
         i2c->slave = slave;
     }
-    return read(i2c->fd,buf,len) != len;
+    int res = read(i2c->fd,buf,len);
+    if (res == -1) {
+	fprintf(stderr,"i2c_read failed %s\n",std::strerror(errno));
+    }
+    return res;
 }
 
 int i2c_write(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len) {
@@ -56,7 +62,11 @@ int i2c_write(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len) {
         ioctl(i2c->fd, I2C_SLAVE, slave);
         i2c->slave = slave;
     }
-    return write(i2c->fd,buf,len) != len;
+    int res = write(i2c->fd,buf,len);
+    if (res == -1) {
+       fprintf(stderr,"i2c_write failed %s\n",std::strerror(errno));
+    }
+    return res;
 }
 
 int i2c_block_write(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t *buf, size_t len) {
