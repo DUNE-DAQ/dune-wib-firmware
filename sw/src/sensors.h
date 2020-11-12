@@ -5,7 +5,7 @@
 
 double read_ltc2499_temp(i2c_t *i2c, uint8_t ch);
 
-uint16_t read_ad7414_temp(i2c_t *i2c, uint8_t slave);
+double read_ad7414_temp(i2c_t *i2c, uint8_t slave);
 
 void enable_ltc2990(i2c_t *i2c, uint8_t slave);
 

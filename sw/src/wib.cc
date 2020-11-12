@@ -610,28 +610,28 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
    // 0x4C 0x4E  LTC2990
    
    enable_ltc2990(&this->selected_i2c,0x4E);
-   for (uint8_t i = 1; i < 5; i++) {
+   for (uint8_t i = 1; i <= 5; i++) {
        printf("LTC2990 0x4E ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i));
    }
-   printf("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,5)+2.5);
+   printf("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
    
    enable_ltc2990(&this->selected_i2c,0x4C);
-   for (uint8_t i = 1; i < 5; i++) {
+   for (uint8_t i = 1; i <= 5; i++) {
        printf("LTC2990 0x4C ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i));
    }
-   printf("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,5)+2.5);
+   printf("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
    
    enable_ltc2991(&this->selected_i2c,0x48);
-   for (uint8_t i = 1; i < 8; i++) {
+   for (uint8_t i = 1; i <= 8; i++) {
        printf("LTC2991 0x48 ch%i -> %0.2f V\n",i,0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i));
    }
-   printf("LTC2991 0x48 T -> %0.2f C\n",0.0625*read_ltc2991_value(&this->selected_i2c,0x48,8));
-   printf("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,9)+2.5);
+   printf("LTC2991 0x48 T -> %0.2f C\n",0.0625*read_ltc2991_value(&this->selected_i2c,0x48,9));
+   printf("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
    
    // 0x49 0x4D 0x4A supposedly are AD7414
-   printf("AD7414 0x49 temp %i\n", read_ad7414_temp(&this->selected_i2c,0x49));
-   printf("AD7414 0x4D temp %i\n", read_ad7414_temp(&this->selected_i2c,0x4D));
-   printf("AD7414 0x4A temp %i\n", read_ad7414_temp(&this->selected_i2c,0x4A));
+   printf("AD7414 0x49 temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x49));
+   printf("AD7414 0x4D temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4D));
+   printf("AD7414 0x4A temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4A));
    
    // 0x15 LTC2499
    printf("Reading temperature sensors\n");
