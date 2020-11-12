@@ -35,8 +35,8 @@ int i2c_reg_read(i2c_t *i2c, uint8_t slave, uint8_t reg) {
         i2c->slave = slave;
     }
     int res = i2c_smbus_read_byte_data(i2c->fd,reg);
-    if (res == -1) {
-        fprintf(stderr,"i2c_reg_read failed %s\n",std::strerror(errno));
+    if (res < 0) {
+        fprintf(stderr,"i2c_reg_read failed %s\n",std::strerror(res));
     }
     return res;
 }
@@ -47,8 +47,8 @@ int i2c_reg_write(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t data) {
         i2c->slave = slave;
     }
     int res = i2c_smbus_write_byte_data(i2c->fd, reg, data);
-    if (res == -1) {
-        fprintf(stderr,"i2c_reg_write failed %s\n",std::strerror(errno));
+    if (res < 0) {
+        fprintf(stderr,"i2c_reg_write failed %s\n",std::strerror(res));
     }
     return res;
 }
@@ -83,8 +83,8 @@ int i2c_block_write(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t *buf, size_t
         i2c->slave = slave;
     }
     int res = i2c_smbus_write_i2c_block_data(i2c->fd, reg, len, buf);
-    if (res == -1) {
-       fprintf(stderr,"i2c_write failed %s\n",std::strerror(errno));
+    if (res < 0) {
+       fprintf(stderr,"i2c_write failed %s\n",std::strerror(res));
     }
     return res;
 }
@@ -95,8 +95,8 @@ int i2c_block_read(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t *buf, size_t 
         i2c->slave = slave;
     }
     int res = i2c_smbus_read_i2c_block_data(i2c->fd, reg, len, buf);
-    if (res == -1) {
-       fprintf(stderr,"i2c_block_read failed %s\n",std::strerror(errno));
+    if (res < 0) {
+       fprintf(stderr,"i2c_block_read failed %s\n",std::strerror(res));
     }
     return res;
 }
