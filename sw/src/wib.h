@@ -102,8 +102,11 @@ protected:
     // I2C interface to the selectable I2C bus (see i2c_select)
     i2c_t selected_i2c;
     
-    // I2C interface to the I2C bus with FEMB power control
-    i2c_t power_i2c;
+    // I2C interface to the I2C bus with FEMB power enable
+    i2c_t femb_en_i2c;
+    
+    // I2C interface to the I2C bus with FEMB power monitor
+    i2c_t femb_pwr_i2c;
     
     // AXI interface to firmware control and status registers 
     io_reg_t regs;

@@ -26,7 +26,8 @@ using namespace std;
 WIB::WIB() {
     io_reg_init(&this->regs,CTRL_REGS,0x10000/4);
     i2c_init(&this->selected_i2c,(char*)"/dev/i2c-0");
-    i2c_init(&this->power_i2c,(char*)"/dev/i2c-2");
+    i2c_init(&this->femb_pwr_i2c,(char*)"/dev/i2c-1");
+    i2c_init(&this->femb_en_i2c,(char*)"/dev/i2c-2");
     #ifdef SIMULATION
     this->daq_spy_fd = -1;
     this->daq_spy[0] = new char[DAQ_SPY_SIZE];
@@ -185,30 +186,30 @@ bool WIB::femb_power_config() {
 bool WIB::femb_power_set(bool on) {
     if (on) {
         // configure all pins as outputs
-        i2c_reg_write(&this->power_i2c, 0x22, 0xC, 0);
-        i2c_reg_write(&this->power_i2c, 0x22, 0xD, 0);
-        i2c_reg_write(&this->power_i2c, 0x22, 0xE, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0xD, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0xE, 0);
         // set all ones on all outputs
-        i2c_reg_write(&this->power_i2c, 0x22, 0x4, 0xFF);
-        i2c_reg_write(&this->power_i2c, 0x22, 0x5, 0xFF);
-        i2c_reg_write(&this->power_i2c, 0x22, 0x6, 0xFF);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, 0xFF);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, 0xFF);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x6, 0xFF);
         // configure all pins as outputs
-        i2c_reg_write(&this->power_i2c, 0x23, 0xC, 0);
-        i2c_reg_write(&this->power_i2c, 0x23, 0xD, 0);
-        i2c_reg_write(&this->power_i2c, 0x23, 0xE, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
         // set all ones on all outputs
-        i2c_reg_write(&this->power_i2c, 0x23, 0x4, 0xFF);
-        i2c_reg_write(&this->power_i2c, 0x23, 0x5, 0xFF);
-        i2c_reg_write(&this->power_i2c, 0x23, 0x6, 0xFF);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x4, 0xFF);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x5, 0xFF);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x6, 0xFF);
     } else {
         // set all zeros on all outputs
-        i2c_reg_write(&this->power_i2c, 0x22, 0x4, 0);
-        i2c_reg_write(&this->power_i2c, 0x22, 0x5, 0);
-        i2c_reg_write(&this->power_i2c, 0x22, 0x6, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x6, 0);
         // set all zeros on all outputs
-        i2c_reg_write(&this->power_i2c, 0x23, 0x4, 0);
-        i2c_reg_write(&this->power_i2c, 0x23, 0x5, 0);
-        i2c_reg_write(&this->power_i2c, 0x23, 0x6, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x4, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x5, 0);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x6, 0);
     }
     return true;
 }
@@ -266,7 +267,7 @@ bool WIB::script_cmd(string line) {
             if (bus == "sel") {  // i2c sel chip addr data [...]
                 i2c_bus = &this->selected_i2c;
             } else if (bus == "pwr") { // i2c pwr chip addr data [...]
-                i2c_bus = &this->power_i2c;
+                i2c_bus = &this->femb_en_i2c;
             } else {
                 fprintf(stderr,"Invalid i2c bus selection: %s\n", tokens[1].c_str());
                 return false;
@@ -600,45 +601,84 @@ bool WIB::set_pulser(bool on) {
 
 bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
    
-   printf("Activating I2C_SENSOR bus\n");
-   i2c_select(I2C_SENSOR);
+    printf("Activating I2C_SENSOR bus\n");
+    i2c_select(I2C_SENSOR);
+
+    printf("Enabling voltage sensors\n");
+    uint8_t buf[1] = {0x7};
+    i2c_write(&this->selected_i2c,0x70,buf,1); // enable i2c repeater
     
-   printf("Enabling voltage sensors\n");
-   uint8_t buf[1] = {0x7};
-   i2c_write(&this->selected_i2c,0x70,buf,1); //
-   // 0x48 LTC2991
-   // 0x4C 0x4E  LTC2990
-   
-   enable_ltc2990(&this->selected_i2c,0x4E);
-   for (uint8_t i = 1; i <= 4; i++) {
-       printf("LTC2990 0x4E ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i));
-   }
-   printf("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
-   
-   enable_ltc2990(&this->selected_i2c,0x4C);
-   for (uint8_t i = 1; i <= 4; i++) {
-       printf("LTC2990 0x4C ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i));
-   }
-   printf("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
-   
-   enable_ltc2991(&this->selected_i2c,0x48);
-   for (uint8_t i = 1; i <= 8; i++) {
-       printf("LTC2991 0x48 ch%i -> %0.2f V\n",i,0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i));
-   }
-   printf("LTC2991 0x48 T -> %0.2f C\n",0.0625*read_ltc2991_value(&this->selected_i2c,0x48,9));
-   printf("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
-   
-   // 0x49 0x4D 0x4A supposedly are AD7414
-   printf("AD7414 0x49 temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x49));
-   printf("AD7414 0x4D temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4D));
-   printf("AD7414 0x4A temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4A));
-   
-   // 0x15 LTC2499
-   printf("Reading temperature sensors\n");
-   for (uint8_t i = 0; i < 7; i++) {
-       printf("LTC2499 ch%i -> %0.14f\n",i,read_ltc2499_temp(&this->selected_i2c,i));
-   }
-   
-   return true;
+    // 5V (before)
+    // 5V
+    // VCCPSPLL_Z_1P2V
+    // PS_DDR4_VTT
+    enable_ltc2990(&this->selected_i2c,0x4E);
+    for (uint8_t i = 1; i <= 4; i++) {
+        printf("LTC2990 0x4E ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i));
+    }
+    printf("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
+
+    // 1.2 V (before)
+    // 1.2 V
+    // 3.3 V (before)
+    // 3.3 V
+    enable_ltc2990(&this->selected_i2c,0x4C);
+    for (uint8_t i = 1; i <= 4; i++) {
+        printf("LTC2990 0x4C ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i));
+    }
+    printf("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
+
+    // In pairs (before,after)
+    // 0.85 V
+    // 0.9 V
+    // 2.5 V
+    // 1.8 V
+    enable_ltc2991(&this->selected_i2c,0x48);
+    for (uint8_t i = 1; i <= 8; i++) {
+        printf("LTC2991 0x48 ch%i -> %0.2f V\n",i,0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i));
+    }
+    printf("LTC2991 0x48 T -> %0.2f C\n",0.0625*read_ltc2991_value(&this->selected_i2c,0x48,9));
+    printf("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
+
+    // 0x49 0x4D 0x4A are AD7414 temperature sensors
+    printf("AD7414 0x49 temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x49));
+    printf("AD7414 0x4D temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4D));
+    printf("AD7414 0x4A temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4A));
+
+    // 0x15 LTC2499 temperature sensor inputs from LTM4644 for FEMB 0 - 3 and WIB 1 - 3
+    for (uint8_t i = 0; i < 7; i++) {
+        printf("LTC2499 ch%i -> %0.14f\n",i,read_ltc2499_temp(&this->selected_i2c,i));
+    }
+
+    // FIXME 0x46 an INA226 for DDR current
+    
+    //FEMB power monitoring
+    uint8_t femb_dc2dc_current_addr[4] = {0x48,0x49,0x4a,0x4b};  //DC2DC 0-3 in pairs for FEMBs 0-3
+    uint8_t femb_ldo_current_addr[2] = {0x4c,0x4d}; //LDO femb 0-3 in pairs for LDO 0-1
+    uint8_t femb_bias_current_addr[1] = {0x4e}; //BIAS femb 0-3 in pairs 
+
+    for (uint8_t i = 0; ; i++) {
+        uint8_t addr;
+        if (i < 4) {
+            printf("Reading FEMB%i DC2DC current sensor\n",i);
+            addr = femb_dc2dc_current_addr[i];
+        } else if (i < 6) {
+            printf("Reading FEMB LDO %i current\n",i-4);
+            addr = femb_ldo_current_addr[i-4];
+        } else if (i < 7) {
+            printf("Reading FEMB bias current\n");
+            addr = femb_bias_current_addr[i-6];
+        } else {
+            break;
+        }
+        enable_ltc2991(&this->femb_pwr_i2c,addr);
+        for (uint8_t i = 1; i <= 8; i++) {
+            printf("LTC2991 0x%X ch%i -> %0.2f V\n",addr,i,0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,i));
+        }
+        printf("LTC2991 0x%X T -> %0.2f C\n",addr,0.0625*read_ltc2991_value(&this->femb_pwr_i2c,addr,9));
+        printf("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,10)+2.5);
+    }
+
+    return true;
 }
 
