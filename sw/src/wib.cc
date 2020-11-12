@@ -384,20 +384,29 @@ bool WIB::read_daq_spy(void *buf0, void *buf1) {
     if (buf1) mask |= (1 << 1);
     prev &= (~(mask << 6));
     uint32_t next = prev | (mask << 6);
+    printf("Starting acquisition...\n");
     io_reg_write(&this->regs,0x04/4,next);
     io_reg_write(&this->regs,0x04/4,prev);
     bool success = false;
-    for (size_t i = 0; i < 10; i++) { // try for 10 ms (should take max 4)
+    int ms;
+    for (ms = 0; ms < 100; ms++) { // try for 100 ms (should take max 4)
         usleep(1000);
         if ((io_reg_read(&this->regs,0x80/4) & mask) == mask) {
             success = true;
             break;
         }
     }
+    if (!success) {
+        fprintf(stderr,"Timed out waiting for buffers to fill\n");
+    } else {
+        printf("Acquisition took %i ms\n",ms);
+    }
+    printf("Copying spydaq buffers\n");
     if (buf0) memcpy(buf0,this->daq_spy[0],DAQ_SPY_SIZE);
     if (buf1) memcpy(buf1,this->daq_spy[1],DAQ_SPY_SIZE);
     #ifdef SIMULATION
     //generate more "random" data for simulation
+    printf("Generating random sin/cos data for next acquisiton\n");
     fake_data((frame14*)this->daq_spy[0],DAQ_SPY_SIZE/sizeof(frame14));
     fake_data((frame14*)this->daq_spy[1],DAQ_SPY_SIZE/sizeof(frame14));
     #endif
