@@ -610,13 +610,13 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
    // 0x4C 0x4E  LTC2990
    
    enable_ltc2990(&this->selected_i2c,0x4E);
-   for (uint8_t i = 1; i <= 5; i++) {
+   for (uint8_t i = 1; i <= 4; i++) {
        printf("LTC2990 0x4E ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i));
    }
    printf("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
    
    enable_ltc2990(&this->selected_i2c,0x4C);
-   for (uint8_t i = 1; i <= 5; i++) {
+   for (uint8_t i = 1; i <= 4; i++) {
        printf("LTC2990 0x4C ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i));
    }
    printf("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
