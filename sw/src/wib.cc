@@ -373,7 +373,7 @@ bool WIB::script(string script, bool file) {
 
 void WIB::i2c_select(uint8_t device) {
     uint32_t next = io_reg_read(&this->regs,0x04/4);
-    next = (next & 0xFFFFFFF0) | (device | 0xF);
+    next = (next & 0xFFFFFFF0) | (device & 0xF);
     io_reg_write(&this->regs,0x04/4,next);
 }
 
