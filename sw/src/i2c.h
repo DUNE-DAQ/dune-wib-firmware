@@ -16,6 +16,8 @@ int i2c_read(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len);
 
 int i2c_write(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len);
 
+int i2c_readwrite(i2c_t *i2c, uint8_t slave, uint8_t *rbuf, size_t rlen, uint8_t *wbuf, size_t wlen);
+
 int i2c_reg_read(i2c_t *i2c, uint8_t slave, uint8_t reg);
 
 int i2c_reg_write(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t data);

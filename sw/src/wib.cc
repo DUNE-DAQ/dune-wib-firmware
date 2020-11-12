@@ -637,7 +637,6 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     for (uint8_t i = 1; i <= 8; i++) {
         printf("LTC2991 0x48 ch%i -> %0.2f V\n",i,0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i));
     }
-    printf("LTC2991 0x48 T -> %0.2f C\n",0.0625*read_ltc2991_value(&this->selected_i2c,0x48,9));
     printf("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
 
     // 0x49 0x4D 0x4A are AD7414 temperature sensors
@@ -646,8 +645,10 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     printf("AD7414 0x4A temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4A));
 
     // 0x15 LTC2499 temperature sensor inputs from LTM4644 for FEMB 0 - 3 and WIB 1 - 3
+    start_ltc2499_temp(&this->selected_i2c,0);
     for (uint8_t i = 0; i < 7; i++) {
-        printf("LTC2499 ch%i -> %0.14f\n",i,read_ltc2499_temp(&this->selected_i2c,i));
+        usleep(175000);
+        printf("LTC2499 ch%i -> %0.14f\n",i,read_ltc2499_temp(&this->selected_i2c,(i+1)%7));
     }
 
     // FIXME 0x46 an INA226 for DDR current
@@ -675,7 +676,6 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
         for (uint8_t i = 1; i <= 8; i++) {
             printf("LTC2991 0x%X ch%i -> %0.2f V\n",addr,i,0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,i));
         }
-        printf("LTC2991 0x%X T -> %0.2f C\n",addr,0.0625*read_ltc2991_value(&this->femb_pwr_i2c,addr,9));
         printf("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,10)+2.5);
     }
 

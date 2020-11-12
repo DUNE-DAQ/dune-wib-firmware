@@ -3,6 +3,7 @@
 
 #include "i2c.h"
 
+void start_ltc2499_temp(i2c_t *i2c, uint8_t ch);
 double read_ltc2499_temp(i2c_t *i2c, uint8_t ch);
 
 double read_ad7414_temp(i2c_t *i2c, uint8_t slave);
