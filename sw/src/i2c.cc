@@ -54,11 +54,10 @@ int i2c_reg_write(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t data) {
 }
 
 int i2c_read(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len) {
-    if (slave != i2c->slave) {
-        ioctl(i2c->fd, I2C_SLAVE, slave);
-        i2c->slave = slave;
-    }
-    int res = read(i2c->fd,buf,len);
+    i2c->slave = -1; //not sure what happens to the ioctl I2C_SLAVE here
+    i2c_msg message = { slave, I2C_M_RD, (uint16_t)len, buf };
+    i2c_rdwr_ioctl_data ioctl_data = { &message, 1 };
+    int res = ioctl(i2c->fd, I2C_RDWR, &ioctl_data);
     if (res == -1) {
         fprintf(stderr,"i2c_read failed %s\n",std::strerror(errno));
     }
@@ -66,11 +65,10 @@ int i2c_read(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len) {
 }
 
 int i2c_write(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len) {
-    if (slave != i2c->slave) {
-        ioctl(i2c->fd, I2C_SLAVE, slave);
-        i2c->slave = slave;
-    }
-    int res = write(i2c->fd,buf,len);
+    i2c->slave = -1; //not sure what happens to the ioctl I2C_SLAVE here
+    i2c_msg message = { slave, 0, (uint16_t)len, buf };
+    i2c_rdwr_ioctl_data ioctl_data = { &message, 1 };
+    int res = ioctl(i2c->fd, I2C_RDWR, &ioctl_data);
     if (res == -1) {
        fprintf(stderr,"i2c_write failed %s\n",std::strerror(errno));
     }
