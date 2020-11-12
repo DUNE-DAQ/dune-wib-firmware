@@ -201,11 +201,11 @@ bool WIB::femb_power_set(bool on) {
         i2c_reg_write(&this->power_i2c, 0x23, 0x5, 0xFF);
         i2c_reg_write(&this->power_i2c, 0x23, 0x6, 0xFF);
     } else {
-        // set all ones on all outputs
+        // set all zeros on all outputs
         i2c_reg_write(&this->power_i2c, 0x22, 0x4, 0);
         i2c_reg_write(&this->power_i2c, 0x22, 0x5, 0);
         i2c_reg_write(&this->power_i2c, 0x22, 0x6, 0);
-        // set all ones on all outputs
+        // set all zeros on all outputs
         i2c_reg_write(&this->power_i2c, 0x23, 0x4, 0);
         i2c_reg_write(&this->power_i2c, 0x23, 0x5, 0);
         i2c_reg_write(&this->power_i2c, 0x23, 0x6, 0);
