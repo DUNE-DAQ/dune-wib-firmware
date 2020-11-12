@@ -13,9 +13,9 @@ void start_ltc2499_temp(i2c_t *i2c, uint8_t ch) {
 }
 
 double read_ltc2499_temp(i2c_t *i2c, uint8_t next_ch) {
-    uint32_t value;
     uint8_t cmd[2] = { (uint8_t)(0xB0 | ((next_ch%2)<<3) | (next_ch/2)), 0x80};
-    i2c_readwrite(i2c,0x15,(uint8_t*)&value,4,cmd,2);
+    uint32_t value; // corresponds to a previously initiated conversion (start_ltc2499_temp)
+    i2c_writeread(i2c,0x15,cmd,2,(uint8_t*)&value,4);
     double volts = ((value>>6) & 0x1FFFFFF)*1.25/pow(2,24);
     return volts > 1.25 ? volts-2*1.25 : volts;
 }

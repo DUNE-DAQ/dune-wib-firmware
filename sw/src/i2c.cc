@@ -67,6 +67,20 @@ int i2c_readwrite(i2c_t *i2c, uint8_t slave, uint8_t *rbuf, size_t rlen, uint8_t
     return res;
 }
 
+int i2c_writeread(i2c_t *i2c, uint8_t slave, uint8_t *wbuf, size_t wlen, uint8_t *rbuf, size_t rlen) {
+    i2c->slave = -1; //not sure what happens to the ioctl I2C_SLAVE here
+    i2c_msg msg[2] = {
+                       { slave, 0, (uint16_t)wlen, wbuf },
+                       { slave, I2C_M_RD, (uint16_t)rlen, rbuf }
+                     };
+    i2c_rdwr_ioctl_data ioctl_data = { msg, 2 };
+    int res = ioctl(i2c->fd, I2C_RDWR, &ioctl_data);
+    if (res == -1) {
+        fprintf(stderr,"i2c_writeread failed %s\n",std::strerror(errno));
+    }
+    return res;
+}
+
 int i2c_read(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len) {
     i2c->slave = -1; //not sure what happens to the ioctl I2C_SLAVE here
     i2c_msg message = { slave, I2C_M_RD, (uint16_t)len, buf };
