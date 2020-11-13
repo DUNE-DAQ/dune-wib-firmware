@@ -145,6 +145,15 @@ int i2c_write(i2c_t *i2c, uint8_t slave, uint8_t *buf, size_t len) {
     return 0;
 }
 
+int i2c_readwrite(i2c_t *i2c, uint8_t slave, uint8_t *rbuf, size_t rlen, uint8_t *buf, size_t len) {
+    return 0;
+}
+
+int i2c_writeread(i2c_t *i2c, uint8_t slave, uint8_t *wbuf, size_t wlen, uint8_t *buf, size_t len) {
+    return 0;
+}
+
+
 int i2c_reg_read(i2c_t *i2c, uint8_t slave, uint8_t reg) {
     return 0;
 }
@@ -156,6 +165,11 @@ int i2c_reg_write(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t data) {
 int i2c_block_write(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t *buf, size_t len) {
     return 0;
 }
+
+int i2c_block_read(i2c_t *i2c, uint8_t slave, uint8_t reg, uint8_t *buf, size_t len) {
+    return 0;
+}
+
 
 #endif
 

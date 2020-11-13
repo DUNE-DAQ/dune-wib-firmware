@@ -613,8 +613,11 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     // VCCPSPLL_Z_1P2V
     // PS_DDR4_VTT
     enable_ltc2990(&this->selected_i2c,0x4E);
+    sensors.clear_ltc2990_4e_voltages();
     for (uint8_t i = 1; i <= 4; i++) {
-        printf("LTC2990 0x4E ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i));
+        double v = 0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i);
+        printf("LTC2990 0x4E ch%i -> %0.2f V\n",i,v);
+        sensors.add_ltc2990_4e_voltages(v);
     }
     printf("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
 
@@ -623,8 +626,11 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     // 3.3 V (before)
     // 3.3 V
     enable_ltc2990(&this->selected_i2c,0x4C);
+    sensors.clear_ltc2990_4c_voltages();
     for (uint8_t i = 1; i <= 4; i++) {
-        printf("LTC2990 0x4C ch%i -> %0.2f V\n",i,0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i));
+        double v = 0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i);
+        printf("LTC2990 0x4C ch%i -> %0.2f V\n",i,v);
+        sensors.add_ltc2990_4c_voltages(v);
     }
     printf("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
 
@@ -634,30 +640,52 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     // 2.5 V
     // 1.8 V
     enable_ltc2991(&this->selected_i2c,0x48);
+    sensors.clear_ltc2991_48_voltages();
     for (uint8_t i = 1; i <= 8; i++) {
-        printf("LTC2991 0x48 ch%i -> %0.2f V\n",i,0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i));
+        double v = 0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i);
+        printf("LTC2991 0x48 ch%i -> %0.2f V\n",i,v);
+        sensors.add_ltc2991_48_voltages(v);
     }
     printf("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
 
     // 0x49 0x4D 0x4A are AD7414 temperature sensors
-    printf("AD7414 0x49 temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x49));
-    printf("AD7414 0x4D temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4D));
-    printf("AD7414 0x4A temp %0.1f\n", read_ad7414_temp(&this->selected_i2c,0x4A));
+    double t;
+    t = read_ad7414_temp(&this->selected_i2c,0x49);
+    printf("AD7414 0x49 temp %0.1f\n", t);
+    sensors.set_ad7414_49_temp(t);
+    t = read_ad7414_temp(&this->selected_i2c,0x4D);
+    printf("AD7414 0x4D temp %0.1f\n", t);
+    sensors.set_ad7414_4d_temp(t);
+    t = read_ad7414_temp(&this->selected_i2c,0x4A);
+    printf("AD7414 0x4A temp %0.1f\n", t);
+    sensors.set_ad7414_4a_temp(t);
 
     // 0x15 LTC2499 temperature sensor inputs from LTM4644 for FEMB 0 - 3 and WIB 1 - 3
     start_ltc2499_temp(&this->selected_i2c,0);
+    sensors.clear_ltc2499_15_temps();
     for (uint8_t i = 0; i < 7; i++) {
         usleep(175000);
-        printf("LTC2499 ch%i -> %0.14f\n",i,read_ltc2499_temp(&this->selected_i2c,(i+1)%7));
+        t = read_ltc2499_temp(&this->selected_i2c,(i+1)%7);
+        printf("LTC2499 ch%i -> %0.14f\n",i,t);
+        sensors.add_ltc2499_15_temps(t);
     }
 
     // FIXME 0x46 an INA226 for DDR current
     
     //FEMB power monitoring
+    
     uint8_t femb_dc2dc_current_addr[4] = {0x48,0x49,0x4a,0x4b};  //DC2DC 0-3 in pairs for FEMBs 0-3
     uint8_t femb_ldo_current_addr[2] = {0x4c,0x4d}; //LDO femb 0-3 in pairs for LDO 0-1
     uint8_t femb_bias_current_addr[1] = {0x4e}; //BIAS femb 0-3 in pairs 
-
+    
+    sensors.clear_femb0_dc2dc_ltc2991_voltages();
+    sensors.clear_femb1_dc2dc_ltc2991_voltages();
+    sensors.clear_femb2_dc2dc_ltc2991_voltages();
+    sensors.clear_femb3_dc2dc_ltc2991_voltages();
+    sensors.clear_femb_ldo_a0_ltc2991_voltages();
+    sensors.clear_femb_ldo_a0_ltc2991_voltages();
+    sensors.clear_femb_bias_ltc2991_voltages();
+    
     for (uint8_t i = 0; ; i++) {
         uint8_t addr;
         if (i < 4) {
@@ -674,7 +702,17 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
         }
         enable_ltc2991(&this->femb_pwr_i2c,addr);
         for (uint8_t i = 1; i <= 8; i++) {
-            printf("LTC2991 0x%X ch%i -> %0.2f V\n",addr,i,0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,i));
+            double v = 0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,i);
+            printf("LTC2991 0x%X ch%i -> %0.2f V\n",addr,i,v);
+            switch (i) {
+                case 0: sensors.add_femb0_dc2dc_ltc2991_voltages(v); break;
+                case 1: sensors.add_femb1_dc2dc_ltc2991_voltages(v); break;
+                case 2: sensors.add_femb2_dc2dc_ltc2991_voltages(v); break;
+                case 3: sensors.add_femb3_dc2dc_ltc2991_voltages(v); break;
+                case 4: sensors.add_femb_ldo_a0_ltc2991_voltages(v); break;
+                case 5: sensors.add_femb_ldo_a0_ltc2991_voltages(v); break;
+                case 6: sensors.add_femb_bias_ltc2991_voltages(v); break;
+            }   
         }
         printf("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,10)+2.5);
     }
