@@ -701,16 +701,16 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
             break;
         }
         enable_ltc2991(&this->femb_pwr_i2c,addr);
-        for (uint8_t i = 1; i <= 8; i++) {
-            double v = 0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,i);
-            printf("LTC2991 0x%X ch%i -> %0.2f V\n",addr,i,v);
+        for (uint8_t j = 1; j <= 8; j++) {
+            double v = 0.00030518*read_ltc2991_value(&this->femb_pwr_i2c,addr,j);
+            printf("LTC2991 0x%X ch%i -> %0.2f V\n",addr,j,v);
             switch (i) {
                 case 0: sensors.add_femb0_dc2dc_ltc2991_voltages(v); break;
                 case 1: sensors.add_femb1_dc2dc_ltc2991_voltages(v); break;
                 case 2: sensors.add_femb2_dc2dc_ltc2991_voltages(v); break;
                 case 3: sensors.add_femb3_dc2dc_ltc2991_voltages(v); break;
                 case 4: sensors.add_femb_ldo_a0_ltc2991_voltages(v); break;
-                case 5: sensors.add_femb_ldo_a0_ltc2991_voltages(v); break;
+                case 5: sensors.add_femb_ldo_a1_ltc2991_voltages(v); break;
                 case 6: sensors.add_femb_bias_ltc2991_voltages(v); break;
             }   
         }

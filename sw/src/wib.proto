@@ -194,25 +194,25 @@ message GetSensors {
         // 0x15 LTC2499 temperature sensor inputs from LTM4644 for FEMB 0 - 3 and WIB 1 - 3
         repeated double ltc2499_15_temps = 7;
         
-        //DC2DC 0-3 in pairs for FEMB 0
+        //DC2DC (4.22V,3.0V,2.5V,1.5V) in (before,after) 0.1ohm pairs for FEMB 0
         repeated double femb0_dc2dc_ltc2991_voltages = 8;
         
-        //DC2DC 0-3 in pairs for FEMB 1
+        //DC2DC (4.22V,3.0V,2.5V,1.5V) in (before,after) 0.1ohm pairs for FEMB 1
         repeated double femb1_dc2dc_ltc2991_voltages = 9;
         
-        //DC2DC 0-3 in pairs for FEMB 2
+        //DC2DC (4.22V,3.0V,2.5V,1.5V) in (before,after) 0.1ohm pairs for FEMB 2
         repeated double femb2_dc2dc_ltc2991_voltages = 10;
         
-        //DC2DC 0-3 in pairs for FEMB 3
+        //DC2DC (4.22V,3.0V,2.5V,1.5V) in (before,after) 0.1ohm pairs for FEMB 3
         repeated double femb3_dc2dc_ltc2991_voltages = 11;
         
-        //LDO femb 0-3 in pairs for LDO A0
+        //LDO 2.5V femb 0-3 in (before after) 0.1ohm pairs for LDO A1
         repeated double femb_ldo_a0_ltc2991_voltages = 12;
         
-        //LDO femb 0-3 in pairs for LDO A1
+        //LDO 2.5V femb 0-3 in (before after) 0.1ohm pairs for LDO A1
         repeated double femb_ldo_a1_ltc2991_voltages = 13;
         
-        //BIAS femb 0-3 in pairs 
+        //BIAS 5V femb 0-3 in (before after) 0.1ohm pairs 
         repeated double femb_bias_ltc2991_voltages = 14;
     }
 }
