@@ -91,11 +91,6 @@ bool WIB::start_frontend() {
     printf("Configuring front end power\n");
     femb_power_config();
     success &= script("prestart");
-    printf("Powering on FEMBs\n");
-    femb_power_set(true);
-    usleep(1000000);
-    printf("Resetting COLDATA\n");
-    FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
     printf("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
@@ -183,24 +178,24 @@ bool WIB::femb_power_config() {
     return true;
 }
 
-bool WIB::femb_power_set(bool on) {
+bool WIB::femb_power_set(bool on, bool coldadc) {
     if (on) {
         // configure all pins as outputs
         i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
         i2c_reg_write(&this->femb_en_i2c, 0x22, 0xD, 0);
         i2c_reg_write(&this->femb_en_i2c, 0x22, 0xE, 0);
         // set all ones on all outputs
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, 0xFF);
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, 0xFF);
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x6, 0xFF);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, coldadc ? 0xFF : 0x6B);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, coldadc ? 0xFF : 0x6B);
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x6, coldadc ? 0xFF : 0x6B);
         // configure all pins as outputs
         i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
         i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
         i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
         // set all ones on all outputs
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x4, 0xFF);
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x5, 0xFF);
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x6, 0xFF);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x4, coldadc ? 0xFF : 0x6B);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x5, coldadc ? 0xFF : 0x6B);
+        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x6, coldadc ? 0xFF : 0x6B);
     } else {
         // set all zeros on all outputs
         i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, 0);
@@ -480,7 +475,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
 
     if (!frontend_initialized) {
         if (!start_frontend()) {
-            fprintf(stderr,"Failed to power on front end electronics\n");
+            fprintf(stderr,"Failed to start frontend electronics\n");
             return false;
         }
         frontend_initialized = true;
@@ -491,10 +486,13 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         return false;
     }
     
-    printf("Reconfiguring WIB\n");
-
-    bool coldata_res = true;
+    printf("Reconfiguring WIB\n"); 
+    
+    femb_power_set(true,false); // COLDATA on, COLDADC off
+    usleep(1000000);
+    printf("Resetting COLDATA\n");
     FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
+    bool coldata_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDATA
         if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),FRAME_14); // Sets ACT to ACT_RESET_COLDADC
     }
@@ -504,8 +502,10 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         printf("COLDATA configuration failed!\n");
     }
     
-    bool coldadc_res = true;
+    femb_power_set(true,true); // COLDATA on, COLDADC on
+    usleep(1000000);
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+    bool coldadc_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
          if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc();
     }

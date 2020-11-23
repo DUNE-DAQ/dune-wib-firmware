@@ -90,7 +90,7 @@ public:
     void i2c_write(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
     uint8_t i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page,  uint8_t reg_addr);
     // Perform a Write and a Read, returning read == data
-    bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
+    bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries = 30);
 
 protected:
 

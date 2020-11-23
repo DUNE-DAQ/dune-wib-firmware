@@ -215,13 +215,14 @@ uint8_t FEMB::i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uin
     return (ctrl >> COLD_I2C_DATA) & 0xFF;
 }
 
-bool FEMB::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data) {
-    i2c_write(bus_idx,chip_addr,reg_page,reg_addr,data);
-    uint8_t read = i2c_read(bus_idx,chip_addr,reg_page,reg_addr);
-    if (read != data) {
-        fprintf(stderr,"i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X :: 0x%X != 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
-        return false;
+bool FEMB::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries) {
+    uint8_t read;
+    for (size_t i = 0; i <= retries; i++) {
+        i2c_write(bus_idx,chip_addr,reg_page,reg_addr,data);
+        read = i2c_read(bus_idx,chip_addr,reg_page,reg_addr);
+        if (read == data) return true;
     }
-    return true;
+    fprintf(stderr,"i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X :: 0x%X != 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
+    return false;
 }
 
