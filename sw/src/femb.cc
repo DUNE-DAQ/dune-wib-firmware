@@ -28,14 +28,14 @@ bool FEMB::configure_coldata(bool cold, FrameType frame) {
     for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
         if (cold) {
 		    res &= i2c_write_verify(i, 2, 5, 0x40, 0x3);    //CONFIG_PLL_ICP
-		    res &= i2c_write_verify(i, 2, 5, 0x41, 0x10);	//CONFIG_PLL_BAND
+		    res &= i2c_write_verify(i, 2, 5, 0x41, 0x4);	//CONFIG_PLL_BAND
 		    res &= i2c_write_verify(i, 2, 5, 0x42, 0x2);	//CONFIG_PLL_LPFR
 		    res &= i2c_write_verify(i, 2, 5, 0x43, 0x2);	//CONFIG_PLL_ATO
 		    res &= i2c_write_verify(i, 2, 5, 0x44, 0x0);	//CONFIG_PLL_PDCP
 		    res &= i2c_write_verify(i, 2, 5, 0x45, 0x0);	//CONFIG_PLL_OPEN
         } else {
 		    res &= i2c_write_verify(i, 2, 5, 0x40, 0x3);    //CONFIG_PLL_ICP
-		    res &= i2c_write_verify(i, 2, 5, 0x41, 0x4);	//CONFIG_PLL_BAND
+		    res &= i2c_write_verify(i, 2, 5, 0x41, 0x10);	//CONFIG_PLL_BAND
 		    res &= i2c_write_verify(i, 2, 5, 0x42, 0x2);	//CONFIG_PLL_LPFR
 		    res &= i2c_write_verify(i, 2, 5, 0x43, 0x2);	//CONFIG_PLL_ATO
 		    res &= i2c_write_verify(i, 2, 5, 0x44, 0x0);	//CONFIG_PLL_PDCP

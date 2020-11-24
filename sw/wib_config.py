@@ -33,6 +33,7 @@ class WIB:
             
         print('Configuring FEMBs')
         req = wib.ConfigureWIB()
+        req.cold = config['cold']
         for i in range(4):
             femb_conf = req.fembs.add();
             

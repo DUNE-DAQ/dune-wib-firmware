@@ -1,5 +1,7 @@
 {
 
+"cold": false,
+
 "enabled_fembs": [true, true, true, true],
 
 "femb_configs": [
