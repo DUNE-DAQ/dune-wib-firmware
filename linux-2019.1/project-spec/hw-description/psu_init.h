@@ -957,8 +957,6 @@
 #define CRF_APB_DBG_FPD_CTRL_OFFSET                                                0XFD1A0068
 #undef CRF_APB_DDR_CTRL_OFFSET 
 #define CRF_APB_DDR_CTRL_OFFSET                                                    0XFD1A0080
-#undef CRF_APB_GPU_REF_CTRL_OFFSET 
-#define CRF_APB_GPU_REF_CTRL_OFFSET                                                0XFD1A0084
 #undef CRF_APB_GDMA_REF_CTRL_OFFSET 
 #define CRF_APB_GDMA_REF_CTRL_OFFSET                                               0XFD1A00B8
 #undef CRF_APB_DPDMA_REF_CTRL_OFFSET 
@@ -1776,61 +1774,6 @@
 #define CRF_APB_DDR_CTRL_SRCSEL_DEFVAL                         0x01000500
 #define CRF_APB_DDR_CTRL_SRCSEL_SHIFT                          0
 #define CRF_APB_DDR_CTRL_SRCSEL_MASK                           0x00000007U
-
-/*
-* 6 bit divider
-*/
-#undef CRF_APB_GPU_REF_CTRL_DIVISOR0_DEFVAL 
-#undef CRF_APB_GPU_REF_CTRL_DIVISOR0_SHIFT 
-#undef CRF_APB_GPU_REF_CTRL_DIVISOR0_MASK 
-#define CRF_APB_GPU_REF_CTRL_DIVISOR0_DEFVAL                   0x00001500
-#define CRF_APB_GPU_REF_CTRL_DIVISOR0_SHIFT                    8
-#define CRF_APB_GPU_REF_CTRL_DIVISOR0_MASK                     0x00003F00U
-
-/*
-* 000 = IOPLL_TO_FPD; 010 = VPLL; 011 = DPLL; (This signal may only be tog
-    * gled after 4 cycles of the old clock and 4 cycles of the new clock. This
-    *  is not usually an issue, but designers must be aware.)
-*/
-#undef CRF_APB_GPU_REF_CTRL_SRCSEL_DEFVAL 
-#undef CRF_APB_GPU_REF_CTRL_SRCSEL_SHIFT 
-#undef CRF_APB_GPU_REF_CTRL_SRCSEL_MASK 
-#define CRF_APB_GPU_REF_CTRL_SRCSEL_DEFVAL                     0x00001500
-#define CRF_APB_GPU_REF_CTRL_SRCSEL_SHIFT                      0
-#define CRF_APB_GPU_REF_CTRL_SRCSEL_MASK                       0x00000007U
-
-/*
-* Clock active signal. Switch to 0 to disable the clock, which will stop c
-    * lock for GPU (and both Pixel Processors).
-*/
-#undef CRF_APB_GPU_REF_CTRL_CLKACT_DEFVAL 
-#undef CRF_APB_GPU_REF_CTRL_CLKACT_SHIFT 
-#undef CRF_APB_GPU_REF_CTRL_CLKACT_MASK 
-#define CRF_APB_GPU_REF_CTRL_CLKACT_DEFVAL                     0x00001500
-#define CRF_APB_GPU_REF_CTRL_CLKACT_SHIFT                      24
-#define CRF_APB_GPU_REF_CTRL_CLKACT_MASK                       0x01000000U
-
-/*
-* Clock active signal for Pixel Processor. Switch to 0 to disable the cloc
-    * k only to this Pixel Processor
-*/
-#undef CRF_APB_GPU_REF_CTRL_PP0_CLKACT_DEFVAL 
-#undef CRF_APB_GPU_REF_CTRL_PP0_CLKACT_SHIFT 
-#undef CRF_APB_GPU_REF_CTRL_PP0_CLKACT_MASK 
-#define CRF_APB_GPU_REF_CTRL_PP0_CLKACT_DEFVAL                 0x00001500
-#define CRF_APB_GPU_REF_CTRL_PP0_CLKACT_SHIFT                  25
-#define CRF_APB_GPU_REF_CTRL_PP0_CLKACT_MASK                   0x02000000U
-
-/*
-* Clock active signal for Pixel Processor. Switch to 0 to disable the cloc
-    * k only to this Pixel Processor
-*/
-#undef CRF_APB_GPU_REF_CTRL_PP1_CLKACT_DEFVAL 
-#undef CRF_APB_GPU_REF_CTRL_PP1_CLKACT_SHIFT 
-#undef CRF_APB_GPU_REF_CTRL_PP1_CLKACT_MASK 
-#define CRF_APB_GPU_REF_CTRL_PP1_CLKACT_DEFVAL                 0x00001500
-#define CRF_APB_GPU_REF_CTRL_PP1_CLKACT_SHIFT                  26
-#define CRF_APB_GPU_REF_CTRL_PP1_CLKACT_MASK                   0x04000000U
 
 /*
 * 6 bit divider
@@ -29748,36 +29691,6 @@
 #define CRF_APB_RST_FPD_TOP_GDMA_RESET_MASK                    0x00000040U
 
 /*
-* Pixel Processor (submodule of GPU) block level reset
-*/
-#undef CRF_APB_RST_FPD_TOP_GPU_PP0_RESET_DEFVAL 
-#undef CRF_APB_RST_FPD_TOP_GPU_PP0_RESET_SHIFT 
-#undef CRF_APB_RST_FPD_TOP_GPU_PP0_RESET_MASK 
-#define CRF_APB_RST_FPD_TOP_GPU_PP0_RESET_DEFVAL               0x000F9FFE
-#define CRF_APB_RST_FPD_TOP_GPU_PP0_RESET_SHIFT                4
-#define CRF_APB_RST_FPD_TOP_GPU_PP0_RESET_MASK                 0x00000010U
-
-/*
-* Pixel Processor (submodule of GPU) block level reset
-*/
-#undef CRF_APB_RST_FPD_TOP_GPU_PP1_RESET_DEFVAL 
-#undef CRF_APB_RST_FPD_TOP_GPU_PP1_RESET_SHIFT 
-#undef CRF_APB_RST_FPD_TOP_GPU_PP1_RESET_MASK 
-#define CRF_APB_RST_FPD_TOP_GPU_PP1_RESET_DEFVAL               0x000F9FFE
-#define CRF_APB_RST_FPD_TOP_GPU_PP1_RESET_SHIFT                5
-#define CRF_APB_RST_FPD_TOP_GPU_PP1_RESET_MASK                 0x00000020U
-
-/*
-* GPU block level reset
-*/
-#undef CRF_APB_RST_FPD_TOP_GPU_RESET_DEFVAL 
-#undef CRF_APB_RST_FPD_TOP_GPU_RESET_SHIFT 
-#undef CRF_APB_RST_FPD_TOP_GPU_RESET_MASK 
-#define CRF_APB_RST_FPD_TOP_GPU_RESET_DEFVAL                   0x000F9FFE
-#define CRF_APB_RST_FPD_TOP_GPU_RESET_SHIFT                    3
-#define CRF_APB_RST_FPD_TOP_GPU_RESET_MASK                     0x00000008U
-
-/*
 * GT block level reset
 */
 #undef CRF_APB_RST_FPD_TOP_GT_RESET_DEFVAL 
@@ -30462,6 +30375,90 @@
 #define IOU_SCNTRS_COUNTER_CONTROL_REGISTER_EN_DEFVAL          0x00000000
 #define IOU_SCNTRS_COUNTER_CONTROL_REGISTER_EN_SHIFT           0
 #define IOU_SCNTRS_COUNTER_CONTROL_REGISTER_EN_MASK            0x00000001U
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_OFFSET 
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_OFFSET                                        0XFFD80218
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_OFFSET 
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_OFFSET                                          0XFFD80220
+
+/*
+* Power-down Request Interrupt Enable for GPU PP0
+*/
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP0_DEFVAL 
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP0_SHIFT 
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP0_MASK 
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP0_DEFVAL                0x00000000
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP0_SHIFT                 4
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP0_MASK                  0x00000010U
+
+/*
+* Power-down Request Interrupt Enable for GPU PP1
+*/
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP1_DEFVAL 
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP1_SHIFT 
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP1_MASK 
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP1_DEFVAL                0x00000000
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP1_SHIFT                 5
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP1_MASK                  0x00000020U
+
+/*
+* Power-down Request Interrupt Enable for ACPU2
+*/
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU2_DEFVAL 
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU2_SHIFT 
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU2_MASK 
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU2_DEFVAL              0x00000000
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU2_SHIFT               2
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU2_MASK                0x00000004U
+
+/*
+* Power-down Request Interrupt Enable for ACPU3
+*/
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU3_DEFVAL 
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU3_SHIFT 
+#undef PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU3_MASK 
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU3_DEFVAL              0x00000000
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU3_SHIFT               3
+#define PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU3_MASK                0x00000008U
+
+/*
+* Power-down Request Trigger for GPU PP0
+*/
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_PP0_DEFVAL 
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_PP0_SHIFT 
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_PP0_MASK 
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_PP0_DEFVAL                  0x00000000
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_PP0_SHIFT                   4
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_PP0_MASK                    0x00000010U
+
+/*
+* Power-down Request Trigger for GPU PP1
+*/
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_PP1_DEFVAL 
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_PP1_SHIFT 
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_PP1_MASK 
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_PP1_DEFVAL                  0x00000000
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_PP1_SHIFT                   5
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_PP1_MASK                    0x00000020U
+
+/*
+* Power-down Request Trigger for ACPU2
+*/
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU2_DEFVAL 
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU2_SHIFT 
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU2_MASK 
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU2_DEFVAL                0x00000000
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU2_SHIFT                 2
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU2_MASK                  0x00000004U
+
+/*
+* Power-down Request Trigger for ACPU3
+*/
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU3_DEFVAL 
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU3_SHIFT 
+#undef PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU3_MASK 
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU3_DEFVAL                0x00000000
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU3_SHIFT                 3
+#define PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU3_MASK                  0x00000008U
 #undef FPD_SLCR_SECURE_SLCR_DPDMA_OFFSET 
 #define FPD_SLCR_SECURE_SLCR_DPDMA_OFFSET                                          0XFD690040
 #undef FPD_SLCR_SECURE_SLCR_PCIE_OFFSET 

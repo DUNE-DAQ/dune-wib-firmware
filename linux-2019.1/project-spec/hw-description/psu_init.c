@@ -1371,36 +1371,6 @@ unsigned long psu_clock_init_data(void)
 /*##################################################################### */
 
     /*
-    * Register : GPU_REF_CTRL @ 0XFD1A0084
-
-    * 6 bit divider
-    *  PSU_CRF_APB_GPU_REF_CTRL_DIVISOR0                           0x1
-
-    * 000 = IOPLL_TO_FPD; 010 = VPLL; 011 = DPLL; (This signal may only be tog
-    * gled after 4 cycles of the old clock and 4 cycles of the new clock. This
-    *  is not usually an issue, but designers must be aware.)
-    *  PSU_CRF_APB_GPU_REF_CTRL_SRCSEL                             0x0
-
-    * Clock active signal. Switch to 0 to disable the clock, which will stop c
-    * lock for GPU (and both Pixel Processors).
-    *  PSU_CRF_APB_GPU_REF_CTRL_CLKACT                             0x1
-
-    * Clock active signal for Pixel Processor. Switch to 0 to disable the cloc
-    * k only to this Pixel Processor
-    *  PSU_CRF_APB_GPU_REF_CTRL_PP0_CLKACT                         0x1
-
-    * Clock active signal for Pixel Processor. Switch to 0 to disable the cloc
-    * k only to this Pixel Processor
-    *  PSU_CRF_APB_GPU_REF_CTRL_PP1_CLKACT                         0x1
-
-    * This register controls this reference clock
-    * (OFFSET, MASK, VALUE)      (0XFD1A0084, 0x07003F07U ,0x07000100U)
-    */
-	PSU_Mask_Write(CRF_APB_GPU_REF_CTRL_OFFSET,
-		0x07003F07U, 0x07000100U);
-/*##################################################################### */
-
-    /*
     * Register : GDMA_REF_CTRL @ 0XFD1A00B8
 
     * 6 bit divider
@@ -2291,7 +2261,7 @@ unsigned long psu_ddr_init_data(void)
     * re is ignored. The uMCTL2 sets this bit appropriately. DDR3/DDR4: Value
     * loaded into MR0 register. mDDR: Value to write to MR register. LPDDR2/LP
     * DDR3/LPDDR4 - Value to write to MR1 register
-    *  PSU_DDRC_INIT3_MR                                           0x730
+    *  PSU_DDRC_INIT3_MR                                           0x734
 
     * DDR2: Value to write to EMR register. Bits 9:7 are for OCD and the setti
     * ng in this register is ignored. The uMCTL2 sets those bits appropriately
@@ -2302,9 +2272,9 @@ unsigned long psu_ddr_init_data(void)
     *  PSU_DDRC_INIT3_EMR                                          0x301
 
     * SDRAM Initialization Register 3
-    * (OFFSET, MASK, VALUE)      (0XFD0700DC, 0xFFFFFFFFU ,0x07300301U)
+    * (OFFSET, MASK, VALUE)      (0XFD0700DC, 0xFFFFFFFFU ,0x07340301U)
     */
-	PSU_Mask_Write(DDRC_INIT3_OFFSET, 0xFFFFFFFFU, 0x07300301U);
+	PSU_Mask_Write(DDRC_INIT3_OFFSET, 0xFFFFFFFFU, 0x07340301U);
 /*##################################################################### */
 
     /*
@@ -3058,7 +3028,7 @@ unsigned long psu_ddr_init_data(void)
     * depending on the PHY, if using RDIMM, it may be necessary to use the val
     * ue (CL + 1) in the calculation of trddata_en. This is to compensate for
     * the extra cycle of latency through the RDIMM. Unit: Clocks
-    *  PSU_DDRC_DFITMG0_DFI_T_RDDATA_EN                            0xb
+    *  PSU_DDRC_DFITMG0_DFI_T_RDDATA_EN                            0xc
 
     * Defines whether dfi_wrdata_en/dfi_wrdata/dfi_wrdata_mask is generated us
     * ing HDR or SDR values Selects whether value in DFITMG0.dfi_tphy_wrlat is
@@ -3084,9 +3054,9 @@ unsigned long psu_ddr_init_data(void)
     *  PSU_DDRC_DFITMG0_DFI_TPHY_WRLAT                             0xb
 
     * DFI Timing Register 0
-    * (OFFSET, MASK, VALUE)      (0XFD070190, 0x1FBFBF3FU ,0x048B820BU)
+    * (OFFSET, MASK, VALUE)      (0XFD070190, 0x1FBFBF3FU ,0x048C820BU)
     */
-	PSU_Mask_Write(DDRC_DFITMG0_OFFSET, 0x1FBFBF3FU, 0x048B820BU);
+	PSU_Mask_Write(DDRC_DFITMG0_OFFSET, 0x1FBFBF3FU, 0x048C820BU);
 /*##################################################################### */
 
     /*
@@ -3299,7 +3269,7 @@ unsigned long psu_ddr_init_data(void)
     *  interface and when the associated dfi_rddata_cs signal is asserted. Thi
     * s corresponds to the DFI timing parameter tphy_rdcslat. Refer to PHY spe
     * cification for correct value.
-    *  PSU_DDRC_DFITMG2_DFI_TPHY_RDCSLAT                           0x9
+    *  PSU_DDRC_DFITMG2_DFI_TPHY_RDCSLAT                           0xa
 
     * Number of clocks between when a write command is sent on the DFI control
     *  interface and when the associated dfi_wrdata_cs signal is asserted. Thi
@@ -3308,9 +3278,9 @@ unsigned long psu_ddr_init_data(void)
     *  PSU_DDRC_DFITMG2_DFI_TPHY_WRCSLAT                           0x9
 
     * DFI Timing Register 2
-    * (OFFSET, MASK, VALUE)      (0XFD0701B4, 0x00003F3FU ,0x00000909U)
+    * (OFFSET, MASK, VALUE)      (0XFD0701B4, 0x00003F3FU ,0x00000A09U)
     */
-	PSU_Mask_Write(DDRC_DFITMG2_OFFSET, 0x00003F3FU, 0x00000909U);
+	PSU_Mask_Write(DDRC_DFITMG2_OFFSET, 0x00003F3FU, 0x00000A09U);
 /*##################################################################### */
 
     /*
@@ -3765,12 +3735,12 @@ unsigned long psu_ddr_init_data(void)
     * amble) If (CL - CWL - RD_PREAMBLE + WR_PREAMBLE) < 0, uMCTL2 does not su
     * pport ODT for read operation. LPDDR3: - RL + RD(tDQSCK(min)/tCK) - 1 - R
     * U(tODTon(max)/tCK)
-    *  PSU_DDRC_ODTCFG_RD_ODT_DELAY                                0x0
+    *  PSU_DDRC_ODTCFG_RD_ODT_DELAY                                0x1
 
     * ODT Configuration Register
-    * (OFFSET, MASK, VALUE)      (0XFD070240, 0x0F1F0F7CU ,0x06000600U)
+    * (OFFSET, MASK, VALUE)      (0XFD070240, 0x0F1F0F7CU ,0x06000604U)
     */
-	PSU_Mask_Write(DDRC_ODTCFG_OFFSET, 0x0F1F0F7CU, 0x06000600U);
+	PSU_Mask_Write(DDRC_ODTCFG_OFFSET, 0x0F1F0F7CU, 0x06000604U);
 /*##################################################################### */
 
     /*
@@ -5752,7 +5722,7 @@ unsigned long psu_ddr_init_data(void)
     *  PSU_DDR_PHY_DTPR0_RESERVED_15                               0x0
 
     * Precharge command period
-    *  PSU_DDR_PHY_DTPR0_TRP                                       0xf
+    *  PSU_DDR_PHY_DTPR0_TRP                                       0x10
 
     * Reserved. Return zeroes on reads.
     *  PSU_DDR_PHY_DTPR0_RESERVED_7_5                              0x0
@@ -5761,9 +5731,9 @@ unsigned long psu_ddr_init_data(void)
     *  PSU_DDR_PHY_DTPR0_TRTP                                      0x8
 
     * DRAM Timing Parameters Register 0
-    * (OFFSET, MASK, VALUE)      (0XFD080110, 0xFFFFFFFFU ,0x07220F08U)
+    * (OFFSET, MASK, VALUE)      (0XFD080110, 0xFFFFFFFFU ,0x07221008U)
     */
-	PSU_Mask_Write(DDR_PHY_DTPR0_OFFSET, 0xFFFFFFFFU, 0x07220F08U);
+	PSU_Mask_Write(DDR_PHY_DTPR0_OFFSET, 0xFFFFFFFFU, 0x07221008U);
 /*##################################################################### */
 
     /*
@@ -5909,7 +5879,7 @@ unsigned long psu_ddr_init_data(void)
     *  PSU_DDR_PHY_DTPR5_RESERVED_15                               0x0
 
     * Activate to read or write delay
-    *  PSU_DDR_PHY_DTPR5_TRCD                                      0xf
+    *  PSU_DDR_PHY_DTPR5_TRCD                                      0x10
 
     * Reserved. Return zeroes on reads.
     *  PSU_DDR_PHY_DTPR5_RESERVED_7_5                              0x0
@@ -5918,9 +5888,9 @@ unsigned long psu_ddr_init_data(void)
     *  PSU_DDR_PHY_DTPR5_TWTR                                      0x8
 
     * DRAM Timing Parameters Register 5
-    * (OFFSET, MASK, VALUE)      (0XFD080124, 0xFFFFFFFFU ,0x00320F08U)
+    * (OFFSET, MASK, VALUE)      (0XFD080124, 0xFFFFFFFFU ,0x00321008U)
     */
-	PSU_Mask_Write(DDR_PHY_DTPR5_OFFSET, 0xFFFFFFFFU, 0x00320F08U);
+	PSU_Mask_Write(DDR_PHY_DTPR5_OFFSET, 0xFFFFFFFFU, 0x00321008U);
 /*##################################################################### */
 
     /*
@@ -5942,12 +5912,12 @@ unsigned long psu_ddr_init_data(void)
     *  PSU_DDR_PHY_DTPR6_RESERVED_7_6                              0x0
 
     * Read Latency
-    *  PSU_DDR_PHY_DTPR6_PUBRL                                     0xf
+    *  PSU_DDR_PHY_DTPR6_PUBRL                                     0x10
 
     * DRAM Timing Parameters Register 6
-    * (OFFSET, MASK, VALUE)      (0XFD080128, 0xFFFFFFFFU ,0x00000E0FU)
+    * (OFFSET, MASK, VALUE)      (0XFD080128, 0xFFFFFFFFU ,0x00000E10U)
     */
-	PSU_Mask_Write(DDR_PHY_DTPR6_OFFSET, 0xFFFFFFFFU, 0x00000E0FU);
+	PSU_Mask_Write(DDR_PHY_DTPR6_OFFSET, 0xFFFFFFFFU, 0x00000E10U);
 /*##################################################################### */
 
     /*
@@ -6146,12 +6116,12 @@ unsigned long psu_ddr_init_data(void)
 
     * Reserved. These are JEDEC reserved bits and are recommended by JEDEC to
     * be programmed to 0x0.
-    *  PSU_DDR_PHY_MR0_RSVD_2_0                                    0x0
+    *  PSU_DDR_PHY_MR0_RSVD_2_0                                    0x4
 
     * LPDDR4 Mode Register 0
-    * (OFFSET, MASK, VALUE)      (0XFD080180, 0xFFFFFFFFU ,0x00000630U)
+    * (OFFSET, MASK, VALUE)      (0XFD080180, 0xFFFFFFFFU ,0x00000634U)
     */
-	PSU_Mask_Write(DDR_PHY_MR0_OFFSET, 0xFFFFFFFFU, 0x00000630U);
+	PSU_Mask_Write(DDR_PHY_MR0_OFFSET, 0xFFFFFFFFU, 0x00000634U);
 /*##################################################################### */
 
     /*
@@ -13936,22 +13906,13 @@ unsigned long psu_peripherals_init_data(void)
     * GDMA block level reset
     *  PSU_CRF_APB_RST_FPD_TOP_GDMA_RESET                          0
 
-    * Pixel Processor (submodule of GPU) block level reset
-    *  PSU_CRF_APB_RST_FPD_TOP_GPU_PP0_RESET                       0
-
-    * Pixel Processor (submodule of GPU) block level reset
-    *  PSU_CRF_APB_RST_FPD_TOP_GPU_PP1_RESET                       0
-
-    * GPU block level reset
-    *  PSU_CRF_APB_RST_FPD_TOP_GPU_RESET                           0
-
     * GT block level reset
     *  PSU_CRF_APB_RST_FPD_TOP_GT_RESET                            0
 
     * FPD Block level software controlled reset
-    * (OFFSET, MASK, VALUE)      (0XFD1A0100, 0x0000007CU ,0x00000000U)
+    * (OFFSET, MASK, VALUE)      (0XFD1A0100, 0x00000044U ,0x00000000U)
     */
-	PSU_Mask_Write(CRF_APB_RST_FPD_TOP_OFFSET, 0x0000007CU, 0x00000000U);
+	PSU_Mask_Write(CRF_APB_RST_FPD_TOP_OFFSET, 0x00000044U, 0x00000000U);
 /*##################################################################### */
 
     /*
@@ -14524,8 +14485,54 @@ unsigned long psu_peripherals_powerdwn_data(void)
     * POWER DOWN REQUEST INTERRUPT ENABLE
     */
     /*
+    * Register : REQ_PWRDWN_INT_EN @ 0XFFD80218
+
+    * Power-down Request Interrupt Enable for GPU PP0
+    *  PSU_PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP0                        1
+
+    * Power-down Request Interrupt Enable for GPU PP1
+    *  PSU_PMU_GLOBAL_REQ_PWRDWN_INT_EN_PP1                        1
+
+    * Power-down Request Interrupt Enable for ACPU2
+    *  PSU_PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU2                      1
+
+    * Power-down Request Interrupt Enable for ACPU3
+    *  PSU_PMU_GLOBAL_REQ_PWRDWN_INT_EN_ACPU3                      1
+
+    * Power-down Request Interrupt Enable Register. Writing a 1 to this locati
+    * on will unmask the Interrupt.
+    * (OFFSET, MASK, VALUE)      (0XFFD80218, 0x0000003CU ,0x0000003CU)
+    */
+	PSU_Mask_Write(PMU_GLOBAL_REQ_PWRDWN_INT_EN_OFFSET,
+		0x0000003CU, 0x0000003CU);
+/*##################################################################### */
+
+    /*
     * POWER DOWN TRIGGER
     */
+    /*
+    * Register : REQ_PWRDWN_TRIG @ 0XFFD80220
+
+    * Power-down Request Trigger for GPU PP0
+    *  PSU_PMU_GLOBAL_REQ_PWRDWN_TRIG_PP0                          1
+
+    * Power-down Request Trigger for GPU PP1
+    *  PSU_PMU_GLOBAL_REQ_PWRDWN_TRIG_PP1                          1
+
+    * Power-down Request Trigger for ACPU2
+    *  PSU_PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU2                        1
+
+    * Power-down Request Trigger for ACPU3
+    *  PSU_PMU_GLOBAL_REQ_PWRDWN_TRIG_ACPU3                        1
+
+    * Power-down Request Trigger Register. Writing a 1 to this location will t
+    * rigger a power-down request to the PMU.
+    * (OFFSET, MASK, VALUE)      (0XFFD80220, 0x0000003CU ,0x0000003CU)
+    */
+	PSU_Mask_Write(PMU_GLOBAL_REQ_PWRDWN_TRIG_OFFSET,
+		0x0000003CU, 0x0000003CU);
+/*##################################################################### */
+
 
 	return 1;
 }
