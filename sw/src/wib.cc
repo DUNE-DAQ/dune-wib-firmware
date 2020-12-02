@@ -218,9 +218,9 @@ bool WIB::femb_rx_mask(uint32_t value, uint32_t mask) {
 
 bool WIB::femb_rx_reset() {
     uint32_t value = io_reg_read(&this->regs,0x04/4);
-    value |= (1<<7);
+    value |= (1<<13);
     io_reg_write(&this->regs,0x04/4,value);
-    value &= ~(1<<7);
+    value &= ~(1<<13);
     io_reg_write(&this->regs,0x04/4,value);
     return true;
 }
