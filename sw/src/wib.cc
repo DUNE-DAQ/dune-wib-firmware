@@ -384,16 +384,17 @@ bool WIB::read_daq_spy(void *buf0, void *buf1) {
     io_reg_write(&this->regs,0x04/4,next);
     io_reg_write(&this->regs,0x04/4,prev);
     bool success = false;
+    uint32_t last_read;
     int ms;
     for (ms = 0; ms < 100; ms++) { // try for 100 ms (should take max 4)
         usleep(1000);
-        if ((io_reg_read(&this->regs,0x80/4) & mask) == mask) {
+        if (((last_read = io_reg_read(&this->regs,0x80/4)) & mask) == mask) {
             success = true;
             break;
         }
     }
     if (!success) {
-        fprintf(stderr,"Timed out waiting for buffers to fill\n");
+        fprintf(stderr,"Timed out waiting for buffers to fill: %0X\n",last_read);
     } else {
         printf("Acquisition took %i ms\n",ms);
     }
