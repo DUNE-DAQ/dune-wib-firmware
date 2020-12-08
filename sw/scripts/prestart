@@ -1,2 +1,2 @@
 # Configures hardware necessary before the FEMB turns on
-run si5344_config
+run si5344_50mhz_config
