@@ -5,12 +5,12 @@
 #include "io_reg.h"
 
 // Fast Command AXI registers
-constexpr uint32_t REG_FAST_CMD_CODE        = 0/4;
-constexpr uint32_t REG_FAST_CMD_ACT_DELAY   = 4/4;
+constexpr uint32_t REG_FAST_CMD_CODE        = 0x0000/4;
+constexpr uint32_t REG_FAST_CMD_ACT_DELAY   = 0x0004/4;
 
 // COLDATA I2C AXI registers
-constexpr uint32_t REG_COLD_I2C_START        = 0/4;
-constexpr uint32_t REG_COLD_I2C_CTRL         = 4/4;
+constexpr uint32_t REG_COLD_I2C_START        = 0x0000/4;
+constexpr uint32_t REG_COLD_I2C_CTRL         = 0x0004/4;
 
 // Fast Command bits
 constexpr uint8_t FAST_CMD_RESET = 1;
@@ -32,14 +32,14 @@ constexpr uint8_t ACT_RESET_LARASIC_SPI = 0x07;
 constexpr uint8_t ACT_PROGRAM_LARASIC = 0x08;
 
 // COLDATA I2C control bit packing scheme
-constexpr uint32_t COLD_I2C_CHIP_ADDR   = 23; //4 //0x07800000;
+constexpr uint32_t COLD_I2C_CHIP_ADDR   = 23; //4 // 0x07800000;
 constexpr uint32_t COLD_I2C_REG_PAGE    = 20; //3 // 0x00700000;
 constexpr uint32_t COLD_I2C_RW          = 19; //1 // 0x00080000;
 constexpr uint32_t COLD_I2C_ACK1        = 18; //1 // 0x00040000;
 constexpr uint32_t COLD_I2C_REG_ADDR    = 10; //8 // 0x0003FC00;
-constexpr uint32_t COLD_I2C_ACK2        = 9; //1 // 0x00000200;
-constexpr uint32_t COLD_I2C_DATA        = 1; //8 // 0x000001FE;
-constexpr uint32_t COLD_I2C_ACK3        = 0; //1 // 0x00000001;
+constexpr uint32_t COLD_I2C_ACK2        =  9; //1 // 0x00000200;
+constexpr uint32_t COLD_I2C_DATA        =  1; //8 // 0x000001FE;
+constexpr uint32_t COLD_I2C_ACK3        =  0; //1 // 0x00000001;
 
 // COLDATA I2C delay
 constexpr uint32_t COLD_I2C_DELAY = 27; //microseconds

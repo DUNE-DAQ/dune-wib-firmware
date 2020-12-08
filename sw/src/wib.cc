@@ -84,13 +84,15 @@ bool WIB::initialize() {
 }
 
 bool WIB::start_frontend() {
-    printf("Starting front end...\n");
+    printf("Initializing front end...\n");
     bool success = true;
     printf("Disabling front end power\n");
     femb_power_set(false);
     printf("Configuring front end power\n");
     femb_power_config();
     success &= script("prestart");
+    printf("Configuring timing endpoint\n");
+    success &= timing_endpoint_config();
     printf("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
@@ -105,6 +107,13 @@ string WIB::crate_ip() {
 string WIB::gateway_ip() {
     printf("FIXME: using default IP: 192.168.121.52\n");
     return "192.168.121.52"; //FIXME pull from somewhere
+}
+
+bool WIB::timing_endpoint_config() {
+    //timing endpoint reset is bit 28
+    io_reg_write(&this->regs,REG_TIMING,1<<28);
+    io_reg_write(&this->regs,REG_TIMING,0);
+    return true;
 }
 
 bool WIB::femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage) {
@@ -210,18 +219,19 @@ bool WIB::femb_power_set(bool on, bool coldadc) {
 }
 
 bool WIB::femb_rx_mask(uint32_t value, uint32_t mask) {
-    uint32_t prev = io_reg_read(&this->regs,0x08/4);
+    uint32_t prev = io_reg_read(&this->regs,REG_LINK_MASK);
     value = (prev & (~mask)) | (value & mask);
-    io_reg_write(&this->regs,0x08/4,value);
+    io_reg_write(&this->regs,REG_LINK_MASK,value);
     return true;
 }
 
 bool WIB::femb_rx_reset() {
-    uint32_t value = io_reg_read(&this->regs,0x04/4);
+    //rx_reset is bit 13
+    uint32_t value = io_reg_read(&this->regs,REG_FW_CTRL);
     value |= (1<<13);
-    io_reg_write(&this->regs,0x04/4,value);
+    io_reg_write(&this->regs,REG_FW_CTRL,value);
     value &= ~(1<<13);
-    io_reg_write(&this->regs,0x04/4,value);
+    io_reg_write(&this->regs,REG_FW_CTRL,value);
     return true;
 }
 
@@ -368,27 +378,28 @@ bool WIB::script(string script, bool file) {
 }
 
 void WIB::i2c_select(uint8_t device) {
-    uint32_t next = io_reg_read(&this->regs,0x04/4);
+    uint32_t next = io_reg_read(&this->regs,REG_FW_CTRL);
     next = (next & 0xFFFFFFF0) | (device & 0xF);
-    io_reg_write(&this->regs,0x04/4,next);
+    io_reg_write(&this->regs,REG_FW_CTRL,next);
 }
 
 bool WIB::read_daq_spy(void *buf0, void *buf1) {
-    uint32_t prev = io_reg_read(&this->regs,0x04/4);
+    uint32_t prev = io_reg_read(&this->regs,REG_FW_CTRL);
     uint32_t mask = 0;
     if (buf0) mask |= (1 << 0);
     if (buf1) mask |= (1 << 1);
+    //acquisition start are bits 6 and 7 (one per buffer)
     prev &= (~(mask << 6));
     uint32_t next = prev | (mask << 6);
     printf("Starting acquisition...\n");
-    io_reg_write(&this->regs,0x04/4,next);
-    io_reg_write(&this->regs,0x04/4,prev);
+    io_reg_write(&this->regs,REG_FW_CTRL,next);
+    io_reg_write(&this->regs,REG_FW_CTRL,prev);
     bool success = false;
     uint32_t last_read;
     int ms;
     for (ms = 0; ms < 100; ms++) { // try for 100 ms (should take max 4)
         usleep(1000);
-        if (((last_read = io_reg_read(&this->regs,0x80/4)) & mask) == mask) {
+        if (((last_read = io_reg_read(&this->regs,REG_DAQ_SPY_STATUS)) & mask) == mask) {
             success = true;
             break;
         }
@@ -489,6 +500,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     
     printf("Reconfiguring WIB\n"); 
     
+    printf("Powering on COLDATA\n");
     femb_power_set(true,false); // COLDATA on, COLDADC off
     usleep(1000000);
     printf("Resetting COLDATA\n");
@@ -503,6 +515,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         printf("COLDATA configuration failed!\n");
     }
     
+    printf("Powering on COLDADC\n");
     femb_power_set(true,true); // COLDATA on, COLDADC on
     usleep(1000000);
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT

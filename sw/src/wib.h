@@ -21,10 +21,17 @@
 #define I2C_FLASH           9
 #define I2C_ADN2814         10
 
+//Memory base addresses of AXI interfaces
 #define CTRL_REGS           0xA00C0000
 #define DAQ_SPY_0           0xA0100000
 #define DAQ_SPY_1           0xA0200000
 #define DAQ_SPY_SIZE        0x00100000
+
+//32bit register index in CTRL_REGS
+#define REG_TIMING          0x0000/4
+#define REG_LINK_MASK       0x0008/4
+#define REG_FW_CTRL         0x0004/4
+#define REG_DAQ_SPY_STATUS  0x0080/4
 
 class WIB {
 
@@ -45,6 +52,9 @@ public:
     std::string crate_ip();
     // Reads determines IP for the default gateway, else returns default 192.168.8.254
     std::string gateway_ip();
+    
+    // Reset and configure the timing endpoint
+    bool timing_endpoint_config();
     
     // Sets the default voltage configurations for FEMB power controller
     bool femb_power_config();
