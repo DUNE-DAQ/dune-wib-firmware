@@ -112,7 +112,9 @@ string WIB::gateway_ip() {
 bool WIB::timing_endpoint_config() {
     //timing endpoint reset is bit 28
     io_reg_write(&this->regs,REG_TIMING,1<<28);
+    usleep(1000000);
     io_reg_write(&this->regs,REG_TIMING,0);
+    usleep(1000000);
     return true;
 }
 

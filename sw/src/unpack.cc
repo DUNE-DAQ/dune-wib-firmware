@@ -53,8 +53,8 @@ void unpack_frame(const frame14 *frame, frame14_unpacked *data) {
     
     data->timestamp = (((uint64_t)frame->wib_pre[3])<<32) | ((uint64_t)frame->wib_pre[2]);
     
-    unpack14(frame->femb_a_seg,(uint16_t*)&data->femb[0]);
-    unpack14(frame->femb_b_seg,(uint16_t*)&data->femb[1]);
+    unpack14(((frame14_bitfield*)frame)->femb_a_seg,(uint16_t*)&data->femb[0]);
+    unpack14(((frame14_bitfield*)frame)->femb_b_seg,(uint16_t*)&data->femb[1]);
     
     data->crc20 = frame->wib_post[0] & 0xFFFFF;
     data->flex12 = (frame->wib_post[0] >> 20) & 0xFFF;
@@ -76,8 +76,8 @@ void repack_frame(const frame14_unpacked *data, frame14 *frame) {
     frame->wib_pre[2] = (uint32_t)(data->timestamp & 0xFFFFFFFF);
     frame->wib_pre[3] = (uint32_t)((data->timestamp >> 32) & 0xFFFFFFFF);
     
-    repack14((uint16_t*)&data->femb[0],frame->femb_a_seg);
-    repack14((uint16_t*)&data->femb[1],frame->femb_b_seg);
+    repack14((uint16_t*)&data->femb[0],((frame14_bitfield*)frame)->femb_a_seg);
+    repack14((uint16_t*)&data->femb[1],((frame14_bitfield*)frame)->femb_b_seg);
     
     frame->wib_post[0] |= data->crc20 & 0xFFFFF; // FIXME calculate crc of something
     frame->wib_post[0] |= (data->flex12 & 0xFFF) << 20;

@@ -1,6 +1,12 @@
 # Similar to prestart, but does all power config from scripts
 run coldata_power_off
-run si5344_config
+# Timing system & PLL setup
+run cdr_reset
+delay 1000000
+run si5344_50mhz_config
+delay 1000000
+run timing_endpoint_reset
+# Setup frontend power
 run femb_voltages
 run coldata_power_on
 delay 1000000

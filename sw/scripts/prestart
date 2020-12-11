@@ -1,2 +1,5 @@
-# Configures hardware necessary before the FEMB turns on
+# Configures timing system and PLL before the frontend is activated
+run cdr_reset
+delay 1000000
 run si5344_50mhz_config
+delay 1000000
