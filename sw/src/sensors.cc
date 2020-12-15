@@ -19,7 +19,7 @@ double read_ltc2499_temp(i2c_t *i2c, uint8_t next_ch) {
     uint32_t value = bytes[3] | (bytes[2]<<8) | (bytes[1]<<16) | (bytes[0]<<24);
     printf("ltc2499 0x%08X\n",value);
     double volts = ((value>>6) & 0x1FFFFFF)*1.25/pow(2,24);
-    return (volts > 1.25) ? volts-2*1.25 : volts;
+    return ((volts > 1.25) ? volts-2*1.25 : volts) + 1.25 /*COM*/;
 }
 
 double read_ad7414_temp(i2c_t *i2c, uint8_t slave) {
