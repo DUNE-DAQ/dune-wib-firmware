@@ -13,9 +13,10 @@ void start_ltc2499_temp(i2c_t *i2c, uint8_t ch) {
 }
 
 double read_ltc2499_temp(i2c_t *i2c, uint8_t next_ch) {
-    uint8_t cmd[2] = { (uint8_t)(0xB0 | ((next_ch%2)<<3) | (next_ch/2)), 0x80};
-    uint32_t value; // corresponds to a previously initiated conversion (start_ltc2499_temp)
-    i2c_writeread(i2c,0x15,cmd,2,(uint8_t*)&value,4);
+    uint8_t cmd[2] = { (uint8_t)(0xB0 | ((next_ch%2)<<3) | (next_ch/2)), 0x80 };
+    uint8_t bytes[4]; // corresponds to a previously initiated conversion (start_ltc2499_temp)
+    i2c_writeread(i2c,0x15,cmd,2,(uint8_t*)&bytes,4);
+    uint32_t value = bytes[3] | (bytes[2]<<8) | (bytes[1]<<16) | (bytes[0]<<24);
     double volts = ((value>>6) & 0x1FFFFFF)*1.25/pow(2,24);
     return volts > 1.25 ? volts-2*1.25 : volts;
 }
@@ -46,9 +47,9 @@ void enable_ltc2990(i2c_t *i2c, uint8_t slave, bool differential) {
 //ch 1 to ch 4, 5 == Vcc
 uint16_t read_ltc2990_value(i2c_t *i2c, uint8_t slave, uint8_t ch) {
     uint8_t reg = (uint8_t)(6+(ch-1)*2);
-    uint16_t word;
-    i2c_writeread(i2c,slave,&reg,1,(uint8_t*)&word,2);
-    return (((word&0xFF)<<8)|((word>>8)&0xFF))&0x3FFF;
+    uint8_t bytes[2];
+    i2c_writeread(i2c,slave,&reg,1,bytes,2);
+    return ((bytes[0]<<8)|bytes[1])&0x3FFF;
     
 }
 
@@ -69,8 +70,8 @@ void enable_ltc2991(i2c_t *i2c, uint8_t slave, bool differential) {
 //ch 1 to ch 8, 9 == T_internal, 10 == Vcc
 uint16_t read_ltc2991_value(i2c_t *i2c, uint8_t slave, uint8_t ch) {
     uint8_t reg = (uint8_t)(0xA+(ch-1)*2);
-    uint16_t word;
-    i2c_writeread(i2c,slave,&reg,1,(uint8_t*)&word,2);
-    return (((word&0xFF)<<8)|((word>>8)&0xFF))&0x3FFF;
+    uint8_t bytes[2];
+    i2c_writeread(i2c,slave,&reg,1,bytes,2);
+    return ((bytes[0]<<8)|bytes[1])&0x3FFF;
     
 }
