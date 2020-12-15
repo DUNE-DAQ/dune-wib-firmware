@@ -31,8 +31,8 @@ void dump_frames(frame14 *buffer, size_t nframes) {
         printf("wib_header_1: 0x%08X\n",buffer[i].wib_pre[1]);
         printf("wib_header_2: 0x%08X\n",buffer[i].wib_pre[2]);
         printf("wib_header_3: 0x%08X\n",buffer[i].wib_pre[3]);
-        femb_seg(buffer[i].femb_a_seg,(char*)"FEMB_A");
-        femb_seg(buffer[i].femb_b_seg,(char*)"FEMB_B");
+        femb_seg(((frame14_bitfield*)buffer)[i].femb_a_seg,(char*)"FEMB_A");
+        femb_seg(((frame14_bitfield*)buffer)[i].femb_b_seg,(char*)"FEMB_B");
         printf("wib_footer_0: 0x%08X\n",buffer[i].wib_post[0]);
         printf("wib_footer_1: 0x%08X\n",buffer[i].wib_post[1]);
         printf("idle_frame:   0x%08X\n",buffer[i].idle_frame);

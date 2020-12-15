@@ -31,7 +31,7 @@ simulation: $(BINS)
 # Use SIMULATION define to avoid building hardware interfaces
 client: CXXFLAGS += -DSIMULATION
 client: CCFLAGS += -DSIMULATION
-client: wib_client
+client: wib_client spy_dump
 	@echo Finished building
 
 
