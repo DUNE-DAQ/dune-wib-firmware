@@ -74,12 +74,12 @@ bool WIB::initialize() {
         fprintf(stderr,"failed to assign IP to eth0\n");
         success = false;
     }
-    //string route_conf("route add default gw "+gateway_ip()+" eth0");
-    //ret = system(route_conf.c_str());
-    //if (WEXITSTATUS(ret) != 0) {
-    //    fprintf(stderr,"failed to assign default route\n");
-    //    success = false;
-    //}
+    string route_conf("route add default gw "+gateway_ip()+" eth0");
+    ret = system(route_conf.c_str());
+    if (WEXITSTATUS(ret) != 0) {
+        fprintf(stderr,"failed to assign default route\n");
+        success = false;
+    }
     return success;
 }
 
@@ -105,7 +105,7 @@ string WIB::crate_ip() {
 }
 
 string WIB::gateway_ip() {
-    printf("FIXME: using default IP: 192.168.121.52\n");
+    printf("FIXME: using default IP: 192.168.121.52\n"); //iceberg01
     return "192.168.121.52"; //FIXME pull from somewhere
 }
 
