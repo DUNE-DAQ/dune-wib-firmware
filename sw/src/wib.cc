@@ -681,7 +681,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2499_15_temps();
     for (uint8_t i = 0; i < 7; i++) {
         usleep(175000);
-        t = read_ltc2499_temp(&this->selected_i2c,(i+1)%7);
+        t = read_ltc2499_temp(&this->selected_i2c,i+1);
         printf("LTC2499 ch%i -> %0.14f\n",i,t);
         sensors.add_ltc2499_15_temps(t);
     }

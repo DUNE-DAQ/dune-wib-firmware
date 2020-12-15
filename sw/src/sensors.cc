@@ -7,18 +7,19 @@
 #include "i2c.h"
 #include "io_reg.h"
 
-void start_ltc2499_temp(i2c_t *i2c, uint8_t ch) {
-    uint8_t cmd[2] = { (uint8_t)(0xB0 | ((ch%2)<<3) | (ch/2)), 0x80};
+void start_ltc2499_temp(i2c_t *i2c, uint8_t next_ch) {
+    uint8_t cmd[2] = { (uint8_t)(0xB0 /*single ended*/ | ((next_ch%2)<<3) /*odd?*/ | (next_ch/2) /*pair*/), 0x80 };
     i2c_write(i2c,0x15,cmd,2);
 }
 
 double read_ltc2499_temp(i2c_t *i2c, uint8_t next_ch) {
-    uint8_t cmd[2] = { (uint8_t)(0xB0 | ((next_ch%2)<<3) | (next_ch/2)), 0x80 };
+    uint8_t cmd[2] = { (uint8_t)(0xB0 /*single ended*/ | ((next_ch%2)<<3) /*odd?*/ | (next_ch/2) /*pair*/), 0x80 };
     uint8_t bytes[4]; // corresponds to a previously initiated conversion (start_ltc2499_temp)
     i2c_writeread(i2c,0x15,cmd,2,(uint8_t*)&bytes,4);
     uint32_t value = bytes[3] | (bytes[2]<<8) | (bytes[1]<<16) | (bytes[0]<<24);
+    printf("ltc2499 0x%08X\n",value);
     double volts = ((value>>6) & 0x1FFFFFF)*1.25/pow(2,24);
-    return volts > 1.25 ? volts-2*1.25 : volts;
+    return (volts > 1.25) ? volts-2*1.25 : volts;
 }
 
 double read_ad7414_temp(i2c_t *i2c, uint8_t slave) {
