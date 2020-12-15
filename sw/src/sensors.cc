@@ -42,9 +42,9 @@ void enable_ltc2990(i2c_t *i2c, uint8_t slave) {
 //ch 1 to ch 4, 5 == Vcc
 uint16_t read_ltc2990_value(i2c_t *i2c, uint8_t slave, uint8_t ch) {
     uint8_t reg = (uint8_t)(6+(ch-1)*2);
-    uint16_t value;
-    i2c_block_read(i2c,slave,reg,(uint8_t*)&value,2);
-    return value&0x3FFF;
+    uint16_t word;
+    i2c_writeread(i2c,slave,&reg,1,&word,2);
+    return (((word&0xFF)<<8)|((word>>8)&0xFF))&0x3FFF;
     
 }
 
@@ -56,8 +56,8 @@ void enable_ltc2991(i2c_t *i2c, uint8_t slave) {
 //ch 1 to ch 8, 9 == T_internal, 10 == Vcc
 uint16_t read_ltc2991_value(i2c_t *i2c, uint8_t slave, uint8_t ch) {
     uint8_t reg = (uint8_t)(0xA+(ch-1)*2);
-    uint16_t value;
-    i2c_block_read(i2c,slave,reg,(uint8_t*)&value,2);
-    return value&0x3FFF;
+    uint16_t word;
+    i2c_writeread(i2c,slave,&reg,1,&word,2);
+    return (((word&0xFF)<<8)|((word>>8)&0xFF))&0x3FFF;
     
 }
