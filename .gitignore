@@ -4,3 +4,4 @@ DUNE_WIB/
 *.run
 *.tar.gz
 *.tar.bz2
+*.img
