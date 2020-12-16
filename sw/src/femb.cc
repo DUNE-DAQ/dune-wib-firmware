@@ -100,10 +100,10 @@ bool FEMB::configure_coldadc() {
             res &= i2c_write_verify(i, j, 1, 0x84, 0x3b);  //single-ened_input_mode
             res &= i2c_write_verify(i, j, 1, 0x88, 0x0b);  //ADC-bias-current-50uA
             res &= i2c_write_verify(i, j, 1, 0x89, 0x08);  //offset_binary_output_data_format
-            res &= i2c_write_verify(i, j, 1, 0x89, 0x08);  //offset_binary_output_data_format
+            res &= i2c_write_verify(i, j, 1, 0xb1, 0x0c);  //config_start_number, as recommended by David
         }
     }
-    if (!res) fprintf(stderr,"COLADC configuration failed for FEMB:%i!\n",index);
+    if (!res) fprintf(stderr,"COLDADC configuration failed for FEMB:%i!\n",index);
     return res;
 }
 
