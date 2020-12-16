@@ -689,9 +689,8 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     // FIXME 0x46 an INA226 for DDR current
     
     //FEMB power monitoring
-    
-    printf("Activating I2C_SENSOR bus\n");
-    i2c_select(I2C_PL_FEMB_PWR);
+    //docs suggest these should be on the selected_i2c bus set to 3, but they aren't
+    i2c_t *femb_power_mon_i2c = &this->femb_en_i2c; 
     
     uint8_t femb_dc2dc_current_addr[4] = {0x48,0x49,0x4a,0x4b};  //DC2DC 0-3 in pairs for FEMBs 0-3
     uint8_t femb_ldo_current_addr[2] = {0x4c,0x4d}; //LDO femb 0-3 in pairs for LDO 0-1
@@ -719,9 +718,9 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
         } else {
             break;
         }
-        enable_ltc2991(&this->selected_i2c,addr);
+        enable_ltc2991(femb_power_mon_i2c,addr);
         for (uint8_t j = 1; j <= 8; j++) {
-            double v = 0.00030518*read_ltc2991_value(&this->selected_i2c,addr,j);
+            double v = 0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,j);
             printf("LTC2991 0x%X ch%i -> %0.2f V\n",addr,j,v);
             switch (i) {
                 case 0: sensors.add_femb0_dc2dc_ltc2991_voltages(v); break;
@@ -733,7 +732,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
                 case 6: sensors.add_femb_bias_ltc2991_voltages(v); break;
             }   
         }
-        printf("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(&this->selected_i2c,addr,10)+2.5);
+        printf("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,10)+2.5);
     }
 
     return true;
