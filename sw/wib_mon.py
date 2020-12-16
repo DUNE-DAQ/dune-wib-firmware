@@ -9,6 +9,7 @@ import numpy as np
 import zmq
 import json
 from collections import deque
+from math import nan
 
 import wib_pb2 as wib
 
@@ -37,7 +38,7 @@ class Sensor(QtWidgets.QWidget):
         p.setColor(self.backgroundRole(), QtGui.QColor(r,g,b))
         self.setPalette(p)
 
-class IVTSensor(Sensor):
+class IVSensor(Sensor):
     def __init__(self,parent,label,accessor,sense_ohms=0.1):
         super().__init__(parent)
         self.accessor = accessor
@@ -52,11 +53,11 @@ class IVTSensor(Sensor):
         
         sub = QtWidgets.QWidget()
         sub_layout = QtWidgets.QHBoxLayout(sub)
-        self.V = QtWidgets.QLabel('0.00 V')
+        self.V = QtWidgets.QLabel('nan V')
         self.V.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.V.setStyleSheet('QLabel { font-weight: bold; color: #268bd2; } ')
         sub_layout.addWidget(self.V)
-        self.I = QtWidgets.QLabel('0.00 mA')
+        self.I = QtWidgets.QLabel('nan mA')
         self.I.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.I.setStyleSheet('QLabel { font-weight: bold; color: #6c71c4; } ')
         sub_layout.addWidget(self.I)
@@ -66,7 +67,7 @@ class IVTSensor(Sensor):
     def load_data(self,sensors):
         before,after = self.accessor(sensors)
         current = (before-after)/self.sense_ohms*1000.0 #mA
-        self.V.setText('%0.2f V'%after)
+        self.V.setText('%0.2f V'%before)
         self.I.setText('%0.1f mA'%current)
         
     
@@ -87,7 +88,7 @@ class VTSensor(Sensor):
         
         sub = QtWidgets.QWidget()
         sub_layout = QtWidgets.QHBoxLayout(sub)
-        self.V = QtWidgets.QLabel('0.0 C')
+        self.V = QtWidgets.QLabel('nan C')
         self.V.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
         self.V.setStyleSheet('QLabel { font-weight: bold; color: #2aa198; } ')
         sub_layout.addWidget(self.V)
@@ -115,7 +116,7 @@ class TSensor(Sensor):
         
         sub = QtWidgets.QWidget()
         sub_layout = QtWidgets.QHBoxLayout(sub)
-        self.T = QtWidgets.QLabel('0.0 C')
+        self.T = QtWidgets.QLabel('nan C')
         self.T.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter)
         self.T.setStyleSheet('QLabel { font-weight: bold; color: #2aa198; } ')
         sub_layout.addWidget(self.T)
@@ -150,13 +151,13 @@ class FEMBPane(QtWidgets.QGroupBox):
             
         self.tpower_sensor = VTSensor(self,'Power Temp',lambda s: s.ltc2499_15_temps[self.idx])
         self.iv_sensors = []
-        self.iv_sensors.append(IVTSensor(self,'2.5V LDO A0',lambda s: s.femb_ldo_a0_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.01))
-        self.iv_sensors.append(IVTSensor(self,'2.5V LDO A1',lambda s: s.femb_ldo_a1_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.01))
-        self.iv_sensors.append(IVTSensor(self,'5V Bias',lambda s: s.femb_bias_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.1))
-        self.iv_sensors.append(IVTSensor(self,'DC/DC V1',lambda s: dc2dc(s,self.idx)[0:2],sense_ohms=0.1))
-        self.iv_sensors.append(IVTSensor(self,'DC/DC V2',lambda s: dc2dc(s,self.idx)[2:4],sense_ohms=0.1))
-        self.iv_sensors.append(IVTSensor(self,'DC/DC V3',lambda s: dc2dc(s,self.idx)[4:6],sense_ohms=0.01))
-        self.iv_sensors.append(IVTSensor(self,'DC/DC V4',lambda s: dc2dc(s,self.idx)[6:8],sense_ohms=0.1))
+        self.iv_sensors.append(IVSensor(self,'2.5V LDO A0',lambda s: s.femb_ldo_a0_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.01))
+        self.iv_sensors.append(IVSensor(self,'2.5V LDO A1',lambda s: s.femb_ldo_a1_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.01))
+        self.iv_sensors.append(IVSensor(self,'5V Bias',lambda s: s.femb_bias_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.1))
+        self.iv_sensors.append(IVSensor(self,'DC/DC V1',lambda s: dc2dc(s,self.idx)[0:2],sense_ohms=0.1))
+        self.iv_sensors.append(IVSensor(self,'DC/DC V2',lambda s: dc2dc(s,self.idx)[2:4],sense_ohms=0.1))
+        self.iv_sensors.append(IVSensor(self,'DC/DC V3',lambda s: dc2dc(s,self.idx)[4:6],sense_ohms=0.01))
+        self.iv_sensors.append(IVSensor(self,'DC/DC V4',lambda s: dc2dc(s,self.idx)[6:8],sense_ohms=0.1))
         
         layout = QtWidgets.QGridLayout(self)
         layout.addWidget(self.tpower_sensor,0,0)
@@ -183,18 +184,18 @@ class WIBPane(QtWidgets.QGroupBox):
         self.t_sensors.append(TSensor(self,'Board Temp 1',lambda s: s.ad7414_49_temp))
         self.t_sensors.append(TSensor(self,'Board Temp 2',lambda s: s.ad7414_4d_temp))
         self.t_sensors.append(TSensor(self,'Board Temp 3',lambda s: s.ad7414_4a_temp))
-        self.t_sensors.append(TSensor(self,'DDR Temp',lambda s: 0.0)) #FIXME
+        self.t_sensors.append(TSensor(self,'DDR Temp',lambda s: nan)) #FIXME
         self.t_sensors.append(VTSensor(self,'Power Temp 1',lambda s: s.ltc2499_15_temps[4]))
         self.t_sensors.append(VTSensor(self,'Power Temp 2',lambda s: s.ltc2499_15_temps[5]))
         self.t_sensors.append(VTSensor(self,'Power Temp 3',lambda s: s.ltc2499_15_temps[6]))
         self.iv_sensors = []
-        self.iv_sensors.append(IVTSensor(self,'5 V',lambda s: s.ltc2990_4e_voltages[0:2],sense_ohms=0.001))
-        self.iv_sensors.append(IVTSensor(self,'1.2 V',lambda s: s.ltc2990_4c_voltages[0:2],sense_ohms=0.001))
-        self.iv_sensors.append(IVTSensor(self,'3.3 V',lambda s: s.ltc2990_4c_voltages[2:4],sense_ohms=0.001))
-        self.iv_sensors.append(IVTSensor(self,'0.85 V',lambda s: s.ltc2991_48_voltages[0:2],sense_ohms=0.001))
-        self.iv_sensors.append(IVTSensor(self,'0.9 V',lambda s: s.ltc2991_48_voltages[2:4],sense_ohms=0.001))
-        self.iv_sensors.append(IVTSensor(self,'2.5 V',lambda s: s.ltc2991_48_voltages[4:6],sense_ohms=0.001))
-        self.iv_sensors.append(IVTSensor(self,'1.8 V',lambda s: s.ltc2991_48_voltages[6:8],sense_ohms=0.001))
+        self.iv_sensors.append(IVSensor(self,'5 V',lambda s: s.ltc2990_4e_voltages[0:2],sense_ohms=0.001))
+        self.iv_sensors.append(IVSensor(self,'1.2 V',lambda s: s.ltc2990_4c_voltages[0:2],sense_ohms=0.001))
+        self.iv_sensors.append(IVSensor(self,'3.3 V',lambda s: s.ltc2990_4c_voltages[2:4],sense_ohms=0.001))
+        self.iv_sensors.append(IVSensor(self,'0.85 V',lambda s: s.ltc2991_48_voltages[0:2],sense_ohms=0.001))
+        self.iv_sensors.append(IVSensor(self,'0.9 V',lambda s: s.ltc2991_48_voltages[2:4],sense_ohms=0.001))
+        self.iv_sensors.append(IVSensor(self,'2.5 V',lambda s: s.ltc2991_48_voltages[4:6],sense_ohms=0.001))
+        self.iv_sensors.append(IVSensor(self,'1.8 V',lambda s: s.ltc2991_48_voltages[6:8],sense_ohms=0.001))
         
         layout = QtWidgets.QGridLayout(self)
         for i,t in enumerate(self.t_sensors):
