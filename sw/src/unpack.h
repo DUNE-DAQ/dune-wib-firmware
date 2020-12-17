@@ -19,8 +19,8 @@ typedef struct {
 // Bitfields in the binary format of the Frame frame14 from the WIB
 typedef struct {
     uint32_t start_frame;
-    uint8_t crate_num : 8, frame_version: 4, slot_num : 3, fiber_num : 1;
-    uint8_t femb_valid : 2, link_mask : 8, reserved : 6;
+    uint32_t crate_num : 8, frame_version: 4, slot_num : 3, fiber_num : 1;
+    uint32_t femb_valid : 2, link_mask : 8, reserved : 6;
     uint32_t wib_data;
     uint64_t timestamp;
     uint32_t femb_a_seg[56];
@@ -28,7 +28,9 @@ typedef struct {
     uint32_t crc20 : 20, flex12 : 12;
     uint32_t eof: 8, flex24 : 24;
     uint32_t idle_frame;
-} frame14_bitfield;
+} __attribute__ ((packed)) frame14_bitfield;
+
+static_assert(sizeof(frame14) == sizeof(frame14_bitfield),"Frame14 packed datatypes inconsistent");
 
 // Samples from the U, V, X channels in a femb_*_seg of a frame as 16bit arrays
 typedef struct {    

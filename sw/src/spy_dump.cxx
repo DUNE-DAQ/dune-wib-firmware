@@ -31,8 +31,8 @@ void dump_frames(frame14 *buffer, size_t nframes) {
         glog.log("wib_header_1: 0x%08X\n",buffer[i].wib_pre[1]);
         glog.log("wib_header_2: 0x%08X\n",buffer[i].wib_pre[2]);
         glog.log("wib_header_3: 0x%08X\n",buffer[i].wib_pre[3]);
-        femb_seg(((frame14_bitfield*)buffer)[i].femb_a_seg,(char*)"FEMB_A");
-        femb_seg(((frame14_bitfield*)buffer)[i].femb_b_seg,(char*)"FEMB_B");
+        femb_seg(buffer[i].femb_a_seg,(char*)"FEMB_A");
+        femb_seg(buffer[i].femb_b_seg,(char*)"FEMB_B");
         glog.log("wib_footer_0: 0x%08X\n",buffer[i].wib_post[0]);
         glog.log("wib_footer_1: 0x%08X\n",buffer[i].wib_post[1]);
         glog.log("idle_frame:   0x%08X\n",buffer[i].idle_frame);
@@ -40,7 +40,7 @@ void dump_frames(frame14 *buffer, size_t nframes) {
 }
 
 int main(int argc, char **argv) {
-
+        
     ifstream bin_in(argv[1], ios::binary);
     if (!bin_in.is_open()) {
         glog.log("Could not open binary dump: %s\n",argv[1]);
