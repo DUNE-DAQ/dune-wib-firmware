@@ -2,6 +2,7 @@
 #define io_reg_h
 
 #include <stdint.h>
+#include "log.h"
 
 typedef struct io_reg_t {
 	int fd;

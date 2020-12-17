@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <stdint.h>
 #include <vector>
+#include "log.h"
 
 // Words in the binary format of the FELIX frame14 from the WIB
 typedef struct {

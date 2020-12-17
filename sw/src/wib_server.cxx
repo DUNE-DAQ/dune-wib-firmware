@@ -1,28 +1,30 @@
 #include <zmq.hpp>
+#include <sstream>
 #include "wib.pb.h"
 
 #include "unpack.h"
 #include "sensors.h"
 #include "wib.h"
+#include "log.h"
 
 int main(int argc, char **argv) {
     //set output to line buffering
     setvbuf(stdout, NULL, _IOLBF, 0);
     setvbuf(stderr, NULL, _IOLBF, 0);
     
-    printf("wib_server preparing hardware interface\n");
+    glog.log("wib_server preparing hardware interface\n");
     
     WIB w;
     w.initialize();
     
-    printf("wib_server will listen on port 1234\n");
+    glog.log("wib_server will listen on port 1234\n");
     
     zmq::context_t context;
     zmq::socket_t socket(context, ZMQ_REP);
 
     socket.bind("tcp://*:1234");
     
-    printf("wib_server ready to serve\n");
+    glog.log("wib_server ready to serve\n");
 
     for (int i = 0; ; i++) {
     
@@ -36,11 +38,11 @@ int main(int argc, char **argv) {
         
         std::string cmd_str((char*)cmd.data(), cmd.size());
         if (!command.ParseFromString(cmd_str)) {
-            fprintf(stderr,"Could not parse message %i size %li",i,cmd.size());
+            glog.log("Could not parse message %i size %li",i,cmd.size());
         } else if (command.cmd().Is<wib::Peek>()) {
             wib::Peek read;
             command.cmd().UnpackTo(&read);
-            printf("peek 0x%lx\n",read.addr());
+            glog.log("peek 0x%lx\n",read.addr());
             uint32_t rval = w.peek(read.addr());
             wib::RegValue value;
             value.set_addr(read.addr());    
@@ -49,7 +51,7 @@ int main(int argc, char **argv) {
         } else if (command.cmd().Is<wib::Poke>()) {
             wib::Poke write;
             command.cmd().UnpackTo(&write);
-            printf("poke 0x%lx = 0x%x\n",write.addr(),write.value());
+            glog.log("poke 0x%lx = 0x%x\n",write.addr(),write.value());
             w.poke(write.addr(),write.value());
             wib::RegValue value;   
             value.set_addr(write.addr());        
@@ -58,7 +60,7 @@ int main(int argc, char **argv) {
         } else if (command.cmd().Is<wib::CDPeek>()) {
             wib::CDPeek read;
             command.cmd().UnpackTo(&read);
-            printf("cdpeek femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x\n",read.femb_idx(),read.coldata_idx(),read.chip_addr(),read.reg_page(),read.reg_addr());
+            glog.log("cdpeek femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x\n",read.femb_idx(),read.coldata_idx(),read.chip_addr(),read.reg_page(),read.reg_addr());
             uint8_t rval = w.cdpeek((uint8_t)read.femb_idx(),(uint8_t)read.coldata_idx(),(uint8_t)read.chip_addr(),(uint8_t)read.reg_page(),(uint8_t)read.reg_addr());
             wib::CDRegValue value;   
             value.set_femb_idx(read.femb_idx());        
@@ -71,7 +73,7 @@ int main(int argc, char **argv) {
         } else if (command.cmd().Is<wib::CDPoke>()) {
             wib::CDPoke write;
             command.cmd().UnpackTo(&write);
-            printf("cdpoke femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x = 0x%x\n",write.femb_idx(),write.coldata_idx(),write.chip_addr(),write.reg_page(),write.reg_addr(),write.data());
+            glog.log("cdpoke femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x = 0x%x\n",write.femb_idx(),write.coldata_idx(),write.chip_addr(),write.reg_page(),write.reg_addr(),write.data());
             w.cdpoke((uint8_t)write.femb_idx(),(uint8_t)write.coldata_idx(),(uint8_t)write.chip_addr(),(uint8_t)write.reg_page(),(uint8_t)write.reg_addr(),(uint8_t)write.data());
             wib::CDRegValue value;   
             value.set_femb_idx(write.femb_idx());        
@@ -84,12 +86,12 @@ int main(int argc, char **argv) {
         } else if (command.cmd().Is<wib::CDFastCmd>()) {
             wib::CDFastCmd fc;
             command.cmd().UnpackTo(&fc);
-            printf("cdfastcmd 0x%x\n",fc.cmd());
+            glog.log("cdfastcmd 0x%x\n",fc.cmd());
             FEMB::fast_cmd((uint8_t)fc.cmd());
             wib::Empty empty;   
             empty.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::Script>()) {
-            printf("script\n");
+            glog.log("script\n");
             wib::Script script;    
             command.cmd().UnpackTo(&script);
             bool res = w.script(script.script(),script.file());
@@ -97,7 +99,7 @@ int main(int argc, char **argv) {
             status.set_success(res);
             status.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::ReadDaqSpy>()) {
-            printf("read_daq_spy\n");
+            glog.log("read_daq_spy\n");
             wib::ReadDaqSpy req;    
             command.cmd().UnpackTo(&req);
             char *buf0 = req.buf0() ? new char[DAQ_SPY_SIZE] : NULL;
@@ -185,42 +187,81 @@ int main(int argc, char **argv) {
             if (buf0) delete [] buf0;
             if (buf1) delete [] buf1;
         } else if (command.cmd().Is<wib::Pulser>()) {
-            printf("pulser\n");
+            glog.log("pulser\n");
             wib::Pulser req;    
             command.cmd().UnpackTo(&req);
             w.set_pulser(req.start());
             wib::Empty rep;    
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSensors>()) {
-            printf("get_sensors\n");
+            glog.log("get_sensors\n");
             wib::GetSensors::Sensors sensors;    
             w.read_sensors(sensors);
             sensors.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::GetTimestamp>()) {
+            glog.log("get_timestamp\n");
+            wib::GetTimestamp req;
+            command.cmd().UnpackTo(&req);
+            wib::GetTimestamp::Timestamp rep;    
+            uint32_t ts = w.read_fw_timestamp();
+            rep.set_timestamp(ts);
+            rep.set_day((ts>>27)&0x1f);
+            rep.set_month((ts>>23)&0x0f);
+            rep.set_year((ts>>17)&0x3f);
+            rep.set_hour((ts>>12)&0x1f);
+            rep.set_min((ts>>6)&0x3f);
+            rep.set_sec((ts>>0)&0x3f);
+            rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::ConfigureWIB>()) {
-            printf("configure_wib\n");
+            glog.log("configure_wib\n");
             wib::ConfigureWIB req;
             command.cmd().UnpackTo(&req);
             wib::Status rep;    
             bool success = w.configure_wib(req);
             rep.set_success(success);
             rep.SerializeToString(&reply_str);
-        } else if (command.cmd().Is<wib::Reboot>()) {
-            printf("reboot\n");
+        } else if (command.cmd().Is<wib::LogControl>()) {
+            glog.log("log_control\n");
+            wib::LogControl req;    
+            command.cmd().UnpackTo(&req);
+            wib::LogControl::Log rep;    
+            if (req.boot_log()) {
+                char buffer[1024];
+                std::stringstream buf;
+                FILE* pipe = popen("dmesg", "r");
+                if (pipe) {
+                    while (fgets(buffer, sizeof buffer, pipe) != NULL) {
+                        buf << buffer;
+                    }
+                    pclose(pipe);
+                }
+                *rep.mutable_contents() = buf.str();
+            } else if (req.return_log()) {
+                glog.log("log stored\n");
+                glog.store(rep.mutable_contents());
+            }
+            if (req.clear_log()) {
+                glog.clear();
+                glog.log("log cleared\n");
+            }
+            rep.SerializeToString(&reply_str);
+        }  else if (command.cmd().Is<wib::Reboot>()) {
+            glog.log("reboot\n");
             wib::Empty empty; 
             empty.SerializeToString(&reply_str);   
             w.reboot();
         } else if (command.cmd().Is<wib::Update>()) {
-            printf("update\n");
+            glog.log("update\n");
             wib::Update update;
             command.cmd().UnpackTo(&update);
             wib::Empty empty;
             empty.SerializeToString(&reply_str);
             w.update(update.root_archive().c_str(),update.boot_archive().c_str());
         } else {
-	        fprintf(stderr,"Received an unknown message!\n");
+	        glog.log("Received an unknown message!\n");
 	    }
         
-        printf("sending message %i size %lu bytes\n",i+1,reply_str.size());
+        glog.log("sending message %i size %lu bytes\n",i+1,reply_str.size());
         zmq::message_t reply(reply_str.size());
         memcpy((void*)reply.data(), reply_str.c_str(), reply_str.size());
         socket.send(reply,zmq::send_flags::none);

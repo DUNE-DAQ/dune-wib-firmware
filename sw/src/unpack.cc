@@ -9,12 +9,12 @@ void unpack14(const uint32_t *packed, uint16_t *unpacked) {
         const size_t low_word = low_bit / 32;
         const size_t high_bit = (i+1)*14-1;
         const size_t high_word = high_bit / 32;
-        //printf("word %li :: low %li (%li[%li]) high %li (%li[%li])\n",i,low_bit,low_word,low_bit%32,high_bit,high_word,high_bit%32);
+        //glog.log("word %li :: low %li (%li[%li]) high %li (%li[%li])\n",i,low_bit,low_word,low_bit%32,high_bit,high_word,high_bit%32);
         if (low_word == high_word) { //all the bits are in the same word
             unpacked[i] = (packed[low_word] >> (low_bit%32)) & 0x3FFF;
         } else { //some of the bits are in the next word
             size_t high_off = high_word*32-low_bit;
-            //printf("pre_mask 0x%X post_mask 0x%X\n", (0x3FFF >> (14-high_off)), ((0x3FFF << high_off) & 0x3FFF) );
+            //glog.log("pre_mask 0x%X post_mask 0x%X\n", (0x3FFF >> (14-high_off)), ((0x3FFF << high_off) & 0x3FFF) );
             unpacked[i] = (packed[low_word] >> (low_bit%32)) & (0x3FFF >> (14-high_off));
             unpacked[i] |= (packed[high_word] << high_off) & ((0x3FFF << high_off) & 0x3FFF);
         }
@@ -29,12 +29,12 @@ void repack14(const uint16_t *unpacked, uint32_t *packed) {
         const size_t low_word = low_bit / 32;
         const size_t high_bit = (i+1)*14-1;
         const size_t high_word = high_bit / 32;
-        //printf("word %li :: low %li (%li[%li]) high %li (%li[%li])\n",i,low_bit,low_word,low_bit%32,high_bit,high_word,high_bit%32);
+        //glog.log("word %li :: low %li (%li[%li]) high %li (%li[%li])\n",i,low_bit,low_word,low_bit%32,high_bit,high_word,high_bit%32);
         if (low_word == high_word) { //all the bits are in the same word
             packed[low_word] |= (unpacked[i] & 0x3FFF) << (low_bit%32);
         } else { //some of the bits are in the next word
             size_t high_off = high_word*32-low_bit;
-            //printf("pre_mask 0x%X post_mask 0x%X\n", (0x3FFF >> (14-high_off)), ((0x3FFF << high_off) & 0x3FFF) );
+            //glog.log("pre_mask 0x%X post_mask 0x%X\n", (0x3FFF >> (14-high_off)), ((0x3FFF << high_off) & 0x3FFF) );
             packed[low_word] |= (unpacked[i] & (0x3FFF >> (14-high_off))) << (low_bit%32);
             packed[high_word] |= (unpacked[i] & ((0x3FFF << high_off) & 0x3FFF)) >> high_off;
         }

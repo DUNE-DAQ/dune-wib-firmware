@@ -13,31 +13,33 @@
 using namespace std;
 
 void print_usage(const char *prog) {
-    fprintf(stderr, "Usage: %s [-w ip] [cmd] \n", prog);
+    glog.log( "Usage: %s [-w ip] [cmd] \n", prog);
 }
 
 void print_help() {
-    printf("Available commands:\n");
-    printf("  reboot\n");
-    printf("    Reboot the WIB\n");
-    printf("  script filename\n");
-    printf("    Run a WIB script (local file will be sent, otherwise filename is remote in /etc/wib/)\n");
-    printf("  daqspy filename\n");
-    printf("    Read 1MB from each daq spy buffer and write the 2MB data to filename\n");
-    printf("  peek addr\n");
-    printf("    Read a 32bit value from WIB address space\n");
-    printf("  poke addr value\n");
-    printf("    Write a 32bit value to WIB address space\n");
-    printf("  cdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
-    printf("    Read a 8bit value from COLDATA I2C address space\n");
-    printf("  cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
-    printf("    Write a 8bit value to COLDATA I2C address space\n");
-    printf("  cdfastcmd cmd\n");
-    printf("    Send the fast command cmd to all coldata chips\n");
-    printf("  update root_archive boot_archive\n");
-    printf("    Deploy a new root and boot archive to the WIB\n");
-    printf("  exit\n");
-    printf("    Closes the command interface\n");
+    glog.log("Available commands:\n");
+    glog.log("  reboot\n");
+    glog.log("    Reboot the WIB\n");
+    glog.log("  log [boot|clear]\n");
+    glog.log("    Return the wib_server log (or return boot log, or clear the logs)\n");
+    glog.log("  script filename\n");
+    glog.log("    Run a WIB script (local file will be sent, otherwise filename is remote in /etc/wib/)\n");
+    glog.log("  daqspy filename\n");
+    glog.log("    Read 1MB from each daq spy buffer and write the 2MB data to filename\n");
+    glog.log("  peek addr\n");
+    glog.log("    Read a 32bit value from WIB address space\n");
+    glog.log("  poke addr value\n");
+    glog.log("    Write a 32bit value to WIB address space\n");
+    glog.log("  cdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
+    glog.log("    Read a 8bit value from COLDATA I2C address space\n");
+    glog.log("  cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
+    glog.log("    Write a 8bit value to COLDATA I2C address space\n");
+    glog.log("  cdfastcmd cmd\n");
+    glog.log("    Send the fast command cmd to all coldata chips\n");
+    glog.log("  update root_archive boot_archive\n");
+    glog.log("    Deploy a new root and boot archive to the WIB\n");
+    glog.log("  exit\n");
+    glog.log("    Closes the command interface\n");
 }
 
 template <class R, class C>
@@ -71,15 +73,41 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         wib::GetSensors req;
         wib::GetSensors::Sensors rep;
         send_command(s,req,rep);
+    } else if (cmd == "log") {
+        if (argc > 2) {
+            glog.log("Usage: log [clear|boot]\n");
+            return 0;
+        }
+        bool boot = false;
+        bool clear = false;
+        if (argc == 2) {
+            string subcmd(argv[1]);
+            if (subcmd == "boot") {
+                boot = true;
+            } else if (subcmd == "clear") {
+                clear = true;
+            } else {    
+                glog.log("Usage: log [clear|boot]\n");
+                return 0;
+            }
+        }
+        wib::LogControl req;
+        req.set_return_log(!boot && !clear);
+        req.set_boot_log(boot);
+        req.set_clear_log(clear);
+        wib::LogControl::Log rep;
+        send_command(s,req,rep);
+        const string &log = rep.contents();
+        printf("%s",log.c_str());
     } else if (cmd == "script") {
         if (argc != 2) {
-            fprintf(stderr,"Usage: script filename\n");
+            glog.log("Usage: script filename\n");
             return 0;
         }
         string fname(argv[1]);
         ifstream fin(fname);
         if (fin.is_open()) {
-            printf("Executing local script... ");
+            glog.log("Executing local script... ");
             fflush(stdout);
             string script((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
             wib::Script req;
@@ -88,13 +116,13 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
             wib::Status rep;
             send_command(s,req,rep);
             if (rep.success()) {
-                printf("Success\n");
+                glog.log("Success\n");
             } else {
-                printf("Failure\n");
+                glog.log("Failure\n");
             }
             fin.close();
         } else {
-            printf("Executing remote script... ");
+            glog.log("Executing remote script... ");
             fflush(stdout);
             wib::Script req;
             req.set_script(fname);
@@ -102,21 +130,21 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
             wib::Status rep;
             send_command(s,req,rep);
             if (rep.success()) {
-                printf("Success\n");
+                glog.log("Success\n");
             } else {
-                printf("Failure\n");
+                glog.log("Failure\n");
             }
         }
     } else if (cmd == "daqspy") {
         if (argc != 2) {
-            fprintf(stderr,"Usage: daqspy filename\n");
+            glog.log("Usage: daqspy filename\n");
             return 0;
         }
         wib::ReadDaqSpy req;
         req.set_buf0(true);
         req.set_buf1(true);
         wib::ReadDaqSpy::DaqSpy rep;
-        printf("Acquiring DAQ spy buffer...");
+        glog.log("Acquiring DAQ spy buffer...");
         fflush(stdout);
         send_command(s,req,rep);
         string fname(argv[1]);
@@ -125,13 +153,13 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         fout.write(rep.buf1().c_str(),rep.buf1().size());
         fout.close();
         if (rep.success()) {
-            printf("Success\n");
+            glog.log("Success\n");
         } else {
-            printf("Failure\n");
+            glog.log("Failure\n");
         }
     } else if (cmd == "update") {
         if (argc != 3) {
-            fprintf(stderr,"Usage: update root_archive boot_archive\n");
+            glog.log("Usage: update root_archive boot_archive\n");
             return 0;
         }
         
@@ -140,7 +168,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         
         ifstream in_root(argv[1], ios::binary);
         if (!in_root.is_open()) {
-            fprintf(stderr,"Could not open root archive: %s\n",argv[1]);
+            glog.log("Could not open root archive: %s\n",argv[1]);
             return 0;
         }
         in_root.ignore( numeric_limits<streamsize>::max() );
@@ -153,7 +181,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         
         ifstream in_boot(argv[2], ios::binary);
         if (!in_boot.is_open()) {
-            fprintf(stderr,"Could not open boot archive: %s\n",argv[2]);
+            glog.log("Could not open boot archive: %s\n",argv[2]);
             return 0;
         }
         in_boot.ignore( numeric_limits<streamsize>::max() );
@@ -165,7 +193,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         in_boot.close();
         
         wib::Update req;
-        printf("Sending root archive (%0.1f MB) and boot archive (%0.1f MB)\n",root_archive.size()/1024.0/1024.0,boot_archive.size()/1024.0/1024.0);
+        glog.log("Sending root archive (%0.1f MB) and boot archive (%0.1f MB)\n",root_archive.size()/1024.0/1024.0,boot_archive.size()/1024.0/1024.0);
         req.set_root_archive(root_archive);
         req.set_boot_archive(boot_archive);
         wib::Empty rep;
@@ -176,19 +204,19 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         send_command(s,req,rep);
     } else if (cmd == "peek") {
         if (argc != 2) {
-            fprintf(stderr,"Usage: peek addr\n");
-            fprintf(stderr,"   all arguments are base 16\n");
+            glog.log("Usage: peek addr\n");
+            glog.log("   all arguments are base 16\n");
             return 0;
         }
         wib::Peek req;
         req.set_addr((size_t)strtoull(argv[1],NULL,16));
         wib::RegValue rep;
         send_command(s,req,rep);
-        printf("0x%X\n",rep.value());
+        glog.log("0x%X\n",rep.value());
     } else if (cmd == "poke") {
         if (argc != 3) {
-            fprintf(stderr,"Usage: poke addr value\n");
-            fprintf(stderr,"   all arguments are base 16\n");
+            glog.log("Usage: poke addr value\n");
+            glog.log("   all arguments are base 16\n");
             return 0;
         }
         wib::Poke req;
@@ -198,8 +226,8 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         send_command(s,req,rep);
     } else if (cmd == "cdpeek") {
         if (argc != 6) {
-            fprintf(stderr,"Usage: cdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
-            fprintf(stderr,"   femb_idx and cd_idx are base 10, remaining args are base 16\n");
+            glog.log("Usage: cdpeek femb_idx cd_idx chip_addr reg_page reg_addr\n");
+            glog.log("   femb_idx and cd_idx are base 10, remaining args are base 16\n");
             return 0;
         }
         wib::CDPeek req;
@@ -210,11 +238,11 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         req.set_reg_addr((uint8_t)strtoull(argv[5],NULL,16));
         wib::CDRegValue rep;
         send_command(s,req,rep);
-        printf("0x%X\n",rep.data());
+        glog.log("0x%X\n",rep.data());
     } else if (cmd == "cdpoke") {
         if (argc != 7) {
-            fprintf(stderr,"Usage: cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
-            fprintf(stderr,"   femb_idx and cd_idx are base 10, remaining args are base 16\n");
+            glog.log("Usage: cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data\n");
+            glog.log("   femb_idx and cd_idx are base 10, remaining args are base 16\n");
             return 0;
         }
         wib::CDPoke req;
@@ -228,8 +256,8 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         send_command(s,req,rep);
     } else if (cmd == "cdfastcmd") {
         if (argc != 2) {
-            fprintf(stderr,"Usage: cdfastcmd cmd\n");
-            fprintf(stderr,"   cmd can be: reset, act, sync, edge, idle, edge_act\n");
+            glog.log("Usage: cdfastcmd cmd\n");
+            glog.log("   cmd can be: reset, act, sync, edge, idle, edge_act\n");
             return 0;
         }
         wib::CDFastCmd req;
@@ -247,8 +275,8 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         } else if (cmd == "edge_act") {
             req.set_cmd(FAST_CMD_EDGE_ACT);
         } else {
-            fprintf(stderr,"Unknown fast command: %s\n",argv[1]);
-            fprintf(stderr,"Valid fast commands: reset, act, sync, edge, idle, edge_act\n");
+            glog.log("Unknown fast command: %s\n",argv[1]);
+            glog.log("Valid fast commands: reset, act, sync, edge, idle, edge_act\n");
             return 0;
         }
         wib::RegValue rep;
@@ -256,7 +284,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
     } else if (cmd == "help") {
         print_help();
     } else {
-        fprintf(stderr,"Unrecognized Command: %s\n",argv[0]);
+        glog.log("Unrecognized Command: %s\n",argv[0]);
         return 0;
     }
     return 0;

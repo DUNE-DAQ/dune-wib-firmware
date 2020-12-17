@@ -26,7 +26,7 @@ using namespace std;
 WIB::WIB() {
     io_reg_init(&this->regs,CTRL_REGS,0x10000/4);
     i2c_init(&this->selected_i2c,(char*)"/dev/i2c-0");
-    i2c_init(&this->femb_pwr_i2c,(char*)"/dev/i2c-1");
+    i2c_init(&this->femb_pwr_i2c,(char*)"/dev/i2c-1"); //FIXME these devices appear to be on /dev/i2c-2 ...
     i2c_init(&this->femb_en_i2c,(char*)"/dev/i2c-2");
     #ifdef SIMULATION
     this->daq_spy_fd = -1;
@@ -65,47 +65,47 @@ bool WIB::initialize() {
     int ret;
     ret = system("ip link set eth0 up");
     if (WEXITSTATUS(ret) != 0) {
-        fprintf(stderr,"failed to bring up eth0\n");
+        glog.log("failed to bring up eth0\n");
         success = false;
     }
     string eth0_conf("ip addr add "+crate_ip()+" dev eth0");
     ret = system(eth0_conf.c_str());
     if (WEXITSTATUS(ret) != 0) {
-        fprintf(stderr,"failed to assign IP to eth0\n");
+        glog.log("failed to assign IP to eth0\n");
         success = false;
     }
     string route_conf("route add default gw "+gateway_ip()+" eth0");
     ret = system(route_conf.c_str());
     if (WEXITSTATUS(ret) != 0) {
-        fprintf(stderr,"failed to assign default route\n");
+        glog.log("failed to assign default route\n");
         success = false;
     }
     return success;
 }
 
 bool WIB::start_frontend() {
-    printf("Initializing front end...\n");
+    glog.log("Initializing front end...\n");
     bool success = true;
-    printf("Disabling front end power\n");
+    glog.log("Disabling front end power\n");
     femb_power_set(false);
-    printf("Configuring front end power\n");
+    glog.log("Configuring front end power\n");
     femb_power_config();
     success &= script("prestart");
-    printf("Configuring timing endpoint\n");
+    glog.log("Configuring timing endpoint\n");
     success &= timing_endpoint_config();
-    printf("Resetting FEMB receiver\n");
+    glog.log("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
     return success;
 }
 
 string WIB::crate_ip() {
-    printf("FIXME: using default IP: 192.168.121.1/24\n");
+    glog.log("FIXME: using default IP: 192.168.121.1/24\n");
     return "192.168.121.1/24"; //FIXME pull from firmware
 }
 
 string WIB::gateway_ip() {
-    printf("FIXME: using default IP: 192.168.121.52\n"); //iceberg01
+    glog.log("FIXME: using default IP: 192.168.121.52\n"); //iceberg01
     return "192.168.121.52"; //FIXME pull from somewhere
 }
 
@@ -246,7 +246,7 @@ bool WIB::script_cmd(string line) {
     string cmd(tokens[0]);
     if (cmd == "delay") {
         if (tokens.size() != 2) {
-            fprintf(stderr,"Invalid delay\n");
+            glog.log("Invalid delay\n");
             return false;
         }
         size_t micros = (size_t) strtoull(tokens[1].c_str(),NULL,10);
@@ -254,7 +254,7 @@ bool WIB::script_cmd(string line) {
         return true;
     } else if (cmd == "run") {
         if (tokens.size() != 2) {
-            fprintf(stderr,"Invalid run\n");
+            glog.log("Invalid run\n");
             return false;
         }
         return script(tokens[1]);
@@ -276,13 +276,13 @@ bool WIB::script_cmd(string line) {
             } else if (bus == "pwr") { // i2c pwr chip addr data [...]
                 i2c_bus = &this->femb_en_i2c;
             } else {
-                fprintf(stderr,"Invalid i2c bus selection: %s\n", tokens[1].c_str());
+                glog.log("Invalid i2c bus selection: %s\n", tokens[1].c_str());
                 return false;
             }
             uint8_t chip = (uint8_t)strtoull(tokens[2].c_str(),NULL,16);
             uint8_t addr = (uint8_t)strtoull(tokens[3].c_str(),NULL,16);
             if (tokens.size() < 5) {
-                fprintf(stderr,"Invalid arguments to i2c\n");
+                glog.log("Invalid arguments to i2c\n");
             } else if (tokens.size() > 5) {
                 size_t size = tokens.size() - 4;
                 uint8_t *buf = new uint8_t[size];
@@ -312,11 +312,11 @@ bool WIB::script_cmd(string line) {
             poke(addr, (prev & (~mask)) | (value & mask));
             return true;
         } else {
-            fprintf(stderr,"Invalid arguments to mem\n");
+            glog.log("Invalid arguments to mem\n");
         }
     } else if (cmd == "fast") {
         if (tokens.size() != 2) {
-            fprintf(stderr,"Invalid arguments to fast\n");
+            glog.log("Invalid arguments to fast\n");
             return false;
         }
         string fast(tokens[1]);
@@ -333,12 +333,12 @@ bool WIB::script_cmd(string line) {
         } else if (fast == "edge_act") {
             FEMB::fast_cmd(FAST_CMD_EDGE_ACT);
         } else {
-            fprintf(stderr,"Unknown fast command: %s\n",fast.c_str());
+            glog.log("Unknown fast command: %s\n",fast.c_str());
             return false;
         }
         return true;
     } else {
-        fprintf(stderr,"Invalid script command: %s\n", tokens[0].c_str());
+        glog.log("Invalid script command: %s\n", tokens[0].c_str());
     }
     return false;
 }
@@ -355,25 +355,25 @@ bool WIB::script(string script, bool file) {
                 if (!fin.is_open()) {
                     return false;
                 } else {
-                    printf("Found /etc/wib/%s on WIB\n",script.c_str());
+                    glog.log("Found /etc/wib/%s on WIB\n",script.c_str());
                 }
             } else {
-                printf("Found scripts/%s on WIB\n",script.c_str());
+                glog.log("Found scripts/%s on WIB\n",script.c_str());
             }
         } else {
-            printf("Found full or relative path %s on WIB\n",script.c_str());
+            glog.log("Found full or relative path %s on WIB\n",script.c_str());
         }
-        printf("Running script: %s\n",script.c_str());
+        glog.log("Running script: %s\n",script.c_str());
         string str((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
         fin.close();
         script = str;
     } else {
-        printf("Running remote/generated script\n");
+        glog.log("Running remote/generated script\n");
     }
     istringstream iss(script);
 
     for (string line; getline(iss, line); ) {
-        //printf("%s\n",line.c_str());
+        //glog.log("%s\n",line.c_str());
         if (!script_cmd(line)) return false;
     }
     return true;
@@ -393,7 +393,7 @@ bool WIB::read_daq_spy(void *buf0, void *buf1) {
     //acquisition start are bits 6 and 7 (one per buffer)
     prev &= (~(mask << 6));
     uint32_t next = prev | (mask << 6);
-    printf("Starting acquisition...\n");
+    glog.log("Starting acquisition...\n");
     io_reg_write(&this->regs,REG_FW_CTRL,next);
     io_reg_write(&this->regs,REG_FW_CTRL,prev);
     bool success = false;
@@ -407,16 +407,16 @@ bool WIB::read_daq_spy(void *buf0, void *buf1) {
         }
     }
     if (!success) {
-        fprintf(stderr,"Timed out waiting for buffers to fill: %0X\n",last_read);
+        glog.log("Timed out waiting for buffers to fill: %0X\n",last_read);
     } else {
-        printf("Acquisition took %i ms\n",ms);
+        glog.log("Acquisition took %i ms\n",ms);
     }
-    printf("Copying spydaq buffers\n");
+    glog.log("Copying spydaq buffers\n");
     if (buf0) memcpy(buf0,this->daq_spy[0],DAQ_SPY_SIZE);
     if (buf1) memcpy(buf1,this->daq_spy[1],DAQ_SPY_SIZE);
     #ifdef SIMULATION
     //generate more "random" data for simulation
-    printf("Generating random sin/cos data for next acquisiton\n");
+    glog.log("Generating random sin/cos data for next acquisiton\n");
     fake_data((frame14*)this->daq_spy[0],DAQ_SPY_SIZE/sizeof(frame14));
     fake_data((frame14*)this->daq_spy[1],DAQ_SPY_SIZE/sizeof(frame14));
     #endif
@@ -472,13 +472,13 @@ bool WIB::update(const string &root_archive, const string &boot_archive) {
     ofstream out_boot("/home/root/boot_archive.tar.gz", ofstream::binary);
     out_boot.write(boot_archive.data(),boot_archive.size());
     out_boot.close();
-    printf("Expanding boot archive (%0.1f MB)\n",boot_archive.size()/1024.0/1024.0);
+    glog.log("Expanding boot archive (%0.1f MB)\n",boot_archive.size()/1024.0/1024.0);
     int ret1 = system("wib_update.sh /home/root/boot_archive.tar.gz /boot");
     
     ofstream out_root("/home/root/root_archive.tar.gz", ofstream::binary);
     out_root.write(root_archive.data(),root_archive.size());
     out_root.close();
-    printf("Expanding root archive (%0.1f MB)\n",root_archive.size()/1024.0/1024.0);
+    glog.log("Expanding root archive (%0.1f MB)\n",root_archive.size()/1024.0/1024.0);
     int ret2 = system("wib_update.sh /home/root/root_archive.tar.gz /");
     
     return WEXITSTATUS(ret1) == 0 && WEXITSTATUS(ret2) == 0;
@@ -489,35 +489,35 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
 
     if (!frontend_initialized) {
         if (!start_frontend()) {
-            fprintf(stderr,"Failed to start frontend electronics\n");
+            glog.log("Failed to start frontend electronics\n");
             return false;
         }
         frontend_initialized = true;
     }
     
     if (conf.fembs_size() != 4) {
-        fprintf(stderr,"Must supply exactly 4 FEMB configurations\n");
+        glog.log("Must supply exactly 4 FEMB configurations\n");
         return false;
     }
     
-    printf("Reconfiguring WIB\n"); 
+    glog.log("Reconfiguring WIB\n"); 
     
-    printf("Powering on COLDATA\n");
+    glog.log("Powering on COLDATA\n");
     femb_power_set(true,false); // COLDATA on, COLDADC off
     usleep(1000000);
-    printf("Resetting COLDATA\n");
+    glog.log("Resetting COLDATA\n");
     FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
     bool coldata_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDATA
         if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),FRAME_14); // Sets ACT to ACT_RESET_COLDADC
     }
     if (coldata_res) {
-        printf("COLDATA configured\n");
+        glog.log("COLDATA configured\n");
     } else {
-        printf("COLDATA configuration failed!\n");
+        glog.log("COLDATA configuration failed!\n");
     }
     
-    printf("Powering on COLDADC\n");
+    glog.log("Powering on COLDADC\n");
     femb_power_set(true,true); // COLDATA on, COLDADC on
     usleep(1000000);
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
@@ -526,9 +526,9 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
          if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc();
     }
     if (coldadc_res) {
-        printf("COLDADC configured\n");
+        glog.log("COLDADC configured\n");
     } else {
-        printf("COLDADC configuration failed!\n");
+        glog.log("COLDADC configuration failed!\n");
     }
     
     bool larasic_res = true;
@@ -559,9 +559,9 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     }
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
     if (larasic_res) {
-        printf("LArASIC configured\n");
+        glog.log("LArASIC configured\n");
     } else {
-        printf("LArASIC configuration failed!\n");
+        glog.log("LArASIC configuration failed!\n");
     }
     
     bool spi_verified = false;
@@ -586,14 +586,14 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         }
     }
     if (spi_verified) {
-        printf("LArASIC SPI verified\n");
+        glog.log("LArASIC SPI verified\n");
     } else {
-        printf("LArASIC SPI verification failed!\n");
+        glog.log("LArASIC SPI verification failed!\n");
     }
         
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
-    printf("FEMB receivers reset\n");
+    glog.log("FEMB receivers reset\n");
     
     return coldata_res && coldadc_res && larasic_res && spi_verified;
 }
@@ -604,7 +604,7 @@ bool WIB::get_pulser() {
 
 bool WIB::set_pulser(bool on) {
     if (pulser_on == on) {
-        printf("Pulser already %s\n",on?"enabled":"disabled");
+        glog.log("Pulser already %s\n",on?"enabled":"disabled");
         return true;
     }
     bool res = true;
@@ -617,10 +617,10 @@ bool WIB::set_pulser(bool on) {
 
 bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
    
-    printf("Activating I2C_SENSOR bus\n");
+    glog.log("Activating I2C_SENSOR bus\n");
     i2c_select(I2C_SENSOR);
 
-    printf("Enabling voltage sensors\n");
+    glog.log("Enabling voltage sensors\n");
     uint8_t buf[1] = {0x7};
     i2c_write(&this->selected_i2c,0x70,buf,1); // enable i2c repeater
     
@@ -632,10 +632,10 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2990_4e_voltages();
     for (uint8_t i = 1; i <= 4; i++) {
         double v = 0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i);
-        printf("LTC2990 0x4E ch%i -> %0.2f V\n",i,v);
+        glog.log("LTC2990 0x4E ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2990_4e_voltages(v);
     }
-    printf("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
+    glog.log("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
 
     // 1.2 V (before)
     // 1.2 V
@@ -645,10 +645,10 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2990_4c_voltages();
     for (uint8_t i = 1; i <= 4; i++) {
         double v = 0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i);
-        printf("LTC2990 0x4C ch%i -> %0.2f V\n",i,v);
+        glog.log("LTC2990 0x4C ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2990_4c_voltages(v);
     }
-    printf("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
+    glog.log("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
 
     // In pairs (before,after)
     // 0.85 V
@@ -659,21 +659,21 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2991_48_voltages();
     for (uint8_t i = 1; i <= 8; i++) {
         double v = 0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i);
-        printf("LTC2991 0x48 ch%i -> %0.2f V\n",i,v);
+        glog.log("LTC2991 0x48 ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2991_48_voltages(v);
     }
-    printf("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
+    glog.log("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
 
     // 0x49 0x4D 0x4A are AD7414 temperature sensors
     double t;
     t = read_ad7414_temp(&this->selected_i2c,0x49);
-    printf("AD7414 0x49 temp %0.1f\n", t);
+    glog.log("AD7414 0x49 temp %0.1f\n", t);
     sensors.set_ad7414_49_temp(t);
     t = read_ad7414_temp(&this->selected_i2c,0x4D);
-    printf("AD7414 0x4D temp %0.1f\n", t);
+    glog.log("AD7414 0x4D temp %0.1f\n", t);
     sensors.set_ad7414_4d_temp(t);
     t = read_ad7414_temp(&this->selected_i2c,0x4A);
-    printf("AD7414 0x4A temp %0.1f\n", t);
+    glog.log("AD7414 0x4A temp %0.1f\n", t);
     sensors.set_ad7414_4a_temp(t);
 
     // 0x15 LTC2499 temperature sensor inputs from LTM4644 for FEMB 0 - 3 and WIB 1 - 3
@@ -682,7 +682,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     for (uint8_t i = 0; i < 7; i++) {
         usleep(175000);
         t = read_ltc2499_temp(&this->selected_i2c,i+1);
-        printf("LTC2499 ch%i -> %0.14f\n",i,t);
+        glog.log("LTC2499 ch%i -> %0.14f\n",i,t);
         sensors.add_ltc2499_15_temps(t);
     }
 
@@ -707,13 +707,13 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     for (uint8_t i = 0; ; i++) {
         uint8_t addr;
         if (i < 4) {
-            printf("Reading FEMB%i DC2DC current sensor\n",i);
+            glog.log("Reading FEMB%i DC2DC current sensor\n",i);
             addr = femb_dc2dc_current_addr[i];
         } else if (i < 6) {
-            printf("Reading FEMB LDO %i current\n",i-4);
+            glog.log("Reading FEMB LDO %i current\n",i-4);
             addr = femb_ldo_current_addr[i-4];
         } else if (i < 7) {
-            printf("Reading FEMB bias current\n");
+            glog.log("Reading FEMB bias current\n");
             addr = femb_bias_current_addr[i-6];
         } else {
             break;
@@ -721,7 +721,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
         enable_ltc2991(femb_power_mon_i2c,addr);
         for (uint8_t j = 1; j <= 8; j++) {
             double v = 0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,j);
-            printf("LTC2991 0x%X ch%i -> %0.2f V\n",addr,j,v);
+            glog.log("LTC2991 0x%X ch%i -> %0.2f V\n",addr,j,v);
             switch (i) {
                 case 0: sensors.add_femb0_dc2dc_ltc2991_voltages(v); break;
                 case 1: sensors.add_femb1_dc2dc_ltc2991_voltages(v); break;
@@ -732,9 +732,13 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
                 case 6: sensors.add_femb_bias_ltc2991_voltages(v); break;
             }   
         }
-        printf("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,10)+2.5);
+        glog.log("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,10)+2.5);
     }
 
     return true;
+}
+
+uint32_t WIB::read_fw_timestamp() {
+    return io_reg_read(&this->regs,REG_FW_TIMESTAMP);
 }
 

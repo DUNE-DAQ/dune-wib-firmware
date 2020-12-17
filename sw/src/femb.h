@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include "io_reg.h"
+#include "log.h"
 
 // Fast Command AXI registers
 constexpr uint32_t REG_FAST_CMD_CODE        = 0x0000/4;
@@ -64,8 +65,8 @@ enum FrameType {
 
 //LArASIC configuration (assumes all channels the same)
 typedef struct {
-    bool sdd,sdc,slkh,s16,stb,stb1,slk; //global reg 1
-    uint8_t sdac; bool sdacsw1,sdacsw2; // global reg 2
+    bool sdd,sdc,slkh,s16,stb,stb1,slk; //glog.reg 1
+    uint8_t sdac; bool sdacsw1,sdacsw2; // glog.reg 2
     bool sts,snc; uint8_t gain, peak_time; bool smn,sdf; // chan regs
 } larasic_conf;
 

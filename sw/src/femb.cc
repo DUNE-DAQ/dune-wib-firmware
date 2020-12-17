@@ -75,7 +75,7 @@ bool FEMB::configure_coldata(bool cold, FrameType frame) {
 		res &= i2c_write_verify(i, 2, 0, 3, 0x3c);  // normal operation
 		res &= i2c_write_verify(i, 2, 0, 0x20, ACT_RESET_COLDADC); // ACT = COLDADC reset
 	}
-    if (!res) fprintf(stderr,"COLDATA configuration failed for FEMB:%i!\n",index);
+    if (!res) glog.log("COLDATA configuration failed for FEMB:%i!\n",index);
     return res;
 }
 
@@ -103,7 +103,7 @@ bool FEMB::configure_coldadc() {
             res &= i2c_write_verify(i, j, 1, 0xb1, 0x0c);  //config_start_number, as recommended by David
         }
     }
-    if (!res) fprintf(stderr,"COLDADC configuration failed for FEMB:%i!\n",index);
+    if (!res) glog.log("COLDADC configuration failed for FEMB:%i!\n",index);
     return res;
 }
 
@@ -146,7 +146,7 @@ bool FEMB::configure_larasic(const larasic_conf &c) {
 		res &= i2c_write_verify(i, 2, 0, 0x20, ACT_PROGRAM_LARASIC); // ACT = Program LArASIC SPI
     }
     
-    if (!res) printf("Failed to store LArASIC configuration for FEMB:%i!\n",index);
+    if (!res) glog.log("Failed to store LArASIC configuration for FEMB:%i!\n",index);
     return res;
 }
 
@@ -155,7 +155,7 @@ bool FEMB::set_fast_act(uint8_t act_cmd) {
     for (uint8_t i = 0; i < 2; i++) {
     	res &= i2c_write_verify(i, 2, 0, 0x20, act_cmd);
 	}
-    if (!res) printf("Failed to set fast act for FEMB:%i!\n",index);
+    if (!res) glog.log("Failed to set fast act for FEMB:%i!\n",index);
 	return res;
 }
 
@@ -222,7 +222,7 @@ bool FEMB::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page
         read = i2c_read(bus_idx,chip_addr,reg_page,reg_addr);
         if (read == data) return true;
     }
-    fprintf(stderr,"i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X :: 0x%X != 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
+    glog.log("i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X :: 0x%X != 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
     return false;
 }
 

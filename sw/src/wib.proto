@@ -217,6 +217,30 @@ message GetSensors {
     }
 }
 
+message GetTimestamp {
+    
+    message Timestamp {
+        uint32 timestamp = 1;
+        uint32 day = 2;
+        uint32 month = 3;
+        uint32 year = 4;
+        uint32 hour = 5;
+        uint32 min = 6;
+        uint32 sec = 7;
+    }
+}
+
+message LogControl {
+    bool clear_log = 1; //clears log buffer
+    bool return_log = 2; //returns contents of log since last clear if true
+    bool boot_log = 3; //overrides return_log
+    
+    message Log {
+        bytes contents = 1;
+    }
+}
+
+
 /*** Generic Command Replies (not valid `cmd` options) ***/
 
 // Nothing

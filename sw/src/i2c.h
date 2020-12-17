@@ -2,6 +2,7 @@
 #define i2c_h
 
 #include <stdint.h>
+#include "log.h"
 
 typedef struct i2c_t {
 	int fd;

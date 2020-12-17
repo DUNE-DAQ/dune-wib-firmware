@@ -55,7 +55,7 @@ bool axi_server_init = false;
 
 void init_axi_server_socket() {
     if (axi_server_init) return;
-    printf("Connecting to cocotb axi_server...\n"); 
+    glog.log("Connecting to cocotb axi_server...\n"); 
     axi_server_socket.connect("tcp://127.0.0.1:7777");
     axi_server_init = true;
 }
@@ -68,7 +68,7 @@ unsigned int axi_server(unsigned int cmd, unsigned int addr = 0, unsigned int da
     m->addr = addr;
     m->data = data;
   
-    //fprintf(stderr,"Skipping AXI simulation!\n");
+    //glog.log("Skipping AXI simulation!\n");
     //axi_server_socket.send(zm,zmq::send_flags::none);
     //axi_server_socket.recv(zm,zmq::recv_flags::none);
     
@@ -86,12 +86,12 @@ int io_reg_free(io_reg_t *reg) {
 }
 
 uint32_t io_reg_read(io_reg_t *reg, size_t idx) {
-    printf("axi_read %lx\n",idx*4+reg->base_addr);
+    glog.log("axi_read %lx\n",idx*4+reg->base_addr);
     return axi_server(READ,idx*4+reg->base_addr);
 }
 
 void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data) {
-    printf("axi_write %lx = %x\n",idx*4+reg->base_addr,data);
+    glog.log("axi_write %lx = %x\n",idx*4+reg->base_addr,data);
     axi_server(WRITE,idx*4+reg->base_addr,data);
 }
 

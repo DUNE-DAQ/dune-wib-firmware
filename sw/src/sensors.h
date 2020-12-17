@@ -2,6 +2,7 @@
 #define sensors_h
 
 #include "i2c.h"
+#include "log.h"
 
 void start_ltc2499_temp(i2c_t *i2c, uint8_t ch);
 double read_ltc2499_temp(i2c_t *i2c, uint8_t ch);
