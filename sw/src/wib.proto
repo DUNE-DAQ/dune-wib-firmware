@@ -217,6 +217,7 @@ message GetSensors {
     }
 }
 
+// reads the hardcoded firmware timestamp to verify firmware version
 message GetTimestamp {
     
     message Timestamp {
@@ -230,6 +231,7 @@ message GetTimestamp {
     }
 }
 
+// reads the wib_server (or boot) log, optionally clearing the log
 message LogControl {
     bool clear_log = 1; //clears log buffer
     bool return_log = 2; //returns contents of log since last clear if true

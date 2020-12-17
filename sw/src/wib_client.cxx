@@ -73,6 +73,12 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         wib::GetSensors req;
         wib::GetSensors::Sensors rep;
         send_command(s,req,rep);
+    } else if (cmd == "timestamp") {
+        wib::GetTimestamp req;
+        wib::GetTimestamp::Timestamp rep;
+        send_command(s,req,rep);
+        glog.log("timestamp code: 0x%08X\n",rep.timestamp());
+        glog.log("decoded: %i/%i/%i %i:%i:%i\n",rep.year(),rep.month(),rep.day(),rep.hour(),rep.min(),rep.sec());
     } else if (cmd == "log") {
         if (argc > 2) {
             glog.log("Usage: log [clear|boot]\n");
