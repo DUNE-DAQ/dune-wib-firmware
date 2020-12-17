@@ -213,6 +213,8 @@ int main(int argc, char **argv) {
             rep.set_sec((ts>>0)&0x3f);
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::ConfigureWIB>()) {
+            glog.clear()
+            glog.log("log auto cleared on configure\n");
             glog.log("configure_wib\n");
             wib::ConfigureWIB req;
             command.cmd().UnpackTo(&req);
