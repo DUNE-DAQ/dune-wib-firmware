@@ -30,8 +30,8 @@
 
 //32bit register index in CTRL_REGS
 #define REG_TIMING          0x0000/4
-#define REG_LINK_MASK       0x0008/4
 #define REG_FW_CTRL         0x0004/4
+#define REG_LINK_MASK       0x0008/4
 #define REG_DAQ_SPY_STATUS  0x0080/4
 #define REG_FW_TIMESTAMP    0x0088/4
 
