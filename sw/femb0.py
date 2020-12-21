@@ -187,7 +187,9 @@ class FFTView(DataView):
         super().__init__(*args,**kwargs)
         self.cb = None
         self.chan = np.arange(128)
-        self.freq = np.arange(2184)
+        freq = np.fft.fftfreq(2184,320e-9) 
+        freq_idx = np.argsort(freq)[len(freq)//2::]
+        self.freq = freq[freq_idx]
         x,_ = np.meshgrid(self.chan,self.freq)
         self.fft = np.full_like(x,1)
         
@@ -195,7 +197,7 @@ class FFTView(DataView):
         #timestamps = self.data_source.timestamps[0]
         print(samples.shape)
         samples = samples[0] # [femb][channel][sample] -> [channel][sample]
-        freq = np.fft.fftfreq(len(samples[0]),1e-6) #FIXME
+        freq = np.fft.fftfreq(len(samples[0]),320e-9) 
         freq_idx = np.argsort(freq)[len(freq)//2::]
         self.freq = freq[freq_idx]
         self.fft = []
@@ -211,7 +213,7 @@ class FFTView(DataView):
             self.cb.remove()
         
         try:
-            im = ax.imshow(self.fft.T,extent=(self.chan[0],self.chan[-1],self.freq[0],self.freq[-1]),
+            im = ax.imshow(self.fft.T,extent=(self.chan[0],self.chan[-1],self.freq[0]/1000,self.freq[-1]/1000),
                           aspect='auto',interpolation='none',origin='lower',norm=LogNorm())
             self.cb = ax.figure.colorbar(im)
         except:
@@ -219,7 +221,7 @@ class FFTView(DataView):
         
         ax.set_title('Power Spectrum')
         ax.set_xlabel('Channel Number')
-        ax.set_ylabel('Frequency (Hz)')
+        ax.set_ylabel('Frequency (kHz)')
         
         ax.figure.canvas.draw()
         self.resize(None)
