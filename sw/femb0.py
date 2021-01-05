@@ -375,7 +375,7 @@ class FEMB0Diagnostics(QtWidgets.QMainWindow):
         self.send_command(req,rep);
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Visually display data from a WIB')
+    parser = argparse.ArgumentParser(description='Visually display diagnostic data plots from FEMB0 on a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
     parser.add_argument('--config','-C',default='femb0.json',help='WIB configuration to load [femb0.json]')
     args = parser.parse_args()

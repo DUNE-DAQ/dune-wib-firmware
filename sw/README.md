@@ -24,6 +24,7 @@ These are described in the following
       - [Acquire](#acquire)
       - [Plotting data](#plotting-data)
       - [Creating useful display](#creating-useful-display)
+    + [femb0.py](#femb0py)
     + [wib_mon.py](#wib_monpy)
     + [wib_config.py](#wib_configpy)
   * [Functionality Overview](#functionality-overview)
@@ -204,6 +205,32 @@ the data.
 After creating a grid, select the signals and featureson each plot after 
 clicking it.
 
+### femb0.py
+
+This is a pyqt5 GUI interface to produce diagnostic plots for FEMB 0 attached
+to a WIB. It has similar functionality to [wib_scope.py](#wib_scopepy) except
+that the data displayed includes:
+* A 2D histogram of ADC counts per channel on FEMB 0
+* The mean and RMS ADC values for each channel on FEMB 0
+* The power spectrum (FFT) of each channel on FEMB 0 as a 2D histogram
+
+By default this utility loads the `femb0.json` which only enables FEMB0. You
+must press `Configure` to load this onto the WIB, similar to `wib_scope.py`
+
+#### Help
+```
+usage: femb0.py [-h] [--wib_server WIB_SERVER] [--config CONFIG]
+
+Visually display diagnostic data plots from FEMB0 on a WIB
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --wib_server WIB_SERVER, -w WIB_SERVER
+                        IP of wib_server to connect to [127.0.0.1]
+  --config CONFIG, -C CONFIG
+                        WIB configuration to load [femb0.json]
+```
+                
 ### wib_mon.py
 
 This is another pyqt5 GUI interface to the WIBs onboard sensors. It can display
