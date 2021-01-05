@@ -268,7 +268,7 @@ class WIBMon(QtWidgets.QMainWindow):
             QtCore.QTimer.singleShot(1000, self.get_sensors)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Visually display data from a WIB')
+    parser = argparse.ArgumentParser(description='Visually display monitoring info from a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
     parser.add_argument('--cli','-c',action='store_true',help='Query sensors and print to CLI only')
     args = parser.parse_args()

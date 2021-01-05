@@ -10,18 +10,22 @@ program, and can be used to remote control a WIB running `wib_server`. The
 These are described in the following 
 
 - [WIB Software](#wib-software)
-  * [Client / Server Overview](#client---server-overview)
+  * [Client Server Overview](#client-server-overview)
   * [Dependencies and Building](#dependencies-and-building)
-  * [Components](#components)
-    + [wib_server](#wib-server)
-    + [wib_client](#wib-client)
-    + [wib_scope.py](#wib-scopepy)
+  * [Software Components](#software-components)
+    + [wib_server](#wib_server)
+    + [wib_client](#wib_client)
+    + [spy_dump](#spy_dump)
+    + [sync_fake_time](#sync_fake_time)
+    + [wib_scope.py](#wib_scopepy)
       - [Help](#help)
       - [Configuration](#configuration)
       - [Pulser](#pulser)
       - [Acquire](#acquire)
       - [Plotting data](#plotting-data)
       - [Creating useful display](#creating-useful-display)
+    + [wib_mon.py](#wib_monpy)
+    + [wib_config.py](#wib_configpy)
   * [Functionality Overview](#functionality-overview)
     + [Low level functions](#low-level-functions)
     + [WIB scripts](#wib-scripts)
@@ -72,7 +76,7 @@ The python components (`wib_scope.py`) requires the following python3 packages:
 
 Generate the python protobuf library with `make python`.
 
-## Components
+## Software Components
 
 ### wib_server
 
@@ -122,6 +126,23 @@ Available commands:
   exit
     Closes the command interface
 ```
+
+### spy_dump
+
+Usage: `./spy_dump [daqspy_binary]`
+
+This utility will emit the contents of a `daqspy` binary created from 
+`wib_client` as human readable hex values for debugging.
+
+### sync_fake_time
+
+Usage: `./sync_fake_time hextime [wib_ip] [wib_ip] ...`
+
+This utility will attempt to synchronize the fake timestamp generator in the 
+WIB firmware over the network with minimal latency. Multiple WIB IPs can be 
+specified (no limit) along with an initial timestamp (in hex notation) common
+to all. Do not expect better than few-ms synchronization using this method. 
+Only useful prior to a fully functional timing endpoint in the WIB.
 
 ### wib_scope.py
 
@@ -182,6 +203,46 @@ the data.
 
 After creating a grid, select the signals and featureson each plot after 
 clicking it.
+
+### wib_mon.py
+
+This is another pyqt5 GUI interface to the WIBs onboard sensors. It can display
+current, voltage, and temperatures from the integrated I2C sensors. Optionally
+this will print to the command line instead of opening a GUI for archival
+purposes.
+
+#### Help
+```
+usage: wib_mon.py [-h] [--wib_server WIB_SERVER] [--cli]
+
+Visually monitoring info from a WIB
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --wib_server WIB_SERVER, -w WIB_SERVER
+                        IP of wib_server to connect to [127.0.0.1]
+  --cli, -c             Query sensors and print to CLI only
+```
+
+### wib_config.py
+
+This is a command line utility for loading a JSON config document specifying 
+frontend electronics settings into the WIB. The format for this is identical to
+that [used by wib_scope.py](#configuration).
+
+#### Help
+```
+usage: wib_config.py [-h] [--wib_server WIB_SERVER] [--config CONFIG]
+
+Send a configuration json document to a WIB
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --wib_server WIB_SERVER, -w WIB_SERVER
+                        IP of wib_server to connect to [127.0.0.1]
+  --config CONFIG, -C CONFIG
+                        WIB configuration to load [default.json]
+```
 
 ## Functionality Overview
 

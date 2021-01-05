@@ -62,7 +62,7 @@ class WIB:
         self.send_command(req,rep);
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Visually display data from a WIB')
+    parser = argparse.ArgumentParser(description='Send a configuration json document to a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
     parser.add_argument('--config','-C',default='default.json',help='WIB configuration to load [default.json]')
     args = parser.parse_args()
