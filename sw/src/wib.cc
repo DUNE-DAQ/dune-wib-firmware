@@ -109,6 +109,16 @@ string WIB::gateway_ip() {
     return "192.168.121.52"; //FIXME pull from somewhere
 }
 
+void WIB::set_fake_time(uint64_t time) {
+    io_reg_write(&this->regs,REG_FAKE_TIME_L,(uint32_t)(time&0xFFFFFFFF)); //set 4 low bytes
+    io_reg_write(&this->regs,REG_FAKE_TIME_H,(uint32_t)((time>>32)&0xFFFFFFFF)); //set 4 high bytes
+    io_reg_write(&this->regs,REG_FAKE_TIME_CTRL,0); //disable FTS
+}
+
+void WIB::start_fake_time() {
+    io_reg_write(&this->regs,REG_FAKE_TIME_CTRL,2); //enable FTS
+}
+
 bool WIB::timing_endpoint_config() {
     //timing endpoint reset is bit 28
     io_reg_write(&this->regs,REG_TIMING,1<<28);

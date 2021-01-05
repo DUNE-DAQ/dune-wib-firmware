@@ -3,4 +3,5 @@ run cdr_reset
 delay 1000000
 run si5344_50mhz_config
 delay 1000000
+# Note startup does not use fake timestamp enable
 run enable_fake_timestamp

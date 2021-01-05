@@ -33,12 +33,23 @@ int main(int argc, char **argv) {
         
         wib::Command command;
         
-        
         std::string reply_str; 
         
         std::string cmd_str((char*)cmd.data(), cmd.size());
         if (!command.ParseFromString(cmd_str)) {
-            glog.log("Could not parse message %i size %li",i,cmd.size());
+            glog.log("Could not parse message %i size %li\n",i,cmd.size());
+        } else if (command.cmd().Is<wib::StartFakeTime>()) {
+            w.start_fake_time(); //do this first to minimize possible latency
+            glog.log("start_fake_time\n");
+            wib::Empty rep; 
+            rep.SerializeToString(&reply_str);  
+        } else if (command.cmd().Is<wib::SetFakeTime>()) {
+            glog.log("set_fake_time\n");
+            wib::SetFakeTime req;    
+            command.cmd().UnpackTo(&req);
+            w.set_fake_time(req.time());
+            wib::Empty rep; 
+            rep.SerializeToString(&reply_str);  
         } else if (command.cmd().Is<wib::Peek>()) {
             wib::Peek read;
             command.cmd().UnpackTo(&read);

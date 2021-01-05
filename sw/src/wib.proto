@@ -231,6 +231,21 @@ message GetTimestamp {
     }
 }
 
+// sets the fake time generator start value
+message SetFakeTime {
+    uint64 time = 1;
+    
+    //replies Empty
+}
+
+// starts fake time generator (subject to network latency)
+message StartFakeTime {
+    
+    //replies Empty
+}
+
+
+
 // reads the wib_server (or boot) log, optionally clearing the log
 message LogControl {
     bool clear_log = 1; //clears log buffer

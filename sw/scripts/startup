@@ -5,6 +5,7 @@ run cdr_reset
 delay 1000000
 run si5344_50mhz_config
 delay 1000000
+# Timing endpoint reset needs work, note prestart uses fake timestamps...
 run timing_endpoint_reset
 # Setup frontend power
 run femb_voltages
