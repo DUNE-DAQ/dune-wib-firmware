@@ -106,8 +106,11 @@ description of each:
 
 ```
 Available commands:
+Available commands:
   reboot
     Reboot the WIB
+  log [boot|clear]
+    Return the wib_server log (or return boot log, or clear the logs)
   script filename
     Run a WIB script (local file will be sent, otherwise filename is remote in /etc/wib/)
   daqspy filename
