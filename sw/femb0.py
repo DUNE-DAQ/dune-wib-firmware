@@ -205,6 +205,7 @@ class FFTView(DataView):
             fft = np.fft.fft(samples[i])
             self.fft.append(np.square(np.abs(fft[freq_idx])))
         self.fft = np.asarray(self.fft)
+        self.fft[self.fft < 1] = 1 # To prevent log scaling from throwing errors
     
     def plot_data(self,rescale=False):
         ax = self.fig_ax
@@ -217,12 +218,11 @@ class FFTView(DataView):
                           aspect='auto',interpolation='none',origin='lower',norm=LogNorm())
             self.cb = ax.figure.colorbar(im)
         except:
-            pass
+            print('Error plotting FFT power spectrum')
         
         ax.set_title('Power Spectrum')
         ax.set_xlabel('Channel Number')
         ax.set_ylabel('Frequency (kHz)')
-        
         ax.figure.canvas.draw()
         self.resize(None)
         

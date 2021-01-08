@@ -79,7 +79,7 @@ bool FEMB::configure_coldata(bool cold, FrameType frame) {
     return res;
 }
 
-bool FEMB::configure_coldadc() {
+bool FEMB::configure_coldadc(bool test_pattern) {
     bool res = true;
     //See COLDADC datasheet
     //FIXME do these options need to be configurable?
@@ -99,7 +99,7 @@ bool FEMB::configure_coldadc() {
             res &= i2c_write_verify(i, j, 1, 0x80, 0x63);  //sdc_bypassed
             res &= i2c_write_verify(i, j, 1, 0x84, 0x3b);  //single-ened_input_mode
             res &= i2c_write_verify(i, j, 1, 0x88, 0x0b);  //ADC-bias-current-50uA
-            res &= i2c_write_verify(i, j, 1, 0x89, 0x08);  //offset_binary_output_data_format //set to 0x18 for test pattern
+            res &= i2c_write_verify(i, j, 1, 0x89, test_pattern ? 0x18 : 0x08);  //offset_binary_output_data_format
             res &= i2c_write_verify(i, j, 1, 0xb1, 0x0c);  //config_start_number, as recommended by David
         }
     }

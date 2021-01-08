@@ -78,7 +78,7 @@ public:
     bool update(const std::string &root_archive, const std::string &boot_archive);
     
     // Instructs firmware to attach a specific I2C device to the selected_i2c interface
-    // See I2C_* defines in this fiel for options
+    // See I2C_* defines in this file for options
     void i2c_select(uint8_t device);
     
     // Instructs firmware to fill the daq spy buffers and copies them into the argument pointers
@@ -89,14 +89,14 @@ public:
     uint32_t peek(size_t addr);
     void poke(size_t addr, uint32_t value);
     
-    // Read/Write the COLDATA i2c address space for a particular (femb,coldata) index 
+    // Read/Write the COLDATA i2c address space for a particular (femb[0-3],coldata[0-1]) index 
     uint8_t cdpeek(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr);
     void cdpoke(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
     
     // Configure this WIB
     bool configure_wib(wib::ConfigureWIB &conf);
     
-    // Turn pulser on or of for all FEMBs
+    // Turn pulser on or off for all FEMBs
     bool set_pulser(bool on);
     bool get_pulser();
     
