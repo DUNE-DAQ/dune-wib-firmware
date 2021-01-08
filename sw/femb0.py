@@ -195,7 +195,6 @@ class FFTView(DataView):
         
     def load_data(self,timestamps,samples):
         #timestamps = self.data_source.timestamps[0]
-        print(samples.shape)
         samples = samples[0] # [femb][channel][sample] -> [channel][sample]
         freq = np.fft.fftfreq(len(samples[0]),320e-9) 
         freq_idx = np.argsort(freq)[len(freq)//2::]
