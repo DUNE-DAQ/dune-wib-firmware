@@ -541,6 +541,20 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         glog.log("COLDADC configuration failed!\n");
     }
     
+    glog.log("Powering on VDDA and VDDD L/R\n");
+    bool power_res = true;
+    for (int i = 0; i < 4; i++) {
+        if (conf.fembs(i).enabled()) {
+            power_res &= femb[i]->set_control_reg(0,false,true); //VDDA on U1 ctrl_1
+            power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD L/R on U2 ctrl_0/ctrl_1
+        }
+    }
+    if (power_res) {
+        glog.log("VDDA and VDDD L/R powered succesfully\n");
+    } else {
+        glog.log("VDDA and VDDD L/R power failed!\n");
+    }
+    
     bool larasic_res = true;
     uint32_t rx_mask = 0x0000;
     for (int i = 0; i < 4; i++) {
@@ -605,7 +619,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     femb_rx_reset();
     glog.log("FEMB receivers reset\n");
     
-    return coldata_res && coldadc_res && larasic_res && spi_verified;
+    return coldata_res && coldadc_res && power_res && larasic_res && spi_verified;
 }
 
 bool WIB::get_pulser() {

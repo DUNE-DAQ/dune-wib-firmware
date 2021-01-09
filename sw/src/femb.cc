@@ -168,6 +168,10 @@ bool FEMB::read_spi_status() {
     return res;
 }
 
+bool FEMB::set_control_reg(uint8_t coldata_idx, bool ctrl_0, bool ctrl_1) {
+    return i2c_write_verify(coldata_idx,2,0,0x25,(ctrl_1?2:0)|(ctrl_0?1:0));
+}
+
 void FEMB::fast_cmd(uint8_t cmd_code) {
     static bool fast_cmd_init = false;
     if (!fast_cmd_init) {
