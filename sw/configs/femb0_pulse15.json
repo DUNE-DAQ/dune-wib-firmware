@@ -17,7 +17,7 @@
         "leak": 0,
         "leak_10x": false,
         "ac_couple": true,
-        "buffer": true,
+        "buffer": 1,
 
         "strobe_skip": 255,
         "strobe_delay": 255,
@@ -35,7 +35,7 @@
         "leak": 0,
         "leak_10x": false,
         "ac_couple": true,
-        "buffer": true,
+        "buffer": 1,
 
         "strobe_skip": 255,
         "strobe_delay": 255,
@@ -53,7 +53,7 @@
         "leak": 0,
         "leak_10x": false,
         "ac_couple": true,
-        "buffer": true,
+        "buffer": 1,
 
         "strobe_skip": 255,
         "strobe_delay": 255,
@@ -71,7 +71,7 @@
         "leak": 0,
         "leak_10x": false,
         "ac_couple": true,
-        "buffer": true,
+        "buffer": 1,
 
         "strobe_skip": 255,
         "strobe_delay": 255,
