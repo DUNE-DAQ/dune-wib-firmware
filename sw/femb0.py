@@ -8,6 +8,7 @@ import argparse
 import numpy as np
 import zmq
 import json
+import matplotlib.pyplot as plt
 from collections import deque
 from matplotlib.figure import Figure
 from matplotlib.colors import LogNorm
@@ -120,7 +121,6 @@ class MeanRMSView(DataView):
         self.mean = np.full_like(self.chan, 0)
       
     def load_data(self,timestamps,samples):
-        #timestamps = self.data_source.timestamps[0]
         samples = samples[0] # [femb][channel][sample] -> [channel][sample]
         self.rms = np.std(samples,axis=1)
         self.mean = np.mean(samples,axis=1)
@@ -133,12 +133,63 @@ class MeanRMSView(DataView):
         self.fig_ax.plot(self.chan,self.mean,drawstyle='steps',label='Mean',c='b')
         self.twin_ax.plot(self.chan,self.rms,drawstyle='steps',label='RMS',c='r')
         
+        self.fig_ax.set_xlim(0,128)
         self.fig_ax.set_xlabel('Channel Number')
         self.fig_ax.set_ylabel('Mean ADC Counts')
         self.twin_ax.set_ylabel('RMS ADC Counts')
         
         self.fig_ax.legend(loc='upper left')
         self.twin_ax.legend(loc='upper right')
+        self.fig_ax.figure.canvas.draw()
+        self.resize(None)
+        
+
+class RMSView(DataView):
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.chan = np.arange(128)
+        self.rms = np.full_like(self.chan, 0)
+      
+    def load_data(self,timestamps,samples):
+        samples = samples[0] # [femb][channel][sample] -> [channel][sample]
+        self.rms = np.std(samples,axis=1)
+        
+    def plot_data(self,rescale=False):
+        self.fig_ax.clear()
+        
+        self.fig_ax.plot(self.chan,self.rms,drawstyle='steps',label='RMS',c='r')
+        
+        self.fig_ax.set_xlim(0,128)
+        self.fig_ax.set_xlabel('Channel Number')
+        self.fig_ax.set_ylabel('RMS ADC Counts')
+        
+        self.fig_ax.legend(loc='upper left')
+        self.fig_ax.figure.canvas.draw()
+        self.resize(None)
+
+class MeanView(DataView):
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.chan = np.arange(128)
+        self.mean = np.full_like(self.chan, 0)
+      
+    def load_data(self,timestamps,samples):
+        samples = samples[0] # [femb][channel][sample] -> [channel][sample]
+        self.mean = np.mean(samples,axis=1)
+        
+        
+    def plot_data(self,rescale=False):
+        self.fig_ax.clear()
+        
+        self.fig_ax.plot(self.chan,self.mean,drawstyle='steps',label='Mean',c='b')
+        
+        self.fig_ax.set_xlim(0,128)
+        self.fig_ax.set_xlabel('Channel Number')
+        self.fig_ax.set_ylabel('Mean ADC Counts')
+        
+        self.fig_ax.legend(loc='upper left')
         self.fig_ax.figure.canvas.draw()
         self.resize(None)
 
@@ -148,9 +199,9 @@ class Hist2DView(DataView):
         super().__init__(*args,**kwargs)
         self.cb = None
         self.chan = np.arange(128)
-        self.samples = np.arange(16385)
+        self.samples = np.linspace(0,16385,200)
         x,_ = np.meshgrid(self.chan,self.samples)
-        self.counts = np.zeros_like(x)
+        self.counts = np.full_like(x,0)
       
     def load_data(self,timestamps,samples):
         #timestamps = self.data_source.timestamps[0]
@@ -169,10 +220,10 @@ class Hist2DView(DataView):
         
         try:
             im = ax.imshow(self.counts.T,extent=(self.chan[0],self.chan[-1],self.samples[0],self.samples[-1]),
-                          aspect='auto',interpolation='none',origin='lower')
+                          aspect='auto',interpolation='none',origin='lower',cmap=plt.get_cmap('GnBu'))
             self.cb = ax.figure.colorbar(im)
         except:
-            pass
+            print('Error plotting ADC count histogram')
         
         ax.set_title('Sample Histogram')
         ax.set_xlabel('Channel Number')
@@ -204,7 +255,7 @@ class FFTView(DataView):
             fft = np.fft.fft(samples[i])
             self.fft.append(np.square(np.abs(fft[freq_idx])))
         self.fft = np.asarray(self.fft)
-        self.fft[self.fft < 1] = 1 # To prevent log scaling from throwing errors
+        self.fft[self.fft < 1e-4] = 1e-4 # To prevent log scaling from throwing errors
     
     def plot_data(self,rescale=False):
         ax = self.fig_ax
@@ -213,8 +264,8 @@ class FFTView(DataView):
             self.cb.remove()
         
         try:
-            im = ax.imshow(self.fft.T,extent=(self.chan[0],self.chan[-1],self.freq[0]/1000,self.freq[-1]/1000),
-                          aspect='auto',interpolation='none',origin='lower',norm=LogNorm())
+            im = ax.imshow(self.fft.T[1:,:],extent=(self.chan[0],self.chan[-1],self.freq[0]/1000,self.freq[-1]/1000),
+                          aspect='auto',interpolation='none',origin='lower',norm=LogNorm(),cmap=plt.get_cmap('Spectral_r'))
             self.cb = ax.figure.colorbar(im)
         except:
             print('Error plotting FFT power spectrum')
@@ -226,7 +277,7 @@ class FFTView(DataView):
         self.resize(None)
         
 class FEMB0Diagnostics(QtWidgets.QMainWindow):
-    def __init__(self,wib_server='127.0.0.1',config='femb0.json'):
+    def __init__(self,wib_server='127.0.0.1',config='femb0.json',grid=False):
         super().__init__()
         
         self.context = zmq.Context()
@@ -240,9 +291,14 @@ class FEMB0Diagnostics(QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout(self._main)
         
         self.grid = QtWidgets.QGridLayout()
-        self.views = [Hist2DView(), MeanRMSView(), FFTView()]
-        for i,v in enumerate(self.views):
-            self.grid.addWidget(v,0,i)
+        if grid:
+            self.views = [Hist2DView(), FFTView(), MeanView(), RMSView()]
+            for i,v in enumerate(self.views):
+                self.grid.addWidget(v,i%2,i//2)
+        else:
+            self.views = [Hist2DView(), MeanRMSView(), FFTView()]
+            for i,v in enumerate(self.views):
+                self.grid.addWidget(v,0,i)
         layout.addLayout(self.grid)
         
         nav_layout = QtWidgets.QHBoxLayout()
@@ -377,6 +433,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Visually display diagnostic data plots from FEMB0 on a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
     parser.add_argument('--config','-C',default='femb0.json',help='WIB configuration to load [femb0.json]')
+    parser.add_argument('--grid','-g',action='store_true',help='Split Mean/RMS into separate plots for a 2x2 grid')
     args = parser.parse_args()
     
     
