@@ -47,6 +47,7 @@ class WIB:
             femb_conf.peak_time = fconfig['peak_time']
             femb_conf.baseline = fconfig['baseline']
             femb_conf.pulse_dac = fconfig['pulse_dac']
+            femb_conf.pulse_switch = fconfig['pulse_switch']
 
             femb_conf.leak = fconfig['leak']
             femb_conf.leak_10x = fconfig['leak_10x']
