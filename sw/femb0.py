@@ -110,7 +110,13 @@ class DataView(QtWidgets.QWidget):
         
     def plot_data(self,rescale=False):
         pass
-        
+
+def one_more_bin(array):
+    return np.append(array,2*array[-1]-array[-2])
+    
+def dupe_last_val(array):
+    return np.append(array,array[-1])
+
 class MeanRMSView(DataView):
 
     def __init__(self,*args,**kwargs):
@@ -130,8 +136,8 @@ class MeanRMSView(DataView):
         self.fig_ax.clear()
         self.twin_ax.clear()
         
-        self.fig_ax.plot(self.chan,self.mean,drawstyle='steps',label='Mean',c='b')
-        self.twin_ax.plot(self.chan,self.rms,drawstyle='steps',label='RMS',c='r')
+        self.fig_ax.plot(one_more_bin(self.chan),dupe_last_val(self.mean),drawstyle='steps-post',label='Mean',c='b')
+        self.twin_ax.plot(one_more_bin(self.chan),dupe_last_val(self.rms),drawstyle='steps-post',label='RMS',c='r')
         
         self.fig_ax.set_xlim(0,128)
         self.fig_ax.set_xlabel('Channel Number')
@@ -158,7 +164,7 @@ class RMSView(DataView):
     def plot_data(self,rescale=False):
         self.fig_ax.clear()
         
-        self.fig_ax.plot(self.chan,self.rms,drawstyle='steps',label='RMS',c='r')
+        self.fig_ax.plot(one_more_bin(self.chan),dupe_last_val(self.rms),drawstyle='steps-post',label='RMS',c='r')
         
         self.fig_ax.set_xlim(0,128)
         self.fig_ax.set_xlabel('Channel Number')
@@ -179,11 +185,10 @@ class MeanView(DataView):
         samples = samples[0] # [femb][channel][sample] -> [channel][sample]
         self.mean = np.mean(samples,axis=1)
         
-        
     def plot_data(self,rescale=False):
         self.fig_ax.clear()
         
-        self.fig_ax.plot(self.chan,self.mean,drawstyle='steps',label='Mean',c='b')
+        self.fig_ax.plot(one_more_bin(self.chan),dupe_last_val(self.mean),drawstyle='steps-post',label='Mean',c='b')
         
         self.fig_ax.set_xlim(0,128)
         self.fig_ax.set_xlabel('Channel Number')
