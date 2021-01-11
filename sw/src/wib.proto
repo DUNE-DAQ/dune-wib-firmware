@@ -64,14 +64,15 @@ message ConfigureWIB {
     message ConfigureFEMB {
         bool enabled = 1; // FEMB serial receiver enabled
         
-        // LArASIC channel
+        // LArASIC global
         bool test_cap = 2; // test capacitor enabled
         uint32 gain = 3; // 14, 25, 7.8, 4.7 mV/fC (0 - 3)
         uint32 peak_time = 4; // 1.0, 0.5, 3, 2 us (0 - 3)
         uint32 baseline = 5; // 0 (900 mV), 1 (200 mV)
         uint32 pulse_dac = 6; // 6bit dac value
+        bool pulse_switch = 14; // enable to connect pulser output to channels
         
-        // LArASIC global
+        // LArASIC channel
         uint32 leak = 7; // 0 (500 pA), 1 (100 pA)
         bool leak_10x = 8; // multiply leak by 10 if true
         bool ac_couple = 9; // false (DC coupling), true (AC coupling)

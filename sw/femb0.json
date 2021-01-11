@@ -12,6 +12,7 @@
         "peak_time": 0,
         "baseline": 0,
         "pulse_dac": 0,
+        "pulse_switch": false,
 
         "leak": 0,
         "leak_10x": false,
@@ -29,6 +30,7 @@
         "peak_time": 0,
         "baseline": 0,
         "pulse_dac": 0,
+        "pulse_switch": false,
 
         "leak": 0,
         "leak_10x": false,
@@ -46,6 +48,7 @@
         "peak_time": 0,
         "baseline": 0,
         "pulse_dac": 0,
+        "pulse_switch": false,
 
         "leak": 0,
         "leak_10x": false,
@@ -63,6 +66,7 @@
         "peak_time": 0,
         "baseline": 0,
         "pulse_dac": 0,
+        "pulse_switch": false,
 
         "leak": 0,
         "leak_10x": false,
