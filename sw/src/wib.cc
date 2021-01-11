@@ -568,7 +568,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
             c.sdc = femb_conf.ac_couple() == true;
             c.slkh = femb_conf.leak_10x() == true;
             c.slk = femb_conf.leak() == 1;
-            c.sdac = femb_conf.leak() & 0x3F;
+            c.sdac = femb_conf.pulse_dac() & 0x3F;
             
             c.sts = femb_conf.test_cap() == true;
             c.snc = femb_conf.baseline() == 1;
