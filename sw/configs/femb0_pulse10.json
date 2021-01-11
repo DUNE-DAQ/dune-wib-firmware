@@ -8,7 +8,7 @@
 "femb_configs": [
 
     {
-        "test_cap": false,
+        "test_cap": true,
         "gain": 0,
         "peak_time": 0,
         "baseline": 0,
