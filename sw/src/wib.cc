@@ -545,7 +545,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     bool power_res = true;
     for (int i = 0; i < 4; i++) {
         if (conf.fembs(i).enabled()) {
-            power_res &= femb[i]->set_control_reg(0,false,true); //VDDA on U1 ctrl_1
+            power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1
             power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD L/R on U2 ctrl_0/ctrl_1
         }
     }
