@@ -70,7 +70,6 @@ message ConfigureWIB {
         uint32 peak_time = 4; // 1.0, 0.5, 3, 2 us (0 - 3)
         uint32 baseline = 5; // 0 (900 mV), 1 (200 mV)
         uint32 pulse_dac = 6; // 6bit dac value
-        bool pulse_switch = 14; // enable to connect pulser output to channels
         
         // LArASIC channel
         uint32 leak = 7; // 0 (500 pA), 1 (100 pA)
@@ -86,15 +85,9 @@ message ConfigureWIB {
 
     repeated ConfigureFEMB fembs = 1; //must supply 4
     bool cold = 2; // True if front end is COLD (77k)
+    bool pulser = 3; // True if pulser (and LArASIC sdacsw2) should be enabled
     
     //replies Status
-}
-
-//Start or stop the pulser
-message Pulser {
-    bool start = 1; // true to start, false to stop
-    
-    //replies Empty
 }
 
 /** System control commands **/

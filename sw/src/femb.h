@@ -68,6 +68,7 @@ typedef struct {
     bool sdd,sdc,slkh,s16,stb,stb1,slk; //glog.reg 1
     uint8_t sdac; bool sdacsw1,sdacsw2; // glog.reg 2
     bool sts,snc; uint8_t gain, peak_time; bool smn,sdf; // chan regs
+    uint8_t cal_skip, cal_delay, cal_length; // COLDATA registers controlling calibration strobe
 } larasic_conf;
 
 class FEMB {

@@ -71,6 +71,8 @@ bool FEMB::configure_coldata(bool cold, FrameType frame) {
                 break;
         }
         
+        
+        
 		//i2c_write (i, 2, 0, 3, 0xc3);  // PRBS7, no 8b10b
 		res &= i2c_write_verify(i, 2, 0, 3, 0x3c);  // normal operation
 		res &= i2c_write_verify(i, 2, 0, 0x20, ACT_RESET_COLDADC); // ACT = COLDADC reset
@@ -142,6 +144,11 @@ bool FEMB::configure_larasic(const larasic_conf &c) {
             }
             res &= i2c_write_verify(i, 2, page, 0x90, global_reg_1);
             res &= i2c_write_verify(i, 2, page, 0x91, global_reg_2); 
+            
+            // COLDATA calibration stobe parameters
+            res &= i2c_write_verify(i, 2, page, 0x06, c.cal_skip); 
+            res &= i2c_write_verify(i, 2, page, 0x07, c.cal_delay);
+            res &= i2c_write_verify(i, 2, page, 0x08, c.cal_length);  
         }
 		res &= i2c_write_verify(i, 2, 0, 0x20, ACT_PROGRAM_LARASIC); // ACT = Program LArASIC SPI
     }

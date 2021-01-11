@@ -569,13 +569,17 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
             c.slkh = femb_conf.leak_10x() == true;
             c.slk = femb_conf.leak() == 1;
             c.sdac = femb_conf.pulse_dac() & 0x3F;
-            c.sdacsw2 = femb_conf.pulse_switch();
+            c.sdacsw2 = conf.pulser(); //connect pulser to channels
             
             c.sts = femb_conf.test_cap() == true;
             c.snc = femb_conf.baseline() == 1;
             c.gain = femb_conf.gain() & 0x3;
             c.peak_time = femb_conf.peak_time() & 0x3;
-            c.sdf = femb_conf.buffer() == 1;        
+            c.sdf = femb_conf.buffer() == 1;    
+            
+            c.cal_skip = femb_conf.strobe_skip();
+            c.cal_delay = femb_conf.strobe_delay();
+            c.cal_length = femb_conf.strobe_length();    
             
             larasic_res &= femb[i]->configure_larasic(c); // Sets ACT to ACT_PROGRAM_LARASIC
         } else {
@@ -615,30 +619,28 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     } else {
         glog.log("LArASIC SPI verification failed!\n");
     }
+    
+    bool pulser_res = true;
+    if (conf.pulser()) {
+        for (int i = 0; i < 4; i++) { 
+            if (conf.fembs(i).enabled()) {
+                pulser_res &= femb[i]->set_fast_act(ACT_LARASIC_PULSE);
+            }
+        }
+        FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+        if (pulser_res) {
+            glog.log("Calibration pulser started\n");
+        } else {
+            glog.log("Calibration pulser start failed!\n");
+        }
+    }
         
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
-    glog.log("FEMB receivers reset\n");
+    glog.log("Serial receivers reset\n");
     
     return coldata_res && coldadc_res && power_res && larasic_res && spi_verified;
 }
-
-bool WIB::get_pulser() {
-    return pulser_on;
-}
-
-bool WIB::set_pulser(bool on) {
-    if (pulser_on == on) {
-        glog.log("Pulser already %s\n",on?"enabled":"disabled");
-        return true;
-    }
-    bool res = true;
-    for (int i = 0; i < 4; i++) res &= femb[i]->set_fast_act(ACT_LARASIC_PULSE);
-    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
-    pulser_on = on;
-    return res;
-}
-
 
 bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
    
