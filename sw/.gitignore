@@ -1,12 +1,10 @@
 __pycache__/
 build/
-femb0.json
-femb0.ply
 spy_dump
-src/unpacker.cxx
 src/wib.pb.cc
 src/wib.pb.h
-unpacker
 wib_client
 wib_pb2.py
 wib_server
+*.bin
+sync_fake_time

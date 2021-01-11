@@ -6,12 +6,11 @@ import time
 import pickle
 import argparse
 import numpy as np
-import zmq
-import json
 from collections import deque
 from math import nan
 
-import wib_pb2 as wib
+from wib import WIB
+import wib_pb2 as wibpb
 
 colors = [(0x00,0x2b,0x36),(0x07,0x36,0x42),(0x58,0x6e,0x75),(0x83,0x94,0x96)]
 
@@ -221,9 +220,7 @@ class WIBMon(QtWidgets.QMainWindow):
         
         self.cli = cli
 
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect('tcp://%s:1234'%wib_server)
+        self.wib = WIB(wib_server)
         
         self.setAutoFillBackground(True)
         p = self.palette()
@@ -249,18 +246,12 @@ class WIBMon(QtWidgets.QMainWindow):
         else:
             QtCore.QTimer.singleShot(500, self.get_sensors)
         
-    def send_command(self,req,rep):
-        cmd = wib.Command()
-        cmd.cmd.Pack(req)
-        self.socket.send(cmd.SerializeToString())
-        rep.ParseFromString(self.socket.recv())
-        
     @QtCore.pyqtSlot()
     def get_sensors(self):
         print('Querying sensors...')
-        req = wib.GetSensors()
-        rep = wib.GetSensors.Sensors()
-        self.send_command(req,rep)
+        req = wibpb.GetSensors()
+        rep = wibpb.GetSensors.Sensors()
+        self.wib.send_command(req,rep)
         self.wib_pane.load_data(rep)
         for f in self.femb_panes:
             f.load_data(rep)

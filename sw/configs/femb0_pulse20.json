@@ -1,6 +1,7 @@
 {
 
 "cold": false,
+"pulser": true,
 
 "enabled_fembs": [true, false, false, false],
 
@@ -12,7 +13,6 @@
         "peak_time": 0,
         "baseline": 0,
         "pulse_dac": 20,
-        "pulse_switch": true,
 
         "leak": 0,
         "leak_10x": false,

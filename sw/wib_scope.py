@@ -6,11 +6,10 @@ import time
 import pickle
 import argparse
 import numpy as np
-import zmq
-import json
 from collections import deque
 
-import wib_pb2 as wib
+from wib import WIB
+import wib_pb2 as wibpb
 
 try:
     from matplotlib.backends.qt_compat import QtCore, QtWidgets, QtGui
@@ -332,9 +331,7 @@ class WIBScope(QtWidgets.QMainWindow):
         super().__init__()
         plot_layout = layout
         
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect('tcp://%s:1234'%wib_server)
+        self.wib = WIB(wib_server)
         self.config = config
         
         self.samples = None
@@ -376,12 +373,6 @@ class WIBScope(QtWidgets.QMainWindow):
         button.setToolTip('Configure WIB and front end')
         button.clicked.connect(self.configure_wib)
         
-        button = QtWidgets.QPushButton('Enable Pulser')
-        nav_layout.addWidget(button)
-        button.setToolTip('Toggle calibration pulser')
-        button.clicked.connect(self.toggle_pulser)
-        self.pulser_button = button
-        
         button = QtWidgets.QPushButton('Acquire')
         nav_layout.addWidget(button)
         button.setToolTip('Read WIB Spy Buffer')
@@ -401,12 +392,6 @@ class WIBScope(QtWidgets.QMainWindow):
         if plot_layout:
             self.load_layout(plot_layout)
         self.plot_selected()
-    
-    def send_command(self,req,rep):
-        cmd = wib.Command()
-        cmd.cmd.Pack(req)
-        self.socket.send(cmd.SerializeToString())
-        rep.ParseFromString(self.socket.recv())
     
     @QtCore.pyqtSlot()
     def reshape_prompt(self):
@@ -490,13 +475,13 @@ class WIBScope(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def acquire_data(self):
         print('Reading out WIB spy buffer')
-        req = wib.ReadDaqSpy()
+        req = wibpb.ReadDaqSpy()
         req.buf0 = True
         req.buf1 = True
         req.deframe = True
         req.channels = True
-        rep = wib.ReadDaqSpy.DeframedDaqSpy()
-        self.send_command(req,rep)
+        rep = wibpb.ReadDaqSpy.DeframedDaqSpy()
+        self.wib.send_command(req,rep)
         
         print('Successful:',rep.success)
         num = rep.num_samples
@@ -516,63 +501,13 @@ class WIBScope(QtWidgets.QMainWindow):
             
     @QtCore.pyqtSlot()
     def configure_wib(self):
-        print('Loading config')
-        try:
-            with open(self.config,'rb') as fin:
-                config = json.load(fin)
-        except Exception as e:
-            print('Failed to load config:',e)
-            return
-            
-        print('Configuring FEMBs')
-        req = wib.ConfigureWIB()
-        req.cold = config['cold']
-        for i in range(4):
-            femb_conf = req.fembs.add();
-            
-            femb_conf.enabled = config['enabled_fembs'][i]
-            
-            fconfig = config['femb_configs'][i]
-            
-            #see wib.proto for meanings
-            femb_conf.test_cap = fconfig['test_cap']
-            femb_conf.gain = fconfig['gain']
-            femb_conf.peak_time = fconfig['peak_time']
-            femb_conf.baseline = fconfig['baseline']
-            femb_conf.pulse_dac = fconfig['pulse_dac']
-            femb_conf.pulse_switch = fconfig['pulse_switch']
-
-            femb_conf.leak = fconfig['leak']
-            femb_conf.leak_10x = fconfig['leak_10x']
-            femb_conf.ac_couple = fconfig['ac_couple']
-            femb_conf.buffer = fconfig['buffer']
-
-            femb_conf.strobe_skip = fconfig['strobe_skip']
-            femb_conf.strobe_delay = fconfig['strobe_delay']
-            femb_conf.strobe_length = fconfig['strobe_length']
+        self.wib.configure(self.config)
         
-        print('Sending ConfigureWIB command')
-        rep = wib.Status()
-        self.send_command(req,rep);
-        
-    @QtCore.pyqtSlot()
-    def toggle_pulser(self):
-        req = wib.Pulser()
-        if self.pulser_button.text() == "Enable Pulser":
-            req.start = True
-            self.pulser_button.setText('Disable Pulser')
-            print("Starting pulser")
-        else:
-            req.start = False
-            self.pulser_button.setText('Enable Pulser')
-            print("Stopping pulser")
-        rep = wib.Status()
-        self.send_command(req,rep);
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Visually display data from a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
-    parser.add_argument('--config','-C',default='default.json',help='WIB configuration to load [default.json]')
+    parser.add_argument('--config','-C',default='configs/default.json',help='WIB configuration to load [configs/default.json]')
     parser.add_argument('--rows','-r',default=1,type=int,help='Rows of plots [1]')
     parser.add_argument('--cols','-c',default=1,type=int,help='Columns of plots [1]')
     parser.add_argument('--layout','-l',default=None,help='Load a saved layout')
