@@ -340,8 +340,11 @@ class FEMB0Diagnostics(QtWidgets.QMainWindow):
     
     @QtCore.pyqtSlot()
     def acquire_data(self):
-        self.timestamps,self.samples = self.wib.acquire_data(buf1=False)
-        
+        data = self.wib.acquire_data(buf1=False)
+        if data is None:
+            return
+            
+        self.timestamps,self.samples = data
         for view in self.views:
             view.load_data(self.timestamps,self.samples)
             
