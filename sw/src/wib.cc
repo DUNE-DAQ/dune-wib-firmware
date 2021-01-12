@@ -87,7 +87,7 @@ bool WIB::start_frontend() {
     glog.log("Initializing front end...\n");
     bool success = true;
     glog.log("Disabling front end power\n");
-    femb_power_set(false);
+    femb_power_set(false,false,false,false);
     glog.log("Configuring front end power\n");
     femb_power_config();
     success &= script("prestart");
@@ -199,34 +199,20 @@ bool WIB::femb_power_config() {
     return true;
 }
 
-bool WIB::femb_power_set(bool on, bool coldadc) {
-    if (on) {
-        // configure all pins as outputs
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0xD, 0);
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0xE, 0);
-        // set all ones on all outputs
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, coldadc ? 0xFF : 0x6B);
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, coldadc ? 0xFF : 0x6B);
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x6, coldadc ? 0xFF : 0x6B);
-        // configure all pins as outputs
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
-        // set all ones on all outputs
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x4, coldadc ? 0xFF : 0x6B);
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x5, coldadc ? 0xFF : 0x6B);
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x6, coldadc ? 0xFF : 0x6B);
-    } else {
-        // set all zeros on all outputs
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, 0);
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, 0);
-        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x6, 0);
-        // set all zeros on all outputs
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x4, 0);
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x5, 0);
-        i2c_reg_write(&this->femb_en_i2c, 0x23, 0x6, 0);
-    }
+bool WIB::femb_power_set(bool femb0, bool femb1, bool femb2, bool femb3, bool coldadc) {
+    // configure all pins as outputs
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x22, 0xD, 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x22, 0xE, 0);
+    // set all ones on all outputs
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x4, femb0 ? (coldadc ? 0xFF : 0x6B) : 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x5, femb1 ? (coldadc ? 0xFF : 0x6B) : 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x6, femb2 ? (coldadc ? 0xFF : 0x6B) : 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, femb3 ? (coldadc ? 0xFF : 0x6B) : 0);
+    i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, (femb0 || femb1 || femb2 || femb3) ? 0x1 : 0);
     return true;
 }
 
@@ -513,7 +499,10 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     glog.log("Reconfiguring WIB\n"); 
     
     glog.log("Powering on COLDATA\n");
-    femb_power_set(true,false); // COLDATA on, COLDADC off
+    femb_power_set(conf.fembs(0).enabled(),
+                   conf.fembs(1).enabled(),
+                   conf.fembs(2).enabled(),
+                   conf.fembs(3).enabled(),false); // COLDATA on, COLDADC off
     usleep(1000000);
     glog.log("Resetting COLDATA\n");
     FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
@@ -528,7 +517,10 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     }
     
     glog.log("Powering on COLDADC\n");
-    femb_power_set(true,true); // COLDATA on, COLDADC on
+    femb_power_set(conf.fembs(0).enabled(),
+                   conf.fembs(1).enabled(),
+                   conf.fembs(2).enabled(),
+                   conf.fembs(3).enabled(),true); // COLDATA on, COLDADC on
     usleep(1000000);
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
     bool coldadc_res = true;

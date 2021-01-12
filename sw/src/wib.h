@@ -63,8 +63,8 @@ public:
     
     // Sets the default voltage configurations for FEMB power controller
     bool femb_power_config();
-    // Turns femb power (incl coldadc or not) on or off (all at once)
-    bool femb_power_set(bool on, bool coldadc = true);
+    // Turns femb power per femb (incl coldadc or not)
+    bool femb_power_set(bool femb0, bool femb1, bool femb2, bool femb3, bool coldadc = true);
     // Set the FEMB serial receiver mask value
     bool femb_rx_mask(uint32_t value, uint32_t mask = 0xFFFF);
     // Resets the FEMB serial receivers
