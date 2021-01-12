@@ -80,7 +80,7 @@ public:
     
     // Front end I2C configuration
     bool configure_coldata(bool cold, FrameType frame);
-    bool configure_coldadc(bool test_pattern = false);
+    bool configure_coldadc(bool cold, bool test_pattern = false);
     bool configure_larasic(const larasic_conf &c);
     bool set_fast_act(uint8_t act_cmd);
     bool read_spi_status(); // requires ACT_SAVE_STATUS first

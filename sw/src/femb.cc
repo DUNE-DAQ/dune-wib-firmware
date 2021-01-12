@@ -26,38 +26,36 @@ bool FEMB::configure_coldata(bool cold, FrameType frame) {
     bool res = true;
     //See COLDATA datasheet
     for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
-        if (cold) {
-		    res &= i2c_write_verify(i, 2, 5, 0x40, 0x3);    //CONFIG_PLL_ICP
-		    res &= i2c_write_verify(i, 2, 5, 0x41, 0x4);	//CONFIG_PLL_BAND
-		    res &= i2c_write_verify(i, 2, 5, 0x42, 0x2);	//CONFIG_PLL_LPFR
-		    res &= i2c_write_verify(i, 2, 5, 0x43, 0x2);	//CONFIG_PLL_ATO
-		    res &= i2c_write_verify(i, 2, 5, 0x44, 0x0);	//CONFIG_PLL_PDCP
-		    res &= i2c_write_verify(i, 2, 5, 0x45, 0x0);	//CONFIG_PLL_OPEN
-        } else {
-		    res &= i2c_write_verify(i, 2, 5, 0x40, 0x3);    //CONFIG_PLL_ICP
-		    res &= i2c_write_verify(i, 2, 5, 0x41, 0x10);	//CONFIG_PLL_BAND
-		    res &= i2c_write_verify(i, 2, 5, 0x42, 0x2);	//CONFIG_PLL_LPFR
-		    res &= i2c_write_verify(i, 2, 5, 0x43, 0x2);	//CONFIG_PLL_ATO
-		    res &= i2c_write_verify(i, 2, 5, 0x44, 0x0);	//CONFIG_PLL_PDCP
-		    res &= i2c_write_verify(i, 2, 5, 0x45, 0x0);	//CONFIG_PLL_OPEN
-        }
+        res &= i2c_write_verify(i, 2, 5, 0x40, 0x3);    //CONFIG_PLL_ICP
+        res &= i2c_write_verify(i, 2, 5, 0x41, cold ? 0x08 : 0x10);    //CONFIG_PLL_BAND
+        res &= i2c_write_verify(i, 2, 5, 0x42, 0x2);    //CONFIG_PLL_LPFR
+        res &= i2c_write_verify(i, 2, 5, 0x43, 0x2);    //CONFIG_PLL_ATO
+        res &= i2c_write_verify(i, 2, 5, 0x44, 0x0);    //CONFIG_PLL_PDCP
+        res &= i2c_write_verify(i, 2, 5, 0x45, 0x0);    //CONFIG_PLL_OPEN
 
-		res &= i2c_write_verify(i, 2, 5, 0x46, 0x1);	//CONFIG_SER_MODE
-		res &= i2c_write_verify(i, 2, 5, 0x47, 0x0);	//CONFIG_SER_INV_SER_CLK
-
-		res &= i2c_write_verify(i, 2, 5, 0x48, 0x0);	//CONFIG_DRV_VMBOOST
-		res &= i2c_write_verify(i, 2, 5, 0x49, 0x0);	//CONFIG_DRV_VMDRIVER
-		res &= i2c_write_verify(i, 2, 5, 0x4a, 0x0);	//CONFIG_DRV_SELPRE
-		res &= i2c_write_verify(i, 2, 5, 0x4b, 0x0);	//CONFIG_DRV_SELPST1
-		res &= i2c_write_verify(i, 2, 5, 0x4c, 0x0);	//CONFIG_DRV_SELPST2
-		res &= i2c_write_verify(i, 2, 5, 0x4d, 0x0F);	//CONFIG_DRV_SELCM_MAIN
-		res &= i2c_write_verify(i, 2, 5, 0x4e, 0x1);	//CONFIG_DRV_ENABLE_CM
-		res &= i2c_write_verify(i, 2, 5, 0x4f, 0x0);	//CONFIG_DRV_INVERSE_CLK
-		res &= i2c_write_verify(i, 2, 5, 0x50, 0x0);	//CONFIG_DRV_DELAYSEL
-		res &= i2c_write_verify(i, 2, 5, 0x51, 0x0F);	//CONFIG_DRV_DELAY_CS
-		res &= i2c_write_verify(i, 2, 5, 0x52, 0x1);	//CONFIG_DRV_CML
-		res &= i2c_write_verify(i, 2, 5, 0x53, 0x1);	//CONGIF_DRV_BIAS_CML_INTERNAL
-		res &= i2c_write_verify(i, 2, 5, 0x54, 0x1);	//CONGIF_DRV_BIAS_CS_INTERNAL
+        res &= i2c_write_verify(i, 2, 5, 0x46, 0x1);    //CONFIG_SER_MODE
+        res &= i2c_write_verify(i, 2, 5, 0x47, 0x0);    //CONFIG_SER_INV_SER_CLK
+        
+        res &= i2c_write_verify(i, 2, 5, 0x48, 0x0);    //CONFIG_DRV_VMBOOST
+        //25m cable values
+        //res &= i2c_write_verify(i, 2, 5, 0x48, cold ? 0x3 : 0x7);    //CONFIG_DRV_VMBOOST
+        res &= i2c_write_verify(i, 2, 5, 0x49, 0x0);    //CONFIG_DRV_VMDRIVER
+        
+        res &= i2c_write_verify(i, 2, 5, 0x4a, 0x0);    //CONFIG_DRV_SELPRE
+        res &= i2c_write_verify(i, 2, 5, 0x4b, 0x0);    //CONFIG_DRV_SELPST1
+        res &= i2c_write_verify(i, 2, 5, 0x4c, 0x0);    //CONFIG_DRV_SELPST2
+        //25m cable values
+        //res &= i2c_write_verify(i, 2, 5, 0x4a, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPRE
+        //res &= i2c_write_verify(i, 2, 5, 0x4b, cold ? 0x2 : 0xA);    //CONFIG_DRV_SELPST1
+        //res &= i2c_write_verify(i, 2, 5, 0x4c, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPST2
+        res &= i2c_write_verify(i, 2, 5, 0x4d, 0x0F);    //CONFIG_DRV_SELCM_MAIN
+        res &= i2c_write_verify(i, 2, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
+        res &= i2c_write_verify(i, 2, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
+        res &= i2c_write_verify(i, 2, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
+        res &= i2c_write_verify(i, 2, 5, 0x51, 0x0F);    //CONFIG_DRV_DELAY_CS
+        res &= i2c_write_verify(i, 2, 5, 0x52, 0x1);    //CONFIG_DRV_CML
+        res &= i2c_write_verify(i, 2, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
+        res &= i2c_write_verify(i, 2, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
         
         switch (frame) {
             case FRAME_DD:
@@ -73,29 +71,30 @@ bool FEMB::configure_coldata(bool cold, FrameType frame) {
         
         
         
-		//i2c_write (i, 2, 0, 3, 0xc3);  // PRBS7, no 8b10b
-		res &= i2c_write_verify(i, 2, 0, 3, 0x3c);  // normal operation
-		res &= i2c_write_verify(i, 2, 0, 0x20, ACT_RESET_COLDADC); // ACT = COLDADC reset
-	}
+        //i2c_write (i, 2, 0, 3, 0xc3);  // PRBS7, no 8b10b
+        res &= i2c_write_verify(i, 2, 0, 3, 0x3c);  // normal operation
+        res &= i2c_write_verify(i, 2, 0, 0x20, ACT_RESET_COLDADC); // ACT = COLDADC reset
+    }
     if (!res) glog.log("COLDATA configuration failed for FEMB:%i!\n",index);
     return res;
 }
 
-bool FEMB::configure_coldadc(bool test_pattern) {
+bool FEMB::configure_coldadc(bool cold, bool test_pattern) {
     bool res = true;
     //See COLDADC datasheet
     //FIXME do these options need to be configurable?
     for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
         for (uint8_t j = 4; j <= 7; j++) { // For each COLADC attached to COLDATA
             res &= i2c_write_verify(i, j, 2, 0x01, 0x0c);  //start_data
+            res &= i2c_write_verify(i, j, 2, 0x02, cold ? 0x7 : 0xF);  //lvds_current
             res &= i2c_write_verify(i, j, 1, 0x96, 0xff);  //bjt_powerdown
             res &= i2c_write_verify(i, j, 1, 0x97, 0x2f);  //ref_bias
             res &= i2c_write_verify(i, j, 1, 0x93, 0x04);  //internal_ref
             res &= i2c_write_verify(i, j, 1, 0x9C, 0x15);  //vt45uA
-            res &= i2c_write_verify(i, j, 1, 0x98, 0xFF);  //vrefp
-            res &= i2c_write_verify(i, j, 1, 0x99, 0x00);  //vrefn
-            res &= i2c_write_verify(i, j, 1, 0x9a, 0x80);  //vcmo
-            res &= i2c_write_verify(i, j, 1, 0x9b, 0x60);  //vcmi
+            res &= i2c_write_verify(i, j, 1, 0x98, cold ? 0xDF : 0xFF);  //vrefp //shanshan cold 0xE0
+            res &= i2c_write_verify(i, j, 1, 0x99, cold ? 0x33 : 0x00);  //vrefn //shanshan cold 0x10
+            res &= i2c_write_verify(i, j, 1, 0x9a, cold ? 0x89 : 0x80);  //vcmo  //shanshan cold 0x87
+            res &= i2c_write_verify(i, j, 1, 0x9b, cold ? 0x67 : 0x60);  //vcmi  //shanshan cold 0x60
             res &= i2c_write_verify(i, j, 1, 0x9d, 0x27);  //ref-bias
             res &= i2c_write_verify(i, j, 1, 0x9e, 0x27);  //ref-bias
             res &= i2c_write_verify(i, j, 1, 0x80, 0x63);  //sdc_bypassed
@@ -150,7 +149,7 @@ bool FEMB::configure_larasic(const larasic_conf &c) {
             res &= i2c_write_verify(i, 2, page, 0x07, c.cal_delay);
             res &= i2c_write_verify(i, 2, page, 0x08, c.cal_length);  
         }
-		res &= i2c_write_verify(i, 2, 0, 0x20, ACT_PROGRAM_LARASIC); // ACT = Program LArASIC SPI
+        res &= i2c_write_verify(i, 2, 0, 0x20, ACT_PROGRAM_LARASIC); // ACT = Program LArASIC SPI
     }
     
     if (!res) glog.log("Failed to store LArASIC configuration for FEMB:%i!\n",index);
@@ -160,10 +159,10 @@ bool FEMB::configure_larasic(const larasic_conf &c) {
 bool FEMB::set_fast_act(uint8_t act_cmd) {
     bool res = true;
     for (uint8_t i = 0; i < 2; i++) {
-    	res &= i2c_write_verify(i, 2, 0, 0x20, act_cmd);
-	}
+        res &= i2c_write_verify(i, 2, 0, 0x20, act_cmd);
+    }
     if (!res) glog.log("Failed to set fast act for FEMB:%i!\n",index);
-	return res;
+    return res;
 }
 
 bool FEMB::read_spi_status() {

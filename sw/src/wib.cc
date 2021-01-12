@@ -525,7 +525,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
     bool coldadc_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
-         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc();
+         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold());
     }
     if (coldadc_res) {
         glog.log("COLDADC configured\n");
