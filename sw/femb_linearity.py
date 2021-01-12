@@ -65,7 +65,7 @@ def take_data(wib,fnames,pulser_dacs=[0,5,10,15,20],num_acquisitions=20,cold=Fal
         hfs = [h5py.File(fname,'w') for fname in fnames]
         for pulser_dac in pulser_dacs:
             grps = [hf.create_group('dac%i'%pulser_dac) for hf in hfs]
-            if not configure_pulser_run(wib,pulser_dac,num_fembs=len(fnames),cold=False):
+            if not configure_pulser_run(wib,pulser_dac,num_fembs=len(fnames),cold=cold):
                 raise Exception('Failed to configure FEMB. See WIB log for more info.')
             for i in range(num_acquisitions):
                 data = wib.acquire_data(buf1=len(fnames)>2)
