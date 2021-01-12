@@ -12,7 +12,7 @@
         "gain": 0,
         "peak_time": 0,
         "baseline": 0,
-        "pulse_dac": 05,
+        "pulse_dac": 5,
 
         "leak": 0,
         "leak_10x": false,

@@ -1,5 +1,6 @@
 import zmq
 import json
+import numpy as np
 import wib_pb2 as wibpb
 
 class WIB:
@@ -57,3 +58,22 @@ class WIB:
         rep = wibpb.Status()
         self.send_command(req,rep);
         print('Successful: ',rep.success)
+        return rep.success
+        
+    def acquire_data(self,buf0=True,buf1=True,deframe=True,channels=True,ignore_failure=False):
+        print('Reading out WIB spy buffer')
+        req = wibpb.ReadDaqSpy()
+        req.buf0 = buf0
+        req.buf1 = buf1
+        req.deframe = deframe
+        req.channels = channels
+        rep = wibpb.ReadDaqSpy.DeframedDaqSpy()
+        self.send_command(req,rep)
+        print('Successful:',rep.success)
+        if not ignore_failure and not rep.success:
+            return None
+        num = rep.num_samples
+        print('Acquired %i samples'%num)
+        timestamps = np.frombuffer(rep.deframed_timestamps,dtype=np.uint64).reshape((2,num))
+        samples = np.frombuffer(rep.deframed_samples,dtype=np.uint16).reshape((4,128,num))
+        return timestamps,samples

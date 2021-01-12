@@ -474,20 +474,7 @@ class WIBScope(QtWidgets.QMainWindow):
     
     @QtCore.pyqtSlot()
     def acquire_data(self):
-        print('Reading out WIB spy buffer')
-        req = wibpb.ReadDaqSpy()
-        req.buf0 = True
-        req.buf1 = True
-        req.deframe = True
-        req.channels = True
-        rep = wibpb.ReadDaqSpy.DeframedDaqSpy()
-        self.wib.send_command(req,rep)
-        
-        print('Successful:',rep.success)
-        num = rep.num_samples
-        print('Acquired %i samples'%num)
-        self.samples = np.frombuffer(rep.deframed_samples,dtype=np.uint16).reshape((4,128,num))
-        self.timestamps = np.frombuffer(rep.deframed_timestamps,dtype=np.uint64).reshape((2,num))
+        self.timestamps,self.samples = self.wib.acquire_data(ignore_failure=True)
         
         for view in self.views:
             view.load_data()
