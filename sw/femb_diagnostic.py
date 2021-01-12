@@ -389,6 +389,9 @@ if __name__ == "__main__":
     qapp.setApplicationName('FEMB %i Diagnostic Tool (%s)'%(args.femb,args.wib_server))
     if args.config is None:
         args.config = 'configs/femb%i.json'%args.femb
+    if args.save is not None:
+        if not os.path.exists(args.save):
+            os.mkdir(args.save)
     app = FEMBDiagnostics(**vars(args))
     app.show()
     qapp.exec_()
