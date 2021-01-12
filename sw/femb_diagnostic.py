@@ -108,7 +108,7 @@ class DataView(QtWidgets.QWidget):
     def load_data(self,timestamps,samples):
         pass
         
-    def plot_data(self,rescale=False):
+    def plot_data(self,rescale=False,save_to=None):
         pass
 
 def one_more_bin(array):
@@ -132,7 +132,7 @@ class MeanRMSView(DataView):
         self.mean = np.mean(samples,axis=1)
         
         
-    def plot_data(self,rescale=False):
+    def plot_data(self,rescale=False,save_to=None):
         self.fig_ax.clear()
         self.twin_ax.clear()
         
@@ -146,6 +146,9 @@ class MeanRMSView(DataView):
         
         self.fig_ax.legend(loc='upper left')
         self.twin_ax.legend(loc='upper right')
+        
+        if save_to is not None:
+            self.fig_ax.figure.savefig(os.path.join(save_to,'mean_rms.pdf'),bbox_inches='tight')
         self.fig_ax.figure.canvas.draw()
         self.resize(None)
         
@@ -161,7 +164,7 @@ class RMSView(DataView):
         samples = samples[self.femb] # [femb][channel][sample] -> [channel][sample]
         self.rms = np.std(samples,axis=1)
         
-    def plot_data(self,rescale=False):
+    def plot_data(self,rescale=False,save_to=None):
         self.fig_ax.clear()
         
         self.fig_ax.plot(one_more_bin(self.chan),dupe_last_val(self.rms),drawstyle='steps-post',label='RMS',c='r')
@@ -169,8 +172,10 @@ class RMSView(DataView):
         self.fig_ax.set_xlim(0,128)
         self.fig_ax.set_xlabel('Channel Number')
         self.fig_ax.set_ylabel('RMS ADC Counts')
-        
         self.fig_ax.legend(loc='upper left')
+        
+        if save_to is not None:
+            self.fig_ax.figure.savefig(os.path.join(save_to,'rms.pdf'),bbox_inches='tight')
         self.fig_ax.figure.canvas.draw()
         self.resize(None)
 
@@ -185,7 +190,7 @@ class MeanView(DataView):
         samples = samples[self.femb] # [femb][channel][sample] -> [channel][sample]
         self.mean = np.mean(samples,axis=1)
         
-    def plot_data(self,rescale=False):
+    def plot_data(self,rescale=False,save_to=None):
         self.fig_ax.clear()
         
         self.fig_ax.plot(one_more_bin(self.chan),dupe_last_val(self.mean),drawstyle='steps-post',label='Mean',c='b')
@@ -193,8 +198,10 @@ class MeanView(DataView):
         self.fig_ax.set_xlim(0,128)
         self.fig_ax.set_xlabel('Channel Number')
         self.fig_ax.set_ylabel('Mean ADC Counts')
-        
         self.fig_ax.legend(loc='upper left')
+        
+        if save_to is not None:
+            self.fig_ax.figure.savefig(os.path.join(save_to,'mean.pdf'),bbox_inches='tight')
         self.fig_ax.figure.canvas.draw()
         self.resize(None)
 
@@ -217,7 +224,7 @@ class Hist2DView(DataView):
             self.counts.append(counts)
         self.counts = np.asarray(self.counts)
         
-    def plot_data(self,rescale=False):
+    def plot_data(self,rescale=False,save_to=None):
         ax = self.fig_ax
         ax.clear()
         if self.cb is not None:
@@ -234,6 +241,8 @@ class Hist2DView(DataView):
         ax.set_xlabel('Channel Number')
         ax.set_ylabel('ADC Counts')
         
+        if save_to is not None:
+            ax.figure.savefig(os.path.join(save_to,'hist.pdf'),bbox_inches='tight')
         ax.figure.canvas.draw()
         #self.resize(None)
 
@@ -262,7 +271,7 @@ class FFTView(DataView):
         self.fft = np.asarray(self.fft)
         self.fft[self.fft < 1e-4] = 1e-4 # To prevent log scaling from throwing errors
     
-    def plot_data(self,rescale=False):
+    def plot_data(self,rescale=False,save_to=None):
         ax = self.fig_ax
         ax.clear()
         if self.cb is not None:
@@ -278,16 +287,20 @@ class FFTView(DataView):
         ax.set_title('Power Spectrum')
         ax.set_xlabel('Channel Number')
         ax.set_ylabel('Frequency (kHz)')
+        
+        if save_to is not None:
+            ax.figure.savefig(os.path.join(save_to,'fft.pdf'),bbox_inches='tight')
         ax.figure.canvas.draw()
         self.resize(None)
         
 class FEMBDiagnostics(QtWidgets.QMainWindow):
-    def __init__(self,wib_server='127.0.0.1',femb=0,config='femb0.json',grid=False):
+    def __init__(self,wib_server='127.0.0.1',femb=0,config='femb0.json',grid=False,save=None):
         super().__init__()
         
         self.wib = WIB(wib_server)
         self.config = config
         self.femb = femb
+        self.save_to = save
         
         self._main = QtWidgets.QWidget()
         self._main.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -355,7 +368,7 @@ class FEMBDiagnostics(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def plot(self):
         for view in self.views:
-            view.plot_data()
+            view.plot_data(save_to=self.save_to)
             
     @QtCore.pyqtSlot()
     def configure_wib(self):
@@ -368,6 +381,7 @@ if __name__ == "__main__":
     parser.add_argument('--femb','-f',default=0,type=int,help='FEMB index to display 0-3 [0]')
     parser.add_argument('--config','-C',default=None,help='WIB configuration to load [configs/fembX.json]')
     parser.add_argument('--grid','-g',action='store_true',help='Split Mean/RMS into separate plots for a 2x2 grid')
+    parser.add_argument('--save','-s',default=None,help='Path to save plots to (only last plotted saved)')
     args = parser.parse_args()
     
     
