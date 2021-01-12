@@ -341,7 +341,7 @@ class FEMBDiagnostics(QtWidgets.QMainWindow):
         
         layout.addLayout(nav_layout)
         
-        self.plot()
+        self.plot(None)
     
     @QtCore.pyqtSlot()
     def toggle_continuous(self):
@@ -363,12 +363,11 @@ class FEMBDiagnostics(QtWidgets.QMainWindow):
         for view in self.views:
             view.load_data(self.timestamps,self.samples)
             
-        self.plot()
+        self.plot(self.save_to)
         
-    @QtCore.pyqtSlot()
-    def plot(self):
+    def plot(self,save_to):
         for view in self.views:
-            view.plot_data(save_to=self.save_to)
+            view.plot_data(save_to=save_to)
             
     @QtCore.pyqtSlot()
     def configure_wib(self):
