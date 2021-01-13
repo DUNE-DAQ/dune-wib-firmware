@@ -5,7 +5,7 @@
 Log glog;
 
 Log::Log(bool _echo) : echo(_echo) {
-    mark()
+    mark();
 }
 
 Log::~Log() {
