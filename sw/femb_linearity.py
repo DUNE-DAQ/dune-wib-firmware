@@ -24,22 +24,16 @@ matplotlib.rcParams['figure.facecolor'] = (1,1,1)
 from wib import WIB
 import wib_pb2 as wibpb
 
-def configure_pulser_run(wib,pulser_dac,num_fembs=2,cold=False):
+def configure_pulser_run(wib,pulser_dac,femb_mask=[False,False,False,False],cold=False):
     req = wibpb.ConfigureWIB()
     req.cold = cold
     req.pulser = True
 
     for i in range(4):
         femb_conf = req.fembs.add();
-
-        if i >= num_fembs:
-            #assume the FEMBs are connected sequentially starting at femb0
-            #disable other FEMBs
-            femb_conf.enabled = False
+        femb_conf.enabled = femb_mask[i]
+        if not femb_conf.enabled:
             continue
-
-        femb_conf.enabled = True
-
         #see wib.proto for meanings
         femb_conf.test_cap = True
         femb_conf.gain = 0
@@ -55,29 +49,30 @@ def configure_pulser_run(wib,pulser_dac,num_fembs=2,cold=False):
         femb_conf.strobe_length = 255
 
     rep = wibpb.Status()
-    print('Configuring WIB with %i FEMBs for pulser run with DAC value %i'%(num_fembs,pulser_dac))
+    print('Configuring WIB with FEMB mask %s for pulser run with DAC value %i'%(str(femb_mask),pulser_dac))
     wib.send_command(req,rep)
     print('Successful:',rep.success)
     return rep.success
 
 def take_data(wib,fnames,pulser_dacs=[0,5,10,15,20],num_acquisitions=20,cold=False):
     try:
-        hfs = [h5py.File(fname,'w') for fname in fnames]
+        femb_mask = [fnames[idx].lower() != 'none' if idx < len(fnames) else False for idx in range(4)]
+        hfs = [(idx,h5py.File(fname,'w')) for idx,fname in enumerate(fnames) if femb_mask[idx]]
         for pulser_dac in pulser_dacs:
-            grps = [hf.create_group('dac%i'%pulser_dac) for hf in hfs]
-            if not configure_pulser_run(wib,pulser_dac,num_fembs=len(fnames),cold=cold):
+            grps = [(idx,hf.create_group('dac%i'%pulser_dac)) for idx,hf in hfs]
+            if not configure_pulser_run(wib,pulser_dac,femb_mask=femb_mask,cold=cold):
                 raise Exception('Failed to configure FEMB. See WIB log for more info.')
             for i in range(num_acquisitions):
                 data = wib.acquire_data(buf1=len(fnames)>2)
                 if data is None:
                     raise Exception('Failed to acquire data from WIB. See WIB log for more info.')
                 timestamps,samples = data
-                for j,gr in enumerate(grps):
-                    gr.create_dataset('ev%i'%i,data=samples[j],compression='gzip',compression_opts=9)
+                for idx,gr in grps:
+                    gr.create_dataset('ev%i'%i,data=samples[idx],compression='gzip',compression_opts=9)
     except:
         raise
     finally:
-        for hf in hfs:
+        for idx,hf in hfs:
             hf.close()
         
 def analyze_ch(ch,ped_start=-100,ped_end=-15,prominence=100):
@@ -151,7 +146,7 @@ if __name__ == "__main__":
     acquire_parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
     acquire_parser.add_argument('--cold','-c',default=False,action='store_true',help='The FEMBs will load the cold configuration with this option [default: warm]')
     acquire_parser.add_argument('--nacq','-n',default=20,type=int,help='Number of acquisitions per pulser DAC setting [20]')
-    acquire_parser.add_argument('femb_data',nargs='+',help='Name for HDF5 file for saving FEMB pulser data (one per FEMB to acquire data for)')
+    acquire_parser.add_argument('femb_data',nargs='+',help='Name for HDF5 file for saving FEMB pulser data (one per FEMB to configure, or ''none'' to skip a FEMB)')
     
     analyze_parser = sub.add_parser('analyze',help='Analyze HDF5 file to find pulse peak values and produce linaerity plots')
     analyze_parser.add_argument('femb_data',help='Name for HDF5 file containing FEMB pulser data')
