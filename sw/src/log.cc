@@ -5,7 +5,7 @@
 Log glog;
 
 Log::Log(bool _echo) : echo(_echo) {
-
+    mark()
 }
 
 Log::~Log() {
@@ -28,11 +28,20 @@ void Log::log(const char *format, ...) {
     free(msg);
 }
 
-void Log::store(std::string *store) {
-    *store = buf.str();
+void Log::store(std::string *storage) {
+    *storage = buf.str();
 }
 
-void Log::clear()  {
+void Log::clear() {
     buf.str("");
     buf.clear();
+    mark();
+}
+
+void Log::mark() {
+    last_mark = buf.tellp();
+}
+
+void Log::store_mark(std::string *buf) {
+    *storage = buf.str().substr(last_mark);
 }
