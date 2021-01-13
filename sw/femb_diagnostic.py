@@ -294,13 +294,14 @@ class FFTView(DataView):
         self.resize(None)
         
 class FEMBDiagnostics(QtWidgets.QMainWindow):
-    def __init__(self,wib_server='127.0.0.1',femb=0,config='femb0.json',grid=False,save=None):
+    def __init__(self,wib_server='127.0.0.1',femb=0,cold=False,grid=False,save_to=None,config=None):
         super().__init__()
         
         self.wib = WIB(wib_server)
         self.config = config
         self.femb = femb
-        self.save_to = save
+        self.cold = cold
+        self.save_to = save_to
         
         self._main = QtWidgets.QWidget()
         self._main.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -371,26 +372,53 @@ class FEMBDiagnostics(QtWidgets.QMainWindow):
             
     @QtCore.pyqtSlot()
     def configure_wib(self):
-        self.wib.configure(self.config)
+        if self.config is not None:
+            print('Loading specified config: %s'%self.config)
+            self.wib.configure(self.config)
+        else:
+            print('Generating %s config with FEMB %i enabled'%('cold' if self.cold else 'warm',self.femb))
+            req = wibpb.ConfigureWIB()
+            req.cold = self.cold
+            req.pulser = False
+            for i in range(4):
+                femb_conf = req.fembs.add();
+                if i != self.femb:
+                    femb_conf.enabled = False
+                    continue
+                #see wib.proto for meanings
+                femb_conf.enabled = True
+                femb_conf.test_cap = False
+                femb_conf.gain = 0
+                femb_conf.peak_time = 0
+                femb_conf.baseline = 0
+                femb_conf.pulse_dac = 0
+                femb_conf.leak = 0
+                femb_conf.leak_10x = False
+                femb_conf.ac_couple = True
+                femb_conf.buffer = 1
+                femb_conf.strobe_skip = 255
+                femb_conf.strobe_delay = 255
+                femb_conf.strobe_length = 255
+            rep = wibpb.Status()
+            print('Configuring WIB')
+            self.wib.send_command(req,rep)
+            print('Successful:',rep.success)
         
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Visually display diagnostic data plots from a FEMB on a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
     parser.add_argument('--femb','-f',default=0,type=int,help='FEMB index to display 0-3 [0]')
-    parser.add_argument('--config','-C',default=None,help='WIB configuration to load [configs/fembX.json]')
+    parser.add_argument('--cold','-c',action='store_true',help='The FEMBs will load the cold configuration with this option [default: warm]')
+    parser.add_argument('--config','-C',default=None,help='WIB configuration to load [default: generated with --femb and --cold]')
     parser.add_argument('--grid','-g',action='store_true',help='Split Mean/RMS into separate plots for a 2x2 grid')
-    parser.add_argument('--save','-s',default=None,help='Path to save plots to (only last plotted saved)')
+    parser.add_argument('--save_to','-s',default=None,help='Path to save plots to (only last plotted saved)')
     args = parser.parse_args()
-    
     
     qapp = QtWidgets.QApplication([])
     qapp.setApplicationName('FEMB %i Diagnostic Tool (%s)'%(args.femb,args.wib_server))
-    if args.config is None:
-        args.config = 'configs/femb%i.json'%args.femb
-    if args.save is not None:
-        if not os.path.exists(args.save):
-            os.mkdir(args.save)
+    if args.save_to is not None and not os.path.exists(args.save_to):
+        os.mkdir(args.save_to)
     app = FEMBDiagnostics(**vars(args))
     app.show()
     qapp.exec_()
