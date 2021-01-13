@@ -539,6 +539,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         if (conf.fembs(i).enabled()) {
             power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1
             power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD L/R on U2 ctrl_0/ctrl_1
+            usleep(100000); //FIXME: board will reset if these are turned on too quickly
         }
     }
     if (power_res) {
@@ -631,7 +632,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
     
-    return coldata_res && coldadc_res && power_res && larasic_res && spi_verified;
+    return coldata_res && coldadc_res && power_res && larasic_res && spi_verified && pulser_res;
 }
 
 bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
