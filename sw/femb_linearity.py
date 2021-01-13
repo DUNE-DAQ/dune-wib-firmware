@@ -130,7 +130,7 @@ def create_plots(prefix,pulser_dacs,ch_mean_for_dacs,ch_rms_for_dacs):
             plt.close()
     
 def acquire(args):
-    take_data(WIB(args.wib_server),args.femb_data,num_acquisitions=args.nacq,cold=args.cold,ignore_failure=ignore_failure)
+    take_data(WIB(args.wib_server),args.femb_data,num_acquisitions=args.nacq,cold=args.cold,ignore_failure=args.ignore_failure)
     
 def analyze(args):
     pulser_dacs,ch_mean_for_dacs,ch_rms_for_dacs = analyze_data(args.femb_data)
