@@ -310,11 +310,11 @@ class FEMBDiagnostics(QtWidgets.QMainWindow):
         
         self.grid = QtWidgets.QGridLayout()
         if grid:
-            self.views = [Hist2DView(), FFTView(), MeanView(), RMSView()]
+            self.views = [Hist2DView(femb=femb), FFTView(femb=femb), MeanView(femb=femb), RMSView(femb=femb)]
             for i,v in enumerate(self.views):
                 self.grid.addWidget(v,i%2,i//2)
         else:
-            self.views = [Hist2DView(), MeanRMSView(), FFTView()]
+            self.views = [Hist2DView(femb=femb), MeanRMSView(femb=femb), FFTView(femb=femb)]
             for i,v in enumerate(self.views):
                 self.grid.addWidget(v,0,i)
         layout.addLayout(self.grid)
