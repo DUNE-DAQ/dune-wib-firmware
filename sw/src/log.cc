@@ -42,6 +42,6 @@ void Log::mark() {
     last_mark = buf.tellp();
 }
 
-void Log::store_mark(std::string *buf) {
+void Log::store_mark(std::string *storage) {
     *storage = buf.str().substr(last_mark);
 }
