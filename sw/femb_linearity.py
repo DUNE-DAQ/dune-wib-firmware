@@ -54,16 +54,17 @@ def configure_pulser_run(wib,pulser_dac,femb_mask=[False,False,False,False],cold
     print('Successful:',rep.success)
     return rep.success
 
-def take_data(wib,fnames,pulser_dacs=[0,5,10,15,20],num_acquisitions=20,cold=False):
+def take_data(wib,fnames,pulser_dacs=[0,5,10,15,20],num_acquisitions=20,cold=False,ignore_failure=False):
     try:
         femb_mask = [fnames[idx].lower() != 'none' if idx < len(fnames) else False for idx in range(4)]
         hfs = [(idx,h5py.File(fname,'w')) for idx,fname in enumerate(fnames) if femb_mask[idx]]
         for pulser_dac in pulser_dacs:
             grps = [(idx,hf.create_group('dac%i'%pulser_dac)) for idx,hf in hfs]
-            if not configure_pulser_run(wib,pulser_dac,femb_mask=femb_mask,cold=cold):
+            success = configure_pulser_run(wib,pulser_dac,femb_mask=femb_mask,cold=cold) 
+            if not success and not ignore_failure:
                 raise Exception('Failed to configure FEMB. See WIB log for more info.')
             for i in range(num_acquisitions):
-                data = wib.acquire_data(buf1=len(fnames)>2)
+                data = wib.acquire_data(buf1=len(fnames)>2,ignore_failure=ignore_failure)
                 if data is None:
                     raise Exception('Failed to acquire data from WIB. See WIB log for more info.')
                 timestamps,samples = data
@@ -129,7 +130,7 @@ def create_plots(prefix,pulser_dacs,ch_mean_for_dacs,ch_rms_for_dacs):
             plt.close()
     
 def acquire(args):
-    take_data(WIB(args.wib_server),args.femb_data,num_acquisitions=args.nacq,cold=args.cold)
+    take_data(WIB(args.wib_server),args.femb_data,num_acquisitions=args.nacq,cold=args.cold,ignore_failure=ignore_failure)
     
 def analyze(args):
     pulser_dacs,ch_mean_for_dacs,ch_rms_for_dacs = analyze_data(args.femb_data)
@@ -144,6 +145,7 @@ if __name__ == "__main__":
     
     acquire_parser = sub.add_parser('acquire',help='Acquire data from a WIB using the spy buffer and save to HDF5 file')
     acquire_parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
+    acquire_parser.add_argument('--ignore_failure','-i',action='store_true',help='Ignore failure in configuration and keep taking data')
     acquire_parser.add_argument('--cold','-c',default=False,action='store_true',help='The FEMBs will load the cold configuration with this option [default: warm]')
     acquire_parser.add_argument('--nacq','-n',default=20,type=int,help='Number of acquisitions per pulser DAC setting [20]')
     acquire_parser.add_argument('femb_data',nargs='+',help='Name for HDF5 file for saving FEMB pulser data (one per FEMB to configure, or ''none'' to skip a FEMB)')
