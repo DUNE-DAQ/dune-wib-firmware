@@ -248,9 +248,23 @@ bool WIB::femb_power_set(int femb_idx, bool on) {
         glog.log("Powering on FEMB %i COLDATA\n",femb_idx);
         i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0x6B); //COLDATA
         usleep(100000);
+        glog.log("Loading default COLDATA config\n");
+        power_res &= femb[femb_idx]->configure_coldata(true,FRAME_14); //default config
+        if (!power_res) {
+            glog.log("Failed to configure COLDATA; aborting power on\n");
+            femb_power_set(femb_idx,false);
+            return false;
+        }
         glog.log("Powering on FEMB %i COLDADC\n",femb_idx);
         i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0xFF); //CLDATA+COLDADC
         usleep(100000);
+        glog.log("Loading default COLDADC config\n");
+        power_res &= femb[femb_idx]->configure_coldadc(true); //default config
+        if (!power_res) {
+            glog.log("Failed to configure COLDADC; aborting power on\n");
+            femb_power_set(femb_idx,false);
+            return false;
+        }
         //Additional steps to turn on analog chips via COLDATA control regs
         glog.log("Enabling FEMB %i U1 control signals\n",femb_idx);
         power_res &= femb[femb_idx]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
@@ -265,6 +279,8 @@ bool WIB::femb_power_set(int femb_idx, bool on) {
             glog.log("FEMB %i powered succesfully\n",femb_idx);
         } else {
             glog.log("FEMB %i power failed!\n",femb_idx);
+            femb_power_set(femb_idx,false);
+            return false;
         }
     } else {
         glog.log("Powering off FEMB %i\n",femb_idx);
