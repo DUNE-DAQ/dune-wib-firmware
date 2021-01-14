@@ -41,7 +41,9 @@ WIB::WIB() {
     #endif
     for (int i = 0; i < 4; i++) {
         this->femb[i] = new FEMB(i);
+        frontend_power[i] = false; //Assume starting from fresh boot
     }
+    pulser_on = false; //Assume starting from fresh boot
 }
 
 WIB::~WIB() {
@@ -480,8 +482,42 @@ bool WIB::update(const string &root_archive, const string &boot_archive) {
     return WEXITSTATUS(ret1) == 0 && WEXITSTATUS(ret2) == 0;
 }
 
+bool WIB::set_pulser(bool on) {
+    if (on != pulser_on) {
+        glog.log(on ? "Starting pulser\n" : "Stopping pulser\n");
+        bool pulser_res = true;
+        for (int i = 0; i < 4; i++) { 
+            if (frontend_power[i]) {
+                pulser_res &= femb[i]->set_fast_act(ACT_LARASIC_PULSE);
+            }
+        }
+        FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+        pulser_on = on;
+        if (!pulser_res) glog.log("Pulser failed to toggle, pulser state unknown\n");
+        return pulser_res;
+    } else {
+        glog.log(on ? "Pulser already started\n" : "Pulser already stopped\n");
+        return true;
+    }
+}
 
-bool WIB::configure_wib(wib::ConfigureWIB &conf) {
+// convenience method to index config
+bool femb_i_on(wib::PowerWIB &conf, int i) {
+    switch (i) {
+        case 0:
+            return conf.femb0();
+        case 1:
+            return conf.femb1();
+        case 2:
+            return conf.femb2();
+        case 3:
+            return conf.femb3();
+        default:
+            return false;
+    }
+}
+
+bool WIB::power_wib(wib::PowerWIB &conf) {
 
     if (!frontend_initialized) {
         if (!start_frontend()) {
@@ -491,29 +527,77 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         frontend_initialized = true;
     }
     
+    //pulser will be off for any new FEMBs, so turn off for all old fembs
+    bool pulser_res = set_pulser(false);
+    
+    if (!conf.femb0() && !conf.femb1() && !conf.femb2() && !conf.femb3()) {
+        glog.log("Turning off all FEMBs");
+        femb_power_set(false, false, false, false, false);
+        frontend_power[0] = frontend_power[1] = frontend_power[2] = frontend_power[3] = false;
+        return true;
+    }
+
+    glog.log("Powering on COLDATA\n");
+    femb_power_set(conf.femb0(), conf.femb1(), conf.femb2(), conf.femb3(), false); // COLDATA on, COLDADC off
+    usleep(1000000);
+    
+    glog.log("Powering on COLDADC\n");
+    femb_power_set(conf.femb0(), conf.femb1(), conf.femb2(), conf.femb3(), true); // COLDATA on, COLDADC on
+    usleep(1000000);
+    
+    bool power_res = true;
+    glog.log("Powering on VDDA and VDDD L/R\n");
+    for (int i = 0; i < 4; i++) {
+        if (femb_i_on(conf,i)) {
+            glog.log("Enabling FEMB%i U1 control signals\n",i);
+            power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
+            usleep(100000);
+            glog.log("Enabling FEMB%i U2 control_0 signal\n",i);
+            power_res &= femb[i]->set_control_reg(1,false,true);  //VDDD L on U2 ctrl_0
+            usleep(100000);
+            glog.log("Enabling FEMB%i U2 control_1 signal\n",i);
+            power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD R on U2 ctrl_1
+            usleep(100000);
+        }
+    }
+    if (power_res) {
+        glog.log("VDDA and VDDD L/R powered succesfully\n");
+    } else {
+        glog.log("VDDA and VDDD L/R power failed!\n");
+    }
+    
+    // Save new power state
+    frontend_power[0] = conf.femb0();
+    frontend_power[1] = conf.femb1();
+    frontend_power[2] = conf.femb2();
+    frontend_power[3] = conf.femb3();
+    
+    return pulser_res && power_res;
+}
+
+bool WIB::configure_wib(wib::ConfigureWIB &conf) {
+
     if (conf.fembs_size() != 4) {
         glog.log("Must supply exactly 4 FEMB configurations\n");
         return false;
     }
     
-    //FIXME: this is silly: without this sleep, reconfigure causes a board reset at VDDA and VDDD power on (somehow)
-    glog.log("FIXME: Power off frontend and dwell for 1 second\n");
-    femb_power_set(false,false,false,false);
-    usleep(1000000);
+    bool fembs_powered = true;
+    for (int i = 0; i < 4; i++) { // Check FEMB power state (enabled FEMBs must be ON)
+        if (conf.fembs(i).enabled()) {
+            fembs_powered &= frontend_power[i];
+        }
+    }
+    if (!fembs_powered) {
+        glog.log("Enabled FEMBs must be powered\n");
+        return false;
+    }
     
     glog.log("Reconfiguring WIB\n"); 
     
-    glog.log("Powering on COLDATA\n");
-    femb_power_set(conf.fembs(0).enabled(),
-                   conf.fembs(1).enabled(),
-                   conf.fembs(2).enabled(),
-                   conf.fembs(3).enabled(),false); // COLDATA on, COLDADC off
-    usleep(1000000);
-    glog.log("Resetting COLDATA\n");
-    FEMB::fast_cmd(FAST_CMD_RESET); // Reset COLDATA
     bool coldata_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDATA
-        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),FRAME_14); // Sets ACT to ACT_RESET_COLDADC
+        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),FRAME_14);
     }
     if (coldata_res) {
         glog.log("COLDATA configured\n");
@@ -521,13 +605,6 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         glog.log("COLDATA configuration failed!\n");
     }
     
-    glog.log("Powering on COLDADC\n");
-    femb_power_set(conf.fembs(0).enabled(),
-                   conf.fembs(1).enabled(),
-                   conf.fembs(2).enabled(),
-                   conf.fembs(3).enabled(),true); // COLDATA on, COLDADC on
-    usleep(1000000);
-    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
     bool coldadc_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
          if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold());
@@ -536,24 +613,6 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         glog.log("COLDADC configured\n");
     } else {
         glog.log("COLDADC configuration failed!\n");
-    }
-    
-    glog.log("Powering on VDDA and VDDD L/R\n");
-    bool power_res = true;
-    for (int i = 0; i < 4; i++) {
-        if (conf.fembs(i).enabled()) {
-            glog.log("Enabling FEMB%i U1 control signals\n",i);
-            power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1
-            usleep(100000); //FIXME: board may reset if these are turned on too quickly 
-            glog.log("Enabling FEMB%i U2 control signals\n",i);
-            power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD L/R on U2 ctrl_0/ctrl_1
-            usleep(100000); //FIXME: board may reset if these are turned on too quickly 
-        }
-    }
-    if (power_res) {
-        glog.log("VDDA and VDDD L/R powered succesfully\n");
-    } else {
-        glog.log("VDDA and VDDD L/R power failed!\n");
     }
     
     bool larasic_res = true;
@@ -640,7 +699,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
     
-    return coldata_res && coldadc_res && power_res && larasic_res && spi_verified && pulser_res;
+    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res;
 }
 
 bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {

@@ -216,12 +216,24 @@ int main(int argc, char **argv) {
             rep.set_min((ts>>6)&0x3f);
             rep.set_sec((ts>>0)&0x3f);
             rep.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::PowerWIB>()) {
+            glog.log("power_wib\n");
+            wib::PowerWIB req;
+            command.cmd().UnpackTo(&req);
+            wib::Status rep;    
+            glog.mark();
+            bool success = w.power_wib(req);
+            glog.store_mark(rep.mutable_extra());
+            rep.set_success(success);
+            rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::ConfigureWIB>()) {
             glog.log("configure_wib\n");
             wib::ConfigureWIB req;
             command.cmd().UnpackTo(&req);
             wib::Status rep;    
+            glog.mark();
             bool success = w.configure_wib(req);
+            glog.store_mark(rep.mutable_extra());
             rep.set_success(success);
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::LogControl>()) {

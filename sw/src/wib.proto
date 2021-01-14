@@ -58,11 +58,23 @@ message ReadDaqSpy {
     }
 }
  
+// Turn power ON and OFF for the FEMBs
+message PowerWIB {
+
+    //True to turn on, False to turn off
+    bool femb0 = 1;
+    bool femb1 = 2;
+    bool femb2 = 3;
+    bool femb3 = 4;
+    
+    //replies Status
+} 
+
 // Perform a full frontend configuration with settings for each FEMB
 message ConfigureWIB {
     // Settings applied to all channels on a FEMB
     message ConfigureFEMB {
-        bool enabled = 1; // FEMB serial receiver enabled
+        bool enabled = 1; // Whether to program this FEMB and enable readout
         
         // LArASIC global
         bool test_cap = 2; // test capacitor enabled

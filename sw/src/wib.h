@@ -93,6 +93,12 @@ public:
     uint8_t cdpeek(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr);
     void cdpoke(uint8_t femb_idx, uint8_t coldata_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
     
+    // Turns pulser on or off  
+    bool set_pulser(bool on);
+    
+    // Control power sequence for frontend 
+    bool power_wib(wib::PowerWIB &conf);
+    
     // Configure this WIB
     bool configure_wib(wib::ConfigureWIB &conf);
 
@@ -113,6 +119,12 @@ protected:
     
     // Front end initialized
     bool frontend_initialized = false;
+    
+    // Save the FEMB power state (could perhaps read from i2c)
+    bool frontend_power[4];
+    
+    // Save the pulser state (no way to read from hardware)
+    bool pulser_on;
     
     // Interface to each of the 4 FEMBs 
     FEMB* femb[4];
