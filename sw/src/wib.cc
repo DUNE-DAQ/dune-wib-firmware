@@ -497,9 +497,9 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     }
     
     //FIXME: this is silly: without this sleep, reconfigure causes a board reset at VDDA and VDDD power on (somehow)
-    glog.log("FIXME: Power off frontend and dwell for 10 seconds to avoid resets\n");
+    glog.log("FIXME: Power off frontend and dwell for 1 second\n");
     femb_power_set(false,false,false,false);
-    usleep(10000000);
+    usleep(1000000);
     
     glog.log("Reconfiguring WIB\n"); 
     
@@ -542,9 +542,12 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     bool power_res = true;
     for (int i = 0; i < 4; i++) {
         if (conf.fembs(i).enabled()) {
+            glog.log("Enabling FEMB%i U1 control signals\n",i);
             power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1
+            usleep(100000); //FIXME: board may reset if these are turned on too quickly 
+            glog.log("Enabling FEMB%i U2 control signals\n",i);
             power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD L/R on U2 ctrl_0/ctrl_1
-            usleep(100000); //FIXME: board will reset if these are turned on too quickly (dwell off before config necessary to avoid this, as well)
+            usleep(100000); //FIXME: board may reset if these are turned on too quickly 
         }
     }
     if (power_res) {
