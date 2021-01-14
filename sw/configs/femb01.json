@@ -1,0 +1,80 @@
+{
+
+"cold": false,
+"pulser": false,
+
+"enabled_fembs": [true, true, false, false],
+
+"femb_configs": [
+
+    {
+        "test_cap": false,
+        "gain": 0,
+        "peak_time": 0,
+        "baseline": 0,
+        "pulse_dac": 0,
+
+        "leak": 0,
+        "leak_10x": false,
+        "ac_couple": true,
+        "buffer": 1,
+
+        "strobe_skip": 255,
+        "strobe_delay": 255,
+        "strobe_length": 255
+    },
+
+    {
+        "test_cap": false,
+        "gain": 0,
+        "peak_time": 0,
+        "baseline": 0,
+        "pulse_dac": 0,
+
+        "leak": 0,
+        "leak_10x": false,
+        "ac_couple": true,
+        "buffer": 1,
+
+        "strobe_skip": 255,
+        "strobe_delay": 255,
+        "strobe_length": 255
+    },
+
+    {
+        "test_cap": false,
+        "gain": 0,
+        "peak_time": 0,
+        "baseline": 0,
+        "pulse_dac": 0,
+
+        "leak": 0,
+        "leak_10x": false,
+        "ac_couple": true,
+        "buffer": 1,
+
+        "strobe_skip": 255,
+        "strobe_delay": 255,
+        "strobe_length": 255
+    },
+
+    {
+        "test_cap": false,
+        "gain": 0,
+        "peak_time": 0,
+        "baseline": 0,
+        "pulse_dac": 0,
+
+        "leak": 0,
+        "leak_10x": false,
+        "ac_couple": true,
+        "buffer": 1,
+
+        "strobe_skip": 255,
+        "strobe_delay": 255,
+        "strobe_length": 255
+    }
+
+]
+
+}
