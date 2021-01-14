@@ -89,7 +89,10 @@ bool WIB::start_frontend() {
     glog.log("Initializing front end...\n");
     bool success = true;
     glog.log("Disabling front end power\n");
-    femb_power_set(false,false,false,false);
+    femb_power_set(0,false);
+    femb_power_set(1,false);
+    femb_power_set(2,false);
+    femb_power_set(3,false);
     glog.log("Configuring front end power\n");
     femb_power_config();
     success &= script("prestart");
@@ -130,7 +133,7 @@ bool WIB::timing_endpoint_config() {
     return true;
 }
 
-bool WIB::femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage) {
+bool WIB::femb_power_reg_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage) {
     uint8_t chip;
     uint8_t reg;
     uint8_t buffer[2];
@@ -190,32 +193,85 @@ bool WIB::femb_power_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage)
 
 bool WIB::femb_power_config() {
     for (int i = 0; i <= 3; i++) {
-        femb_power_ctrl(i, 0, 4.0);
-        femb_power_ctrl(i, 1, 4.0);
-        femb_power_ctrl(i, 2, 4.0);
-        femb_power_ctrl(i, 3, 4.0);
-        femb_power_ctrl(i, 4, 2.5);
-        femb_power_ctrl(i, 5, 2.5);
+        femb_power_reg_ctrl(i, 0, 4.0);
+        femb_power_reg_ctrl(i, 1, 4.0);
+        femb_power_reg_ctrl(i, 2, 4.0);
+        femb_power_reg_ctrl(i, 3, 4.0);
+        femb_power_reg_ctrl(i, 4, 2.5);
+        femb_power_reg_ctrl(i, 5, 2.5);
     }
     
-    return true;
-}
-
-bool WIB::femb_power_set(bool femb0, bool femb1, bool femb2, bool femb3, bool coldadc) {
-    // configure all pins as outputs
+    // configure all pins as outputs for regulator enablers
     i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x22, 0xD, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x22, 0xE, 0);
-    // set all ones on all outputs
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x4, femb0 ? (coldadc ? 0xFF : 0x6B) : 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x5, femb1 ? (coldadc ? 0xFF : 0x6B) : 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x6, femb2 ? (coldadc ? 0xFF : 0x6B) : 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x22, 0x4, femb3 ? (coldadc ? 0xFF : 0x6B) : 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, (femb0 || femb1 || femb2 || femb3) ? 0x1 : 0);
+    
     return true;
+}
+
+bool WIB::femb_power_set(int femb_idx, bool on) {
+    if (on || frontend_power[0] || frontend_power[1] || frontend_power[2] || frontend_power[3]) {
+        //Enabled if any FEMB is on
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, 0x1);
+        usleep(100000);
+    } else {
+        i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, 0x0);
+        usleep(100000);
+    }
+    uint8_t i2c_addr;
+    uint8_t i2c_reg;
+    switch (femb_idx) {
+        case 0:
+            i2c_addr = 0x23;
+            i2c_reg = 0x4;
+            break;
+        case 1:
+            i2c_addr = 0x23;
+            i2c_reg = 0x5;
+            break;
+        case 2:
+            i2c_addr = 0x23;
+            i2c_reg = 0x6;
+            break;
+        case 3:
+            i2c_addr = 0x22;
+            i2c_reg = 0x4;
+            break;
+        default:
+            return false;
+    }
+    bool power_res = true;
+    if (on) {
+        glog.log("Powering on FEMB %i COLDATA\n",femb_idx);
+        i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0x6B); //COLDATA
+        usleep(100000);
+        glog.log("Powering on FEMB %i COLDADC\n",femb_idx);
+        i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0xFF); //CLDATA+COLDADC
+        usleep(100000);
+        //Additional steps to turn on analog chips via COLDATA control regs
+        glog.log("Enabling FEMB %i U1 control signals\n",femb_idx);
+        power_res &= femb[femb_idx]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
+        usleep(100000);
+        glog.log("Enabling FEMB %i U2 control_0 signal\n",femb_idx);
+        power_res &= femb[femb_idx]->set_control_reg(1,false,true);  //VDDD L on U2 ctrl_0
+        usleep(100000);
+        glog.log("Enabling FEMB %i U2 control_1 signal\n",femb_idx);
+        power_res &= femb[femb_idx]->set_control_reg(1,true,true);  //VDDD R on U2 ctrl_1
+        usleep(100000);
+        if (power_res) {
+            glog.log("FEMB %i powered succesfully\n",femb_idx);
+        } else {
+            glog.log("FEMB %i power failed!\n",femb_idx);
+        }
+    } else {
+        glog.log("Powering off FEMB %i\n",femb_idx);
+        i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0x00); //CLDATA+COLDADC
+    }
+    frontend_power[femb_idx] = on;
+    return power_res;
 }
 
 bool WIB::femb_rx_mask(uint32_t value, uint32_t mask) {
@@ -530,47 +586,10 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     //pulser will be off for any new FEMBs, so turn off for all old fembs
     bool pulser_res = set_pulser(false);
     
-    if (!conf.femb0() && !conf.femb1() && !conf.femb2() && !conf.femb3()) {
-        glog.log("Turning off all FEMBs");
-        femb_power_set(false, false, false, false, false);
-        frontend_power[0] = frontend_power[1] = frontend_power[2] = frontend_power[3] = false;
-        return true;
-    }
-
-    glog.log("Powering on COLDATA\n");
-    femb_power_set(conf.femb0(), conf.femb1(), conf.femb2(), conf.femb3(), false); // COLDATA on, COLDADC off
-    usleep(1000000);
-    
-    glog.log("Powering on COLDADC\n");
-    femb_power_set(conf.femb0(), conf.femb1(), conf.femb2(), conf.femb3(), true); // COLDATA on, COLDADC on
-    usleep(1000000);
-    
     bool power_res = true;
-    glog.log("Powering on VDDA and VDDD L/R\n");
     for (int i = 0; i < 4; i++) {
-        if (femb_i_on(conf,i)) {
-            glog.log("Enabling FEMB%i U1 control signals\n",i);
-            power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
-            usleep(100000);
-            glog.log("Enabling FEMB%i U2 control_0 signal\n",i);
-            power_res &= femb[i]->set_control_reg(1,false,true);  //VDDD L on U2 ctrl_0
-            usleep(100000);
-            glog.log("Enabling FEMB%i U2 control_1 signal\n",i);
-            power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD R on U2 ctrl_1
-            usleep(100000);
-        }
+        power_res &= femb_power_set(i, femb_i_on(conf, i)); // Sequences COLDATA -> COLDADC -> Analog
     }
-    if (power_res) {
-        glog.log("VDDA and VDDD L/R powered succesfully\n");
-    } else {
-        glog.log("VDDA and VDDD L/R power failed!\n");
-    }
-    
-    // Save new power state
-    frontend_power[0] = conf.femb0();
-    frontend_power[1] = conf.femb1();
-    frontend_power[2] = conf.femb2();
-    frontend_power[3] = conf.femb3();
     
     return pulser_res && power_res;
 }
