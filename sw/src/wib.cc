@@ -642,7 +642,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
     
     bool coldadc_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
-         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold());
+         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern());
     }
     if (coldadc_res) {
         glog.log("COLDADC configured\n");

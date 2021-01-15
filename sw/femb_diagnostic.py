@@ -410,6 +410,7 @@ if __name__ == "__main__":
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
     parser.add_argument('--femb','-f',default=0,type=int,help='FEMB index to display 0-3 [0]')
     parser.add_argument('--cold','-c',action='store_true',help='The FEMBs will load the cold configuration with this option [default: warm]')
+    parser.add_argument('--test','-t',action='store_true',help='ADCs will digitize a test pattern instead of digitized data [default: off]')
     parser.add_argument('--config','-C',default=None,help='WIB configuration to load [default: generated with --femb and --cold]')
     parser.add_argument('--grid','-g',action='store_true',help='Split Mean/RMS into separate plots for a 2x2 grid')
     parser.add_argument('--save_to','-s',default=None,help='Path to save plots to (only last plotted saved)')

@@ -30,6 +30,8 @@ class WIB:
         req = wibpb.ConfigureWIB()
         req.cold = config['cold']
         req.pulser = config['pulser']
+        if 'adc_test_pattern' in config:
+            req.adc_test_pattern = config['adc_test_pattern']
         
         for i in range(4):
             femb_conf = req.fembs.add();
