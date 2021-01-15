@@ -715,20 +715,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         glog.log("LArASIC SPI verification failed!\n");
     }
     
-    bool pulser_res = true;
-    if (conf.pulser()) {
-        for (int i = 0; i < 4; i++) { 
-            if (conf.fembs(i).enabled()) {
-                pulser_res &= femb[i]->set_fast_act(ACT_LARASIC_PULSE);
-            }
-        }
-        FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
-        if (pulser_res) {
-            glog.log("Calibration pulser started\n");
-        } else {
-            glog.log("Calibration pulser start failed!\n");
-        }
-    }
+    bool pulser_res = set_pulser(conf.pulser());
         
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
