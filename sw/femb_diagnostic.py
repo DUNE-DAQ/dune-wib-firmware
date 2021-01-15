@@ -294,13 +294,14 @@ class FFTView(DataView):
         self.resize(None)
         
 class FEMBDiagnostics(QtWidgets.QMainWindow):
-    def __init__(self,wib_server='127.0.0.1',femb=0,cold=False,grid=False,save_to=None,config=None):
+    def __init__(self,wib_server='127.0.0.1',femb=0,cold=False,grid=False,save_to=None,config=None,test=False):
         super().__init__()
         
         self.wib = WIB(wib_server)
         self.config = config
         self.femb = femb
         self.cold = cold
+        self.test = test
         self.save_to = save_to
         
         self._main = QtWidgets.QWidget()
@@ -380,6 +381,7 @@ class FEMBDiagnostics(QtWidgets.QMainWindow):
             req = wibpb.ConfigureWIB()
             req.cold = self.cold
             req.pulser = False
+            req.adc_test_pattern = self.test
             for i in range(4):
                 femb_conf = req.fembs.add();
                 if i != self.femb:
