@@ -650,6 +650,9 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         glog.log("COLDADC configuration failed!\n");
     }
     
+    // Pulser _must_ be off to program LArASIC
+    set_pulser(false);
+    
     bool larasic_res = true;
     uint32_t rx_mask = 0x0000;
     for (int i = 0; i < 4; i++) {
