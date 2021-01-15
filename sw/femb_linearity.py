@@ -56,6 +56,7 @@ def configure_pulser_run(wib,pulser_dac,femb_mask=[False,False,False,False],cold
 
 def take_data(wib,fnames,pulser_dacs=[0,5,10,15,20],num_acquisitions=20,cold=False,ignore_failure=False):
     try:
+        hfs = None
         femb_mask = [fnames[idx].lower() != 'none' if idx < len(fnames) else False for idx in range(4)]
         hfs = [(idx,h5py.File(fname,'w')) for idx,fname in enumerate(fnames) if femb_mask[idx]]
         for pulser_dac in pulser_dacs:
@@ -73,8 +74,9 @@ def take_data(wib,fnames,pulser_dacs=[0,5,10,15,20],num_acquisitions=20,cold=Fal
     except:
         raise
     finally:
-        for idx,hf in hfs:
-            hf.close()
+        if hfs is not None:
+            for idx,hf in hfs:
+                hf.close()
         
 def analyze_ch(ch,ped_start=-100,ped_end=-15,prominence=100):
     peaks,*_ = sig.find_peaks(ch,prominence=prominence)
