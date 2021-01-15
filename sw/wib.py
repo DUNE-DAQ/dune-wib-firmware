@@ -57,6 +57,7 @@ class WIB:
         print('Sending ConfigureWIB command')
         rep = wibpb.Status()
         self.send_command(req,rep);
+        print(rep.extra.decode('ascii'))
         print('Successful: ',rep.success)
         return rep.success
         
