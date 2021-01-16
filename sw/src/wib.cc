@@ -608,7 +608,7 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
         if (femb_i_on(conf,i)) femb[i]->set_fast_act(ACT_RESET_COLDADC); // Prepare COLDADC reset
     }
     
-    glog.log("Synchronizing COLDADCs\n")
+    glog.log("Synchronizing COLDADCs\n");
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT
     
     return pulser_res && power_res;
