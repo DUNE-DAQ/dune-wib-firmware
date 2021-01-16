@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import time
+import shlex
+import pickle
+import readline
+import argparse
+
+from wib import WIB
+import wib_pb2 as wibpb
+
+parser = argparse.ArgumentParser(description='Python version of the wib_client utility')
+parser.add_argument('-w','--wib_server',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
+parser.add_argument('command',nargs='?',help='Execute a single command (opens CLI if omitted; help command for more info)')
+parser.add_argument('args',nargs='*',help='Optional arguments to command')
+
+commands = argparse.ArgumentParser(add_help=False,prog='')
+class CommandException(Exception):
+    def __init__(self,message,parser=None):
+        self.message = message
+        self.parser = parser
+def custom_exit(*args, message=None, **kwargs):
+    raise CommandException(message)
+def custom_error(message, *args, **kwargs):
+    raise CommandException(message)
+commands.exit = custom_exit
+commands.error = custom_error
+sub = commands.add_subparsers(title='subcommands',help='subcommand help')
+
+def bind_parser(parser,func):
+    def custom_exit(*args, message=None, **kwargs):
+        raise CommandException(message,parser=parser)
+    def custom_error(message, *args, **kwargs):
+        raise CommandException(message,parser=parser)
+    parser.exit = custom_exit
+    parser.error = custom_error
+    parser.set_defaults(func=func)
+
+reboot_parser = sub.add_parser('reboot',help='Reboot the WIB',add_help=False)
+def reboot(args):
+    req = wibpb.Reboot()
+    rep = wibpb.Empty()
+    wib.send_command(rep,req)
+    print('Rebooting...')
+bind_parser(reboot_parser,reboot)
+
+log_parser = sub.add_parser('log',help='Return or control the wib_server log',add_help=False)
+log_parser.add_argument('action',nargs='?',choices=['clear','boot'],help='Optional log action (returns log if omitted)')
+def log(args):
+    req = wibpb.LogControl()
+    req.return_log = args.action == None
+    req.boot_log = args.action == 'boot'
+    req.clear_log = args.action == 'clear'
+    rep = wibpb.LogControl.Log()
+    wib.send_command(req,rep)
+    print(rep.contents.decode('ascii'),end='')
+bind_parser(log_parser,log)
+
+script_parser = sub.add_parser('script',help='Run a WIB script',add_help=False)
+script_parser.add_argument('filename',help='local file will be sent, otherwise filename is remote in /etc/wib/ on the WIB')
+def script(args):
+    req = wibpb.Script()
+    rep = wibpb.Status()
+    if os.path.exists(args.filename):
+        print('Executing local script...')
+        with open(args.filename,'rb') as fin:
+            req.script = fin.read()
+        req.file = False
+    else:
+        print('Executing remote script...')
+        req.script = args.filename
+        req.file = True
+    wib.send_command(req,rep)
+    print('Successful:',rep.success)
+bind_parser(script_parser,script)
+
+config_parser = sub.add_parser('config',help='Send frontend configuration to the WIB',add_help=False)
+config_parser.add_argument('filename',help='JSON config file')
+def config(args):
+    wib.config(args.filename)
+bind_parser(config_parser,script)
+
+daqspy_parser = sub.add_parser('daqspy',help='Read 1MB from each daq spy buffer and write the (up to) 2MB binary data',add_help=False)
+daqspy_parser.add_argument('filename',help='Output file for binary data')
+daqspy_parser.add_argument('buffers',nargs='?',choices=['buf0','buf1','both'],default='both',help='Select specific buffers [both]')
+def daqspy(args):
+    req = wibpb.ReadDaqSpy()
+    req.buf0 = args.buffers in ['buf0','both']
+    req.buf1 = args.buffers in ['buf1','both']
+    rep = wibpb.ReadDaqSpy.DaqSpy()
+    wib.send_command(req,rep)
+    print('Successful:',rep.success)
+    with open(args.filename,'wb') as fout:
+        fout.write(rep.buf0)
+        fout.write(rep.buf1)
+bind_parser(daqspy_parser,daqspy)
+
+peek_parser = sub.add_parser('peek',help='Read a 32bit value from WIB address space',add_help=False)
+peek_parser.add_argument('addr',type=lambda x: int(x,16),help='Address to read (hex)')
+def peek(args):
+    req = wibpb.Peek()
+    rep = wibpb.RegValue()
+    req.addr = args.addr
+    wib.send_command(req,rep)
+    print('*(0x%016X) -> 0x%08X'%(rep.addr,rep.value))
+bind_parser(peek_parser,peek)
+
+poke_parser = sub.add_parser('poke',help='Write a 32bit value to WIB address space',add_help=False)
+poke_parser.add_argument('addr',type=lambda x: int(x,16),help='Address to write (hex)')
+poke_parser.add_argument('value',type=lambda x: int(x,16),help='Value to write to addr (hex)')
+def poke(args):
+    req = wibpb.Poke()
+    rep = wibpb.RegValue()
+    req.addr = args.addr
+    req.value = args.value
+    wib.send_command(req,rep)
+    print('*(0x%016X) <- 0x%08X'%(rep.addr,rep.value))
+bind_parser(poke_parser,poke)
+
+cdpeek_parser = sub.add_parser('cdpeek',help='Read a 8bit value from COLDATA I2C address space',add_help=False)
+cdpeek_parser.add_argument('femb_idx',type=int,choices=[0,1,2,3],help='FEMB to communicate with [0-3]')
+cdpeek_parser.add_argument('coldata_idx',type=int,choices=[0,1],help='COLDDATA chip to communicate with [0-1]')
+cdpeek_parser.add_argument('chip_addr',type=lambda x: int(x,16),help='DUNE I2C chip address (hex)')
+cdpeek_parser.add_argument('reg_page',type=lambda x: int(x,16),help='DUNE I2C register page (hex)')
+cdpeek_parser.add_argument('reg_addr',type=lambda x: int(x,16),help='DUNE I2C register address (hex)')
+def cdpeek(args):
+    req = wibpb.CDPeek()
+    rep = wibpb.CDRegValue()
+    req.femb_idx = args.femb_idx
+    req.coldata_idx = args.coldata_idx
+    req.reg_page = args.reg_page
+    req.reg_addr = args.reg_addr
+    wib.send_command(req,rep)
+    print('femb:%i coldata:%i chip:0x%02X page:0x%02X reg:0x%02X -> 0x%02X'%(rep.femb_idx,rep.coldata_idx,rep.chip_addr,rep.reg_page,rep.reg_addr,rep.data))
+bind_parser(cdpeek_parser,cdpeek)
+
+cdpoke_parser = sub.add_parser('cdpoke',help='Write a 8bit value to COLDATA I2C address space',add_help=False)
+cdpoke_parser.add_argument('femb_idx',type=int,choices=[0,1,2,3],help='FEMB to communicate with')
+cdpoke_parser.add_argument('coldata_idx',type=int,choices=[0,1],help='COLDDATA chip to communicate with')
+cdpoke_parser.add_argument('chip_addr',type=int,help='DUNE I2C chip address')
+cdpoke_parser.add_argument('reg_page',type=int,help='DUNE I2C register page')
+cdpoke_parser.add_argument('reg_addr',type=int,help='DUNE I2C register address')
+cdpoke_parser.add_argument('data',type=int,help='Data to write over DUNE I2C')
+def cdpoke(args):
+    req = wibpb.CDPeek()
+    rep = wibpb.CDRegValue()
+    req.femb_idx = args.femb_idx
+    req.coldata_idx = args.coldata_idx
+    req.reg_page = args.reg_page
+    req.reg_addr = args.reg_addr
+    req.data = args.data
+    wib.send_command(req,rep)
+    print('femb:%i coldata:%i chip:0x%02X page:0x%02X reg:0x%02X <- 0x%02X'%(rep.femb_idx,rep.coldata_idx,rep.chip_addr,rep.reg_page,rep.reg_addr,rep.data))
+bind_parser(cdpoke_parser,cdpoke)
+
+cdfastcmd_parser = sub.add_parser('cdfastcmd',help='Send the fast command cmd to all coldata chips',add_help=False)
+cdfastcmd_parser.add_argument('command',choices=['reset', 'act', 'sync', 'edge', 'idle', 'edge_act'],help='FASTCMD to send')
+def cdfastcmd(args):
+    fast_cmds = { 'reset':1, 'act':2, 'sync':4, 'edge':8, 'idle':16, 'edge_act':32 }
+    req = wibpb.CDFastCmd()
+    req.cmd = fast_cmds[argument.command]
+    rep = wibpb.Empty()
+    wib.send_command(req,rep)
+    print('Fast command sent')
+bind_parser(cdfastcmd_parser,cdfastcmd)
+
+update_parser = sub.add_parser('update',help='Deploy a new root and boot archive to the WIB',add_help=False)
+update_parser.add_argument('root_archive',help='Root filesystem archive')
+update_parser.add_argument('boot_archive',help='Boot filesystem archive')
+def update(args):
+    if not os.path.exists(args.root_archive):
+        print('Root archive',args.root_archive,'not found. Aborting update.')
+        return
+    if not os.path.exists(args.boot_archive):
+        print('Boot archive',args.boot_archive,'not found. Aborting update.')
+        return
+    req = wibpb.Update()
+    with open(args.root_archive,'rb') as froot:
+        req.root_archive = froot.read()
+    with open(args.boot_archive,'rb') as fboot:
+        req.boot_archive = fboot.read()
+    rep = wibpb.Empty()
+    print('Sending update command...')
+    wib.send_command(req,rep) 
+    print('WIB will now update and reboot.')
+bind_parser(update_parser,update)
+
+exit_parser = sub.add_parser('exit',help='Closes the command interface',add_help=False)
+def exit(args):
+    sys.exit(0)
+bind_parser(exit_parser,exit)
+
+help_parser = sub.add_parser('help',help='Show help message, optionally for a subcommand',add_help=False)
+help_parser.add_argument('command',nargs='?',help='Subcommand to show help for')
+def help(args):
+    if args.command is None:
+        commands.print_help()
+    else:
+        p = '%s_parser'%args.command
+        if p in globals():
+            eval('%s.print_help()'%p)
+        else:
+            print('Unknown command %s'%args.command)
+bind_parser(help_parser,help)
+
+def handle_args(args):
+    try:
+        args = commands.parse_args(args)
+        args.func(args)
+    except CommandException as ex:
+        if ex.parser is not None:
+            ex.parser.print_usage()
+        print(ex.message)
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+    wib = WIB(args.wib_server)
+    if args.command is None:
+        import readline
+        while True:
+            try:
+                line = input('[%s] >> '%args.wib_server).strip()
+                handle_args(shlex.split(line))
+            except KeyboardInterrupt:
+                print()
+                continue
+            except EOFError:
+                print()
+                break
+    else:
+        handle_args([args.command]+args.args)

@@ -285,7 +285,7 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
             glog.log("Valid fast commands: reset, act, sync, edge, idle, edge_act\n");
             return 0;
         }
-        wib::RegValue rep;
+        wib::Empty rep;
         send_command(s,req,rep);
     } else if (cmd == "help") {
         print_help();
