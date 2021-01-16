@@ -563,7 +563,7 @@ bool WIB::set_pulser(bool on) {
                 pulser_res &= femb[i]->set_fast_act(ACT_LARASIC_PULSE);
             }
         }
-        FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+        FEMB::fast_cmd(FAST_CMD_ACT); // Perform ACT
         pulser_on = on;
         if (!pulser_res) glog.log("Pulser failed to toggle, pulser state unknown\n");
         return pulser_res;
@@ -605,7 +605,11 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     bool power_res = true;
     for (int i = 0; i < 4; i++) {
         power_res &= femb_power_set(i, femb_i_on(conf, i)); // Sequences COLDATA -> COLDADC -> Analog
+        if (femb_i_on(conf,i)) femb[i]->set_fast_act(ACT_RESET_COLDADC); // Prepare COLDADC reset
     }
+    
+    glog.log("Synchronizing COLDADCs\n")
+    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT
     
     return pulser_res && power_res;
 }
@@ -684,7 +688,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
             rx_mask |= (0xF << (i*4));
         }
     }
-    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+    FEMB::fast_cmd(FAST_CMD_ACT); // Perform ACT
     if (larasic_res) {
         glog.log("LArASIC configured\n");
     } else {
@@ -701,7 +705,7 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
             }
         }
         if (!verify_res) continue;
-        FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform ACT
+        FEMB::fast_cmd(FAST_CMD_ACT); // Perform ACT
         for (int i = 0; i < 4; i++) {
             if (conf.fembs(i).enabled()) {
                 verify_res &= femb[i]->read_spi_status();
