@@ -219,6 +219,12 @@ if __name__ == "__main__":
     wib = WIB(args.wib_server)
     if args.command is None:
         import readline
+        hist_file = os.path.expanduser('~/.wib_client_hist')
+        if os.path.exists(hist_file):
+            readline.read_history_file(hist_file)
+        else:
+            open(hist_file,'w').close()
+        hist_start = readline.get_current_history_length()
         while True:
             try:
                 line = input('[%s] >> '%args.wib_server).strip()
@@ -229,5 +235,7 @@ if __name__ == "__main__":
             except EOFError:
                 print()
                 break
+        hist_end = readline.get_current_history_length()
+        readline.append_history_file(hist_end-hist_start,hist_file)
     else:
         handle_args([args.command]+args.args)
