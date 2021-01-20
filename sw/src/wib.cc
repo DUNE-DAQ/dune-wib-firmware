@@ -1,6 +1,7 @@
 #include "wib.h"
 #include "unpack.h"
 #include "sensors.h"
+#include "diagnostics.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -610,6 +611,9 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     
     glog.log("Synchronizing COLDADCs\n");
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT
+    
+    glog.log("Running power-on diagnostics\n");
+    check_test_pattern(*this,frontend_power,true);
     
     return pulser_res && power_res;
 }
