@@ -106,13 +106,29 @@ bool WIB::start_frontend() {
 }
 
 string WIB::crate_ip() {
-    glog.log("FIXME: using default IP: 192.168.121.1/24\n");
-    return "192.168.121.1/24"; //FIXME pull from firmware
+    //FIXME pull from firmware
+    ifstream fin("/etc/wib/ip");
+    if (fin.is_open()) {
+        string ip((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
+        glog.log("Using IP %s from /etc/wib/ip\n",ip.c_str());
+        return ip;
+    }
+    glog.log("Using default IP: 192.168.121.1/24\n");
+    glog.log("Create /etc/wib/ip containing desired IP to override\n");
+    return "192.168.121.1/24"; 
 }
 
 string WIB::gateway_ip() {
-    glog.log("FIXME: using default IP: 192.168.121.52\n"); //iceberg01
-    return "192.168.121.52"; //FIXME pull from somewhere
+    //FIXME pull from somewhere
+    ifstream fin("/etc/wib/gateway");
+    if (fin.is_open()) {
+        string ip((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
+        glog.log("Using gateway %s from /etc/wib/gateway\n",ip.c_str());
+        return ip;
+    }
+    glog.log("Using default gateway: 192.168.121.52\n"); //iceberg01
+    glog.log("Create /etc/wib/gateway containing desired gateway to override\n");
+    return "192.168.121.52";
 }
 
 void WIB::set_fake_time(uint64_t time) {
