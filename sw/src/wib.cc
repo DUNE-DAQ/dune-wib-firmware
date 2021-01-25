@@ -229,7 +229,7 @@ bool WIB::femb_power_config() {
     return true;
 }
 
-bool WIB::femb_power_set(int femb_idx, bool on) {
+bool WIB::femb_power_set(int femb_idx, bool on, bool cold) {
     if (on || frontend_power[0] || frontend_power[1] || frontend_power[2] || frontend_power[3]) {
         //Enabled if any FEMB is on
         i2c_reg_write(&this->femb_en_i2c, 0x22, 0x5, 0x1);
@@ -270,7 +270,7 @@ bool WIB::femb_power_set(int femb_idx, bool on) {
         i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0x6B); //COLDATA
         usleep(100000);
         glog.log("Loading default COLDATA config\n");
-        power_res &= femb[femb_idx]->configure_coldata(true,FRAME_14); //default config
+        power_res &= femb[femb_idx]->configure_coldata(cold,FRAME_14); //default config
         if (!power_res) {
             glog.log("Failed to configure COLDATA; aborting power on\n");
             femb_power_set(femb_idx,false);
@@ -280,7 +280,7 @@ bool WIB::femb_power_set(int femb_idx, bool on) {
         i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0xFF); //CLDATA+COLDADC
         usleep(100000);
         glog.log("Loading default COLDADC config\n");
-        power_res &= femb[femb_idx]->configure_coldadc(true); //default config
+        power_res &= femb[femb_idx]->configure_coldadc(cold); //default config
         if (!power_res) {
             glog.log("Failed to configure COLDADC; aborting power on\n");
             femb_power_set(femb_idx,false);
@@ -621,7 +621,7 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
         if (femb_i_on(conf,i)) {
             //Additional steps to turn on analog chips via COLDATA control regs
             glog.log("Loading default COLDADC config for FEMB %i\n",i);
-            power_res &= femb[i]->configure_coldadc(true); //default config
+            power_res &= femb[i]->configure_coldadc(conf.cold()); //default config
             glog.log("Enabling FEMB %i U1 control signals\n",i);
             power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
             usleep(100000);
@@ -639,7 +639,7 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     }
     
     glog.log("Running power-on diagnostics\n");
-    check_test_pattern(*this,frontend_power,true);
+    bool adc_test = check_test_pattern(*this,frontend_power,conf.cold());
     
     return pulser_res && power_res;
 }

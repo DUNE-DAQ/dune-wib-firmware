@@ -67,6 +67,8 @@ message PowerWIB {
     bool femb2 = 3;
     bool femb3 = 4;
     
+    bool cold = 5; // True if front end is COLD (77k)
+    
     //replies Status
 } 
 
