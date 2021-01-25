@@ -23,6 +23,7 @@ bool adc_test_config(WIB &w, const bool femb_mask[4], bool cold) {
     wib::ConfigureWIB conf;
     conf.set_cold(cold);
     conf.set_pulser(false);
+    conf.set_adc_test_pattern(true);
     for (size_t iFEMB = 0; iFEMB < 4; iFEMB++) {
         wib::ConfigureWIB::ConfigureFEMB *femb_conf = conf.add_fembs();
         femb_conf->set_enabled(femb_mask[iFEMB]);

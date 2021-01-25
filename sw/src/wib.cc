@@ -639,9 +639,9 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     }
     
     glog.log("Running power-on diagnostics\n");
-    bool adc_test = check_test_pattern(*this,frontend_power,conf.cold());
+    bool adc_test_res = check_test_pattern(*this,frontend_power,conf.cold());
     
-    return pulser_res && power_res;
+    return pulser_res && power_res && adc_test_res;
 }
 
 bool WIB::configure_wib(wib::ConfigureWIB &conf) {
