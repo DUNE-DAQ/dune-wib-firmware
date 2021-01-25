@@ -618,21 +618,23 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT      
     
     for (int i = 0; i < 4; i++) {
-        //Additional steps to turn on analog chips via COLDATA control regs
-        glog.log("Loading default COLDADC config for FEMB %i\n",i);
-        power_res &= femb[i]->configure_coldadc(true); //default config
-        glog.log("Enabling FEMB %i U1 control signals\n",i);
-        power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
-        usleep(100000);
-        glog.log("Enabling FEMB %i U2 control_0 signal\n",i);
-        power_res &= femb[i]->set_control_reg(1,false,true);  //VDDD L on U2 ctrl_0
-        usleep(100000);
-        glog.log("Enabling FEMB %i U2 control_1 signal\n",i);
-        power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD R on U2 ctrl_1
-        usleep(100000);
-        if (!power_res) {
-            glog.log("Failed to enable COLDADC power for FEMB %i, aborting\n",i);
-            return false;
+        if (femb_i_on(conf,i)) {
+            //Additional steps to turn on analog chips via COLDATA control regs
+            glog.log("Loading default COLDADC config for FEMB %i\n",i);
+            power_res &= femb[i]->configure_coldadc(true); //default config
+            glog.log("Enabling FEMB %i U1 control signals\n",i);
+            power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
+            usleep(100000);
+            glog.log("Enabling FEMB %i U2 control_0 signal\n",i);
+            power_res &= femb[i]->set_control_reg(1,false,true);  //VDDD L on U2 ctrl_0
+            usleep(100000);
+            glog.log("Enabling FEMB %i U2 control_1 signal\n",i);
+            power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD R on U2 ctrl_1
+            usleep(100000);
+            if (!power_res) {
+                glog.log("Failed to enable COLDADC power for FEMB %i, aborting\n",i);
+                return false;
+            }
         }
     }
     
