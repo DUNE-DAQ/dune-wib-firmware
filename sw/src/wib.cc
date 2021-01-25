@@ -262,6 +262,10 @@ bool WIB::femb_power_set(int femb_idx, bool on) {
     }
     bool power_res = true;
     if (on) {
+        if (frontend_power[femb_idx]) {
+            glog.log("FEMB %i already on\n",femb_idx);
+            return power_res;
+        }
         glog.log("Powering on FEMB %i COLDATA\n",femb_idx);
         i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0x6B); //COLDATA
         usleep(100000);
@@ -282,23 +286,8 @@ bool WIB::femb_power_set(int femb_idx, bool on) {
             femb_power_set(femb_idx,false);
             return false;
         }
-        //Additional steps to turn on analog chips via COLDATA control regs
-        glog.log("Enabling FEMB %i U1 control signals\n",femb_idx);
-        power_res &= femb[femb_idx]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
-        usleep(100000);
-        glog.log("Enabling FEMB %i U2 control_0 signal\n",femb_idx);
-        power_res &= femb[femb_idx]->set_control_reg(1,false,true);  //VDDD L on U2 ctrl_0
-        usleep(100000);
-        glog.log("Enabling FEMB %i U2 control_1 signal\n",femb_idx);
-        power_res &= femb[femb_idx]->set_control_reg(1,true,true);  //VDDD R on U2 ctrl_1
-        usleep(100000);
-        if (power_res) {
-            glog.log("FEMB %i powered succesfully\n",femb_idx);
-        } else {
-            glog.log("FEMB %i power failed!\n",femb_idx);
-            femb_power_set(femb_idx,false);
-            return false;
-        }
+        if (power_res) glog.log("FEMB %i powered succesfully\n",femb_idx);
+        //does not turn on VDDA2P5 or VDDD2P5
     } else {
         glog.log("Powering off FEMB %i\n",femb_idx);
         i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0x00); //CLDATA+COLDADC
@@ -621,12 +610,31 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     
     bool power_res = true;
     for (int i = 0; i < 4; i++) {
-        power_res &= femb_power_set(i, femb_i_on(conf, i)); // Sequences COLDATA -> COLDADC -> Analog
+        power_res &= femb_power_set(i, femb_i_on(conf, i)); // Sequences COLDATA -> COLDADC (except VDDA2P5, VDDD2P5)
         if (femb_i_on(conf,i)) femb[i]->set_fast_act(ACT_RESET_COLDADC); // Prepare COLDADC reset
     }
     
-    glog.log("Synchronizing COLDADCs\n");
-    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT
+    glog.log("Resetting and synchronizing COLDADCs\n");
+    FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT      
+    
+    for (int i = 0; i < 4; i++) {
+        //Additional steps to turn on analog chips via COLDATA control regs
+        glog.log("Loading default COLDADC config for FEMB %i\n",i);
+        power_res &= femb[i]->configure_coldadc(true); //default config
+        glog.log("Enabling FEMB %i U1 control signals\n",i);
+        power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
+        usleep(100000);
+        glog.log("Enabling FEMB %i U2 control_0 signal\n",i);
+        power_res &= femb[i]->set_control_reg(1,false,true);  //VDDD L on U2 ctrl_0
+        usleep(100000);
+        glog.log("Enabling FEMB %i U2 control_1 signal\n",i);
+        power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD R on U2 ctrl_1
+        usleep(100000);
+        if (!power_res) {
+            glog.log("Failed to enable COLDADC power for FEMB %i, aborting\n",i);
+            return false;
+        }
+    }
     
     glog.log("Running power-on diagnostics\n");
     check_test_pattern(*this,frontend_power,true);
