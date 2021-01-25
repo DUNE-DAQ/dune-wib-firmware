@@ -24,7 +24,7 @@ if __name__ == "__main__":
     req.femb1 = args.FEMB_1 == 'on'
     req.femb2 = args.FEMB_2 == 'on'
     req.femb3 = args.FEMB_3 == 'on'
-    req.cold - args.cold
+    req.cold = args.cold
     rep = wibpb.Status()
     print('Sending PowerWIB command...')
     wib.send_command(req,rep)
