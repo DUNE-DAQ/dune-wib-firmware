@@ -277,7 +277,7 @@ bool WIB::femb_power_set(int femb_idx, bool on, bool cold) {
             return false;
         }
         glog.log("Powering on FEMB %i COLDADC\n",femb_idx);
-        i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0xFF); //CLDATA+COLDADC
+        i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0xFF); //COLDATA+COLDADC
         usleep(100000);
         glog.log("Loading default COLDADC config\n");
         power_res &= femb[femb_idx]->configure_coldadc(cold); //default config
@@ -609,10 +609,21 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     bool pulser_res = set_pulser(false);
     
     bool power_res = true;
+    bool any_on = false;
     for (int i = 0; i < 4; i++) {
         power_res &= femb_power_set(i, femb_i_on(conf, i)); // Sequences COLDATA -> COLDADC (except VDDA2P5, VDDD2P5)
-        if (femb_i_on(conf,i)) femb[i]->set_fast_act(ACT_RESET_COLDADC); // Prepare COLDADC reset
+        if (femb_i_on(conf,i)) {
+            any_on = true;
+            femb[i]->set_fast_act(ACT_RESET_COLDADC); // Prepare COLDADC reset
+        }
     }
+    
+    if (!power_res) { // Break out here if any FEMBs failed to power ON
+        glog.log("Faled to power on enabled FEMBs, aborting\n");
+        return false;
+    }
+    
+    if (!any_on) return true; // Break out here of no FEMBs are ON
     
     glog.log("Resetting and synchronizing COLDADCs\n");
     FEMB::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT      
