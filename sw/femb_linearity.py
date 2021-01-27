@@ -128,7 +128,7 @@ def create_plots(prefix,pulser_dacs,ch_mean_for_dacs,ch_rms_for_dacs):
             plt.legend(fontsize='xx-small')
             cd_idx = ((i+1)//16-1)
             plt.title('COLDADC %i'%cd_idx)
-            plt.savefig(os.path.join(prefix,'COLDATA_%i.pdf'%cd_idx),bbox_inches='tight')
+            plt.savefig(os.path.join(prefix,'COLDADC_%i.pdf'%cd_idx),bbox_inches='tight')
             plt.close()
     
 def acquire(args):
