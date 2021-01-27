@@ -269,7 +269,7 @@ bool WIB::femb_power_set(int femb_idx, bool on, bool cold) {
         glog.log("Powering on FEMB %i COLDATA\n",femb_idx);
         i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0x6B); //COLDATA
         usleep(100000);
-        glog.log("Loading %s COLDATA config\n",conf?"COLD":"WARM");
+        glog.log("Loading %s COLDATA config\n",cold?"COLD":"WARM");
         power_res &= femb[femb_idx]->configure_coldata(cold,FRAME_14); //default config
         if (!power_res) {
             glog.log("Failed to configure COLDATA; aborting power on\n");
@@ -279,7 +279,7 @@ bool WIB::femb_power_set(int femb_idx, bool on, bool cold) {
         glog.log("Powering on FEMB %i COLDADC\n",femb_idx);
         i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, 0xFF); //COLDATA+COLDADC
         usleep(100000);
-        glog.log("Loading %s COLDADC config\n",conf?"COLD":"WARM");
+        glog.log("Loading %s COLDADC config\n",cold?"COLD":"WARM");
         power_res &= femb[femb_idx]->configure_coldadc(cold); //default config
         if (!power_res) {
             glog.log("Failed to configure COLDADC; aborting power on\n");
