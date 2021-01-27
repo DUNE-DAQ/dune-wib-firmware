@@ -165,6 +165,21 @@ bool FEMB::set_fast_act(uint8_t act_cmd) {
     return res;
 }
 
+void FEMB::log_spi_status() {
+    bool res = true;
+    for (uint8_t i = 0; i < 2; i++) {
+        uint8_t status = i2c_read(i,2,0,0x23);
+        for (uint8_t j = 0; j < 4; j++) {
+            bool done = (status >> (j*2+0)) & 0x1 == 0x1;
+            bool success = (status >> (j*2+1)) & 0x1 == 0x1;
+            if (!done && !success) {
+                glog.log("Failed to verify SPI for FEMB:%i LArASIC:%i\n",index,i*4+j);
+            }
+        }
+    }
+}
+
+
 bool FEMB::read_spi_status() {
     bool res = true;
     for (uint8_t i = 0; i < 2; i++) {

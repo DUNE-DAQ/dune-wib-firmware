@@ -755,6 +755,13 @@ bool WIB::configure_wib(wib::ConfigureWIB &conf) {
         if (verify_res) {
             spi_verified = true;
             break;
+        } else {
+            // Log which SPI programmings failed
+            for (int i = 0; i < 4; i++) {
+                if (conf.fembs(i).enabled()) {
+                    femb[i]->log_spi_status();
+                }
+            }
         }
     }
     if (spi_verified) {

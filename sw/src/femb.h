@@ -84,6 +84,7 @@ public:
     bool configure_larasic(const larasic_conf &c);
     bool set_fast_act(uint8_t act_cmd);
     bool read_spi_status(); // requires ACT_SAVE_STATUS first
+    void log_spi_status(); // requires ACT_SAVE_STATUS first
     
     // for setting the FMB_CONTROL_WORD
     bool set_control_reg(uint8_t coldata_idx, bool ctrl_0, bool ctrl_1);
