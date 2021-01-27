@@ -631,7 +631,7 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     for (int i = 0; i < 4; i++) {
         if (femb_i_on(conf,i)) {
             //Additional steps to turn on analog chips via COLDATA control regs
-            glog.log("Loading %s COLDADC config for FEMB %i\n",i,conf.cold()?"COLD":"WARM");
+            glog.log("Loading %s COLDADC config for FEMB %i\n",conf.cold()?"COLD":"WARM",i);
             power_res &= femb[i]->configure_coldadc(conf.cold()); //default config
             glog.log("Enabling FEMB %i U1 control signals\n",i);
             power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
