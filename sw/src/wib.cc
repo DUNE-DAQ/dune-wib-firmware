@@ -619,7 +619,7 @@ bool WIB::power_wib(wib::PowerWIB &conf) {
     }
     
     if (!power_res) { // Break out here if any FEMBs failed to power ON
-        glog.log("Faled to power on enabled FEMBs, aborting\n");
+        glog.log("Failed to power on enabled FEMBs, aborting\n");
         return false;
     }
     
