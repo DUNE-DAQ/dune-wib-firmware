@@ -105,11 +105,18 @@ bool WIB::start_frontend() {
     return success;
 }
 
+string read_and_strip(ifstream &fin) {
+    string param((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
+    param.erase(param.find_last_not_of(" \t\n\r") + 1);
+    param.erase(0,param.find_first_not_of(" \t\n\r"));
+    return param;
+}
+
 string WIB::crate_ip() {
     //FIXME pull from firmware
     ifstream fin("/etc/wib/ip");
     if (fin.is_open()) {
-        string ip((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
+        const string &ip = read_and_strip(fin);
         glog.log("Using IP %s from /etc/wib/ip\n",ip.c_str());
         return ip;
     }
@@ -122,7 +129,7 @@ string WIB::gateway_ip() {
     //FIXME pull from somewhere
     ifstream fin("/etc/wib/gateway");
     if (fin.is_open()) {
-        string ip((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
+        const string &ip = read_and_strip(fin);
         glog.log("Using gateway %s from /etc/wib/gateway\n",ip.c_str());
         return ip;
     }
