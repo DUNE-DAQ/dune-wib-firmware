@@ -172,7 +172,7 @@ void FEMB::log_spi_status() {
         for (uint8_t j = 0; j < 4; j++) {
             bool done = (status >> (j*2+0)) & 0x1 == 0x1;
             bool success = (status >> (j*2+1)) & 0x1 == 0x1;
-            if (!done && !success) {
+            if (!done || !success) {
                 glog.log("Failed to verify SPI for FEMB:%i LArASIC:%i\n",index,i*4+j);
             }
         }
