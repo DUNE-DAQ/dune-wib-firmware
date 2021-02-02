@@ -65,7 +65,9 @@ def take_data(wib,fnames,pulser_dacs=[0,5,10,15,20],num_acquisitions=20,cold=Fal
             if not success and not ignore_failure:
                 raise Exception('Failed to configure FEMB. See WIB log for more info.')
             for i in range(num_acquisitions):
-                data = wib.acquire_data(buf1=len(fnames)>2,ignore_failure=ignore_failure)
+                buf0 = femb_mask[0] or femb_mask[1]
+                buf1 = femb_mask[2] or femb_mask[3]
+                data = wib.acquire_data(buf0=buf0,buf1=buf1,ignore_failure=ignore_failure)
                 if data is None:
                     raise Exception('Failed to acquire data from WIB. See WIB log for more info.')
                 timestamps,samples = data
@@ -141,7 +143,7 @@ def analyze(args):
     create_plots(args.plot_loc,pulser_dacs,ch_mean_for_dacs,ch_rms_for_dacs)
     
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Acquire pulser data from FEMB0 and FEMB1 and/or perform linearity test',add_help=False)
+    parser = argparse.ArgumentParser(description='Acquire pulser data from FEMBs and/or perform linearity test',add_help=False)
     parser.add_argument('--help','-h',nargs='?',const=True,help='show help message and exit',metavar='subcommand')
     sub = parser.add_subparsers(title='subcommands',help='subcommand help',dest='cmd')
     
