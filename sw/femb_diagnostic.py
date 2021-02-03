@@ -404,6 +404,8 @@ class FEMBDiagnostics(QtWidgets.QMainWindow):
             rep = wibpb.Status()
             print('Configuring WIB')
             self.wib.send_command(req,rep)
+            if not rep.success:
+                print(rep.extra.decode('ascii'))
             print('Successful:',rep.success)
         
 

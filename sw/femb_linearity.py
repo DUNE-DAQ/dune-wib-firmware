@@ -51,6 +51,8 @@ def configure_pulser_run(wib,pulser_dac,femb_mask=[False,False,False,False],cold
     rep = wibpb.Status()
     print('Configuring WIB with FEMB mask %s for pulser run with DAC value %i'%(str(femb_mask),pulser_dac))
     wib.send_command(req,rep)
+    if not rep.success:
+        print(rep.extra.decode('ascii'))
     print('Successful:',rep.success)
     return rep.success
 
