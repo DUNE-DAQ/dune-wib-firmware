@@ -66,6 +66,17 @@ WIB::~WIB() {
 bool WIB::initialize() {
     bool success = true;
     int ret;
+    ret = system("ip link set eth0 down");
+    if (WEXITSTATUS(ret) != 0) {
+        glog.log("failed to bring down eth0\n");
+        success = false;
+    }
+    string eth0_mac("ip link set dev eth0 address "+crate_mac());
+    ret = system(eth0_mac.c_str());
+    if (WEXITSTATUS(ret) != 0) {
+        glog.log("failed to set eth0 mac\n");
+        success = false;
+    }
     ret = system("ip link set eth0 up");
     if (WEXITSTATUS(ret) != 0) {
         glog.log("failed to bring up eth0\n");
@@ -110,6 +121,19 @@ string read_and_strip(ifstream &fin) {
     param.erase(param.find_last_not_of(" \t\n\r") + 1);
     param.erase(0,param.find_first_not_of(" \t\n\r"));
     return param;
+}
+
+string WIB::crate_mac() {
+    //FIXME pull from firmware
+    ifstream fin("/etc/wib/mac");
+    if (fin.is_open()) {
+        const string &ip = read_and_strip(fin);
+        glog.log("Using MAC %s from /etc/wib/mac\n",ip.c_str());
+        return ip;
+    }
+    glog.log("Using default IP: 100:0a:35:00:22:01\n");
+    glog.log("Create /etc/wib/mac containing desired MAC to override\n");
+    return "00:0a:35:00:22:01"; 
 }
 
 string WIB::crate_ip() {

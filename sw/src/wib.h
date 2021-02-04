@@ -53,9 +53,11 @@ public:
     // Startup initialization
     bool initialize();
     
-    // Reads determines IP from backplane, else returns default 192.168.8.1
+    // Returns MAC based on backplane (currently hardcoded), else returns default 00:0a:35:00:22:01
+    std::string crate_mac();
+    // Returns IP from backplane (currently hardcoded), else returns default 192.168.121.1
     std::string crate_ip();
-    // Reads determines IP for the default gateway, else returns default 192.168.8.254
+    // Returns IP for the default gateway, else returns default 192.168.121.52
     std::string gateway_ip();
     
     // Reset and configure the timing endpoint
