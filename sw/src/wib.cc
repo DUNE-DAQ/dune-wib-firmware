@@ -131,7 +131,7 @@ string WIB::crate_mac() {
         glog.log("Using MAC %s from /etc/wib/mac\n",ip.c_str());
         return ip;
     }
-    glog.log("Using default IP: 100:0a:35:00:22:01\n");
+    glog.log("Using default IP: 00:0a:35:00:22:01\n");
     glog.log("Create /etc/wib/mac containing desired MAC to override\n");
     return "00:0a:35:00:22:01"; 
 }
