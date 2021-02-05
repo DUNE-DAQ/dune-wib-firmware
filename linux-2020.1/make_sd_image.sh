@@ -1,8 +1,8 @@
 #!/bin/bash
 
 SIZE_GB="4"
-bootfs="images/linux/bootfs.img"
-rootfs="images/linux/rootfs.img"
+bootfs="images/linux/bootfs.tar.gz"
+rootfs="images/linux/rootfs.tar.gz"
 mac="00:0a:35:00:22:01"
 ip="192.168.121.1/24"
 gateway="192.168.121.52/24"
