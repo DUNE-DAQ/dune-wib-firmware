@@ -9,3 +9,5 @@ are invoked at the first config after power is turned ON:
 * `si5344_62p5mhz_config` - configures the PLL chip (a 50MHz versions exists)
 * `pll_sticky_clear` - resets status registers
 * `ept_reset` - resets the timing endpoint
+
+Other scripts may have unintended side effects.
