@@ -37,6 +37,7 @@
 #define REG_FAKE_TIME_H     0x001C/4
 #define REG_DAQ_SPY_STATUS  0x0080/4
 #define REG_FW_TIMESTAMP    0x0088/4
+#define REG_BACKPLANE_ADDR  0x008C/4
 
 class WIB {
 
@@ -60,8 +61,9 @@ public:
     // Returns IP for the default gateway, else returns default 192.168.121.52
     std::string gateway_ip();
     
-    // Reset and configure the timing endpoint
-    bool timing_endpoint_config();
+    // Reads the backplane crate and slot numbers
+    uint8_t backplane_crate_num();
+    uint8_t backplane_slot_num();
     
     // Sets the default voltage configurations for FEMB power controller
     bool femb_power_config();

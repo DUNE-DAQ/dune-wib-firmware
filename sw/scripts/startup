@@ -1,12 +1,7 @@
-# Similar to prestart, but does all power config from scripts
+# An early power-on script. Does not enable all on-FEMB regulators.
 run coldata_power_off
 # Timing system & PLL setup
-run cdr_reset
-delay 1000000
-run si5344_50mhz_config
-delay 1000000
-# Timing endpoint reset needs work, note prestart uses fake timestamps...
-run timing_endpoint_reset
+run conf_pll_timing
 # Setup frontend power
 run femb_voltages
 run coldata_power_on

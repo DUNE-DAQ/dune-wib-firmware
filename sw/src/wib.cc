@@ -107,9 +107,8 @@ bool WIB::start_frontend() {
     femb_power_set(3,false);
     glog.log("Configuring front end power\n");
     femb_power_config();
-    success &= script("prestart");
     glog.log("Configuring timing endpoint\n");
-    success &= timing_endpoint_config();
+    success &= script("conf_pll_timing");
     glog.log("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
@@ -124,7 +123,9 @@ string read_and_strip(ifstream &fin) {
 }
 
 string WIB::crate_mac() {
-    //FIXME pull from firmware
+    //FIXME this method should use backplane_crate_num() and backplane_slot_num()
+    //      along with some mapping function to MAC, eventually. ICEBERG is using
+    //      the /etc/wib/mac override instead.
     ifstream fin("/etc/wib/mac");
     if (fin.is_open()) {
         const string &ip = read_and_strip(fin);
@@ -137,7 +138,9 @@ string WIB::crate_mac() {
 }
 
 string WIB::crate_ip() {
-    //FIXME pull from firmware
+    //FIXME this method should use backplane_crate_num() and backplane_slot_num()
+    //      along with some mapping function to IP, eventually. ICEBERG is using
+    //      the /etc/wib/ip override instead.
     ifstream fin("/etc/wib/ip");
     if (fin.is_open()) {
         const string &ip = read_and_strip(fin);
@@ -162,6 +165,16 @@ string WIB::gateway_ip() {
     return "192.168.121.52";
 }
 
+uint8_t WIB::backplane_crate_num() {
+    uint32_t addr_reg = io_reg_read(&this->regs,REG_BACKPLANE_ADDR);
+    return (uint8_t)((addr_reg>>8) & 0xFF);
+}
+
+uint8_t WIB::backplane_slot_num() {
+    uint32_t addr_reg = io_reg_read(&this->regs,REG_BACKPLANE_ADDR);
+    return (uint8_t)(addr_reg & 0xFF);
+}
+
 void WIB::set_fake_time(uint64_t time) {
     io_reg_write(&this->regs,REG_FAKE_TIME_L,(uint32_t)(time&0xFFFFFFFF)); //set 4 low bytes
     io_reg_write(&this->regs,REG_FAKE_TIME_H,(uint32_t)((time>>32)&0xFFFFFFFF)); //set 4 high bytes
@@ -170,15 +183,6 @@ void WIB::set_fake_time(uint64_t time) {
 
 void WIB::start_fake_time() {
     io_reg_write(&this->regs,REG_FAKE_TIME_CTRL,2); //enable FTS
-}
-
-bool WIB::timing_endpoint_config() {
-    //timing endpoint reset is bit 28
-    io_reg_write(&this->regs,REG_TIMING,1<<28);
-    usleep(1000000);
-    io_reg_write(&this->regs,REG_TIMING,0);
-    usleep(1000000);
-    return true;
 }
 
 bool WIB::femb_power_reg_ctrl(uint8_t femb_id, uint8_t regulator_id, double voltage) {
