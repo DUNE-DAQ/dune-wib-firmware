@@ -152,6 +152,9 @@ protected:
     
     // Power on and reset the frontend (called on first configure_wib)
     bool start_frontend();
+    
+    // Program and reset the timing endpoint
+    bool start_timing_endpoint();
 
 };
 

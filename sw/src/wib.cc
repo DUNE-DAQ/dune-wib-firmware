@@ -109,10 +109,20 @@ bool WIB::start_frontend() {
     femb_power_config();
     glog.log("Configuring timing endpoint\n");
     success &= script("conf_pll_timing");
+    success &= start_timing_endpoint();
     glog.log("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
     return success;
+}
+
+bool WIB::start_timing_endpoint() {
+    //FIXME using only slot here; this works for ICEBERG with one crate ONLY
+    uint32_t value = backplane_slot_num(); //low 8 bits are addr 
+    io_reg_write(&this->regs,REG_TIMING,(1<<28)|value); // bit 28 is reset bit
+    sleep(2000000);
+    io_reg_write(&this->regs,REG_TIMING,value); 
+    return true;
 }
 
 string read_and_strip(ifstream &fin) {
