@@ -958,10 +958,10 @@ bool WIB::read_timing_status(wib::GetTimingStatus::TimingStatus &status) {
     
     //read i2c status registers
     i2c_select(I2C_SI5344);
-    uint8_t los_val = i2c_reg_read(&this->femb_en_i2c, pll_i2c_adr, los_reg);
-    uint8_t los_flg_val = i2c_reg_read(&this->femb_en_i2c, pll_i2c_adr, los_flg_reg);
-    uint8_t lol_val = i2c_reg_read(&this->femb_en_i2c, pll_i2c_adr, lol_reg);
-    uint8_t lol_flg_val = i2c_reg_read(&this->femb_en_i2c, pll_i2c_adr, lol_flg_reg);
+    uint8_t los_val = i2c_reg_read(&this->selected_i2c, pll_i2c_adr, los_reg);
+    uint8_t los_flg_val = i2c_reg_read(&this->selected_i2c, pll_i2c_adr, los_flg_reg);
+    uint8_t lol_val = i2c_reg_read(&this->selected_i2c, pll_i2c_adr, lol_reg);
+    uint8_t lol_flg_val = i2c_reg_read(&this->selected_i2c, pll_i2c_adr, lol_flg_reg);
     
     //read firmware timing endpoint status
     uint32_t ept_status = io_reg_read(&this->regs, REG_ENDPOINT_STATUS);
