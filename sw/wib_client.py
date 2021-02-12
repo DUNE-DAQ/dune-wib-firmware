@@ -42,7 +42,7 @@ reboot_parser = sub.add_parser('reboot',help='Reboot the WIB',add_help=False)
 def reboot(args):
     req = wibpb.Reboot()
     rep = wibpb.Empty()
-    wib.send_command(rep,req)
+    wib.send_command(req,rep)
     print('Rebooting...')
 bind_parser(reboot_parser,reboot)
 
@@ -62,7 +62,7 @@ timestamp_parser = sub.add_parser('timestamp',help='Return firmware version time
 def timestamp(args):
     req = wibpb.GetTimestamp()
     rep = wibpb.GetTimestamp.Timestamp()
-    wib.send_command(rep,req)
+    wib.send_command(req,rep)
     print('timestamp code: 0x%08X'%rep.timestamp);
     print('decoded: %i/%i/%i %i:%i:%i'%(rep.year,rep.month,rep.day,rep.hour,rep.min,rep.sec));
 bind_parser(timestamp_parser,timestamp)
@@ -71,7 +71,7 @@ timing_status_parser = sub.add_parser('timing_status',help='Return the status of
 def timing_status(args):
     req = wibpb.GetTimingStatus()
     rep = wibpb.GetTimingStatus.TimingStatus()
-    wib.send_command(rep,req)
+    wib.send_command(req,rep)
     print('--- PLL INFO ---')
     print('LOS:         0x%x'%(rep.los_val & 0x0f))
     print('OOF:         0x%x'%(rep.los_val >> 4))
