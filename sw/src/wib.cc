@@ -947,6 +947,35 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     return true;
 }
 
+bool WIB::read_timing_status(wib::GetTimingStatus::TimingStatus &status) {
+
+    constexpr uint8_t pll_i2c_adr = 0x6b; //address of SI5344 chip
+
+    constexpr uint8_t los_reg = 0x0d; // bit 3:0 los for the four inputs, 7:4 OOF for the inputs
+    constexpr uint8_t los_flg_reg = 0x12; // sticky version of 0x0d
+    constexpr uint8_t lol_reg = 0x0e; // bit 1: lol, bit 5: HOLD (holdover/free run mode)
+    constexpr uint8_t lol_flg_reg = 0x13; // sticky version of 0x0e
+    
+    //read i2c status registers
+    i2c_select(I2C_SI5344);
+    uint8_t los_val = i2c_reg_read(&this->femb_en_i2c, pll_i2c_adr, los_reg);
+    uint8_t los_flg_val = i2c_reg_read(&this->femb_en_i2c, pll_i2c_adr, los_flg_reg);
+    uint8_t lol_val = i2c_reg_read(&this->femb_en_i2c, pll_i2c_adr, lol_reg);
+    uint8_t lol_flg_val = i2c_reg_read(&this->femb_en_i2c, pll_i2c_adr, lol_flg_reg);
+    
+    //read firmware timing endpoint status
+    uint32_t ept_status = io_reg_read(&this->regs, REG_ENDPOINT_STATUS);
+    
+    status.set_los_val(los_val);
+    status.set_los_flg_val(los_flg_val);
+    status.set_lol_val(lol_val);
+    status.set_lol_flg_val(lol_flg_val);
+    status.set_ept_status(ept_status);
+    
+    return true;
+}
+
+
 uint32_t WIB::read_fw_timestamp() {
     return io_reg_read(&this->regs,REG_FW_TIMESTAMP);
 }

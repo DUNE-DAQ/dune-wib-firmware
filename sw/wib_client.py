@@ -58,6 +58,36 @@ def log(args):
     print(rep.contents.decode('ascii'),end='')
 bind_parser(log_parser,log)
 
+timestamp_parser = sub.add_parser('timestamp',help='Return firmware version timestamp',add_help=False)
+def timestamp(args):
+    req = wibpb.GetTimetamp()
+    rep = wibpb.GetTimetamp.Timestamp()
+    wib.send_command(rep,req)
+    print('timestamp code: 0x%08X'%rep.timestamp());
+    print('decoded: %i/%i/%i %i:%i:%i'%(rep.year(),rep.month(),rep.day(),rep.hour(),rep.min(),rep.sec()));
+bind_parser(timestamp_parser,timestamp)
+
+timing_status_parser = sub.add_parser('timing_status',help='Return the status of the timing endpoint',add_help=False)
+def timing_status(args):
+    req = wibpb.GetTimingStatus()
+    rep = wibpb.GetTimingStatus.TimingStatus()
+    wib.send_command(rep,req)
+    print('--- PLL INFO ---')
+    print('LOS:         0x%x'%(rep.los_val & 0x0f))
+    print('OOF:         0x%x'%(rep.los_val >> 4))
+    print('LOS FLG:     0x%x'%(rep.los_flg_val & 0x0f))
+    print('OOF FLG:     0x%x'%(rep.los_flg_val >> 4))
+    print('HOLD:        0x%x'%( (rep.los_val >> 5) & 0x1 ))
+    print('LOL:         0x%x'%( (rep.los_val >> 1) & 0x1 ))
+    print('HOLD FLG:    0x%x'%( (rep.lol_flg_val >> 5) & 0x1 ))
+    print('LOL FLG:     0x%x'%( (rep.lol_flg_val >> 1) & 0x1 ))
+    print('--- EPT INFO ---')
+    print('EPT CDR LOS: 0x%x'%( (rep.ept_status >> 17) & 0x1 )) # bit 17 is CDR LOS as seen by endpoint
+    print('EPT CDR LOL: 0x%x'%( (rep.ept_status >> 16) & 0x1 )) # bit 16 is CDR LOL as seen by endpoint
+    print('EPT TS RDY:  0x%x'%( (rep.ept_status >> 8 ) & 0x1 )) # bit 8 is ts ready
+    print('EPT STATE:   0x%x'%(  rep.ept_status & 0x0f )) # bits 3:0 are the endpoint state
+bind_parser(timing_status_parser,timing_status)
+
 script_parser = sub.add_parser('script',help='Run a WIB script',add_help=False)
 script_parser.add_argument('filename',help='local file will be sent, otherwise filename is remote in /etc/wib/ on the WIB')
 def script(args):

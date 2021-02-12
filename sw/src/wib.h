@@ -38,6 +38,7 @@
 #define REG_DAQ_SPY_STATUS  0x0080/4
 #define REG_FW_TIMESTAMP    0x0088/4
 #define REG_BACKPLANE_ADDR  0x008C/4
+#define REG_ENDPOINT_STATUS 0x0090/4
 
 class WIB {
 
@@ -108,6 +109,9 @@ public:
 
     // Read the onboard I2C sensors and fill the sensor structure
     bool read_sensors(wib::GetSensors::Sensors &sensors);
+    
+    // Read the status of the timing endpoint 
+    bool read_timing_status(wib::GetTimingStatus::TimingStatus &status);
     
     // Read the firmware timestamp code
     uint32_t read_fw_timestamp();

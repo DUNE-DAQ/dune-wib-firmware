@@ -20,6 +20,8 @@ void print_help() {
     glog.log("Available commands:\n");
     glog.log("  reboot\n");
     glog.log("    Reboot the WIB\n");
+    glog.log("  timestamp\n");
+    glog.log("    Return the firmware version timestamp\n");
     glog.log("  log [boot|clear]\n");
     glog.log("    Return the wib_server log (or return boot log, or clear the logs)\n");
     glog.log("  script filename\n");

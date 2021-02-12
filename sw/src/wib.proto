@@ -240,6 +240,21 @@ message GetTimestamp {
     }
 }
 
+// reads the status of the timing endpoint
+message GetTimingStatus {
+
+    //replies TimingStatus
+    message TimingStatus {
+        //SI5344 status register values
+        uint32 lol_val = 1;
+        uint32 lol_flg_val = 2;
+        uint32 los_val = 3;
+        uint32 los_flg_val = 4;
+        //Firmware timing endpoint status register
+        uint32 ept_status = 5;
+    }
+}
+
 // sets the fake time generator start value
 message SetFakeTime {
     uint64 time = 1;
