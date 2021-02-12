@@ -60,8 +60,8 @@ bind_parser(log_parser,log)
 
 timestamp_parser = sub.add_parser('timestamp',help='Return firmware version timestamp',add_help=False)
 def timestamp(args):
-    req = wibpb.GetTimetamp()
-    rep = wibpb.GetTimetamp.Timestamp()
+    req = wibpb.GetTimestamp()
+    rep = wibpb.GetTimestamp.Timestamp()
     wib.send_command(rep,req)
     print('timestamp code: 0x%08X'%rep.timestamp());
     print('decoded: %i/%i/%i %i:%i:%i'%(rep.year(),rep.month(),rep.day(),rep.hour(),rep.min(),rep.sec()));
