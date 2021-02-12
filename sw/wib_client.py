@@ -63,8 +63,8 @@ def timestamp(args):
     req = wibpb.GetTimestamp()
     rep = wibpb.GetTimestamp.Timestamp()
     wib.send_command(rep,req)
-    print('timestamp code: 0x%08X'%rep.timestamp());
-    print('decoded: %i/%i/%i %i:%i:%i'%(rep.year(),rep.month(),rep.day(),rep.hour(),rep.min(),rep.sec()));
+    print('timestamp code: 0x%08X'%rep.timestamp);
+    print('decoded: %i/%i/%i %i:%i:%i'%(rep.year,rep.month,rep.day,rep.hour,rep.min,rep.sec));
 bind_parser(timestamp_parser,timestamp)
 
 timing_status_parser = sub.add_parser('timing_status',help='Return the status of the timing endpoint',add_help=False)
