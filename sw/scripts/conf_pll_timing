@@ -3,5 +3,3 @@ run cdr_reset
 delay 2000000
 run si5344_62p5mhz_config
 delay 2000000
-run pll_sticky_clear
-delay 2000000

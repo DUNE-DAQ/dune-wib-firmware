@@ -107,22 +107,37 @@ bool WIB::start_frontend() {
     femb_power_set(3,false);
     glog.log("Configuring front end power\n");
     femb_power_config();
-    glog.log("Configuring timing endpoint\n");
-    success &= script("conf_pll_timing");
-    success &= start_timing_endpoint();
+    if (!pll_initialized) {
+        success &= reset_timing_endpoint();
+    }
     glog.log("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
     return success;
 }
 
-bool WIB::start_timing_endpoint() {
+bool WIB::reset_timing_endpoint() {
+    bool success = true;
+    if (!pll_initialized) {
+        glog.log("Configuring PLL\n");
+        success &= script("conf_pll_timing");
+        if (success) {
+            pll_initialized = true;
+        } else {
+            glog.log("Failed to configure PLL\n");
+            return false;
+        }
+    } else {
+        glog.log("PLL already configured\n");
+    }
+    glog.log("Resetting timing endpoint\n");
+    success &= script("pll_sticky_clear");
     //FIXME using only slot here; this works for ICEBERG with one crate ONLY
     uint32_t value = backplane_slot_num(); //low 8 bits are addr 
     io_reg_write(&this->regs,REG_TIMING,(1<<28)|value); // bit 28 is reset bit
     usleep(2000000);
     io_reg_write(&this->regs,REG_TIMING,value); 
-    return true;
+    return success;
 }
 
 string read_and_strip(ifstream &fin) {

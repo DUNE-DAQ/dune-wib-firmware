@@ -66,6 +66,9 @@ public:
     uint8_t backplane_crate_num();
     uint8_t backplane_slot_num();
     
+    // Reset the timing endpoint
+    bool reset_timing_endpoint();
+    
     // Sets the default voltage configurations for FEMB power controller
     bool femb_power_config();
     // Set FEMB power on or off per FEMB (first colddata then coldadc)
@@ -128,6 +131,9 @@ protected:
     // Front end initialized
     bool frontend_initialized = false;
     
+    // Timing endpoint PLL initialized
+    bool pll_initialized = false;
+    
     // Save the FEMB power state (could perhaps read from i2c)
     bool frontend_power[4];
     
@@ -157,8 +163,6 @@ protected:
     // Power on and reset the frontend (called on first configure_wib)
     bool start_frontend();
     
-    // Program and reset the timing endpoint
-    bool start_timing_endpoint();
 
 };
 

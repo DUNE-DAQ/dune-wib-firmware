@@ -80,3 +80,19 @@ class WIB:
         timestamps = np.frombuffer(rep.deframed_timestamps,dtype=np.uint64).reshape((2,num))
         samples = np.frombuffer(rep.deframed_samples,dtype=np.uint16).reshape((4,128,num))
         return timestamps,samples
+    
+    def print_timing_status(self,timing_status):
+        print('--- PLL INFO ---')
+        print('LOS:         0x%x'%(timing_status.los_val & 0x0f))
+        print('OOF:         0x%x'%(timing_status.los_val >> 4))
+        print('LOS FLG:     0x%x'%(timing_status.los_flg_val & 0x0f))
+        print('OOF FLG:     0x%x'%(timing_status.los_flg_val >> 4))
+        print('HOLD:        0x%x'%( (timing_status.los_val >> 5) & 0x1 ))
+        print('LOL:         0x%x'%( (timing_status.los_val >> 1) & 0x1 ))
+        print('HOLD FLG:    0x%x'%( (timing_status.lol_flg_val >> 5) & 0x1 ))
+        print('LOL FLG:     0x%x'%( (timing_status.lol_flg_val >> 1) & 0x1 ))
+        print('--- EPT INFO ---')
+        print('EPT CDR LOS: 0x%x'%( (timing_status.ept_status >> 17) & 0x1 )) # bit 17 is CDR LOS as seen by endpoint
+        print('EPT CDR LOL: 0x%x'%( (timing_status.ept_status >> 16) & 0x1 )) # bit 16 is CDR LOL as seen by endpoint
+        print('EPT TS RDY:  0x%x'%( (timing_status.ept_status >> 8 ) & 0x1 )) # bit 8 is ts ready
+        print('EPT STATE:   0x%x'%(  timing_status.ept_status & 0x0f )) # bits 3:0 are the endpoint state

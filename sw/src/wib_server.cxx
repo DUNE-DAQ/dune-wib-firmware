@@ -202,6 +202,12 @@ int main(int argc, char **argv) {
             wib::GetSensors::Sensors sensors;    
             w.read_sensors(sensors);
             sensors.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::ResetTiming>()) {
+            glog.log("reset_timing\n");
+            wib::GetTimingStatus::TimingStatus rep;    
+            w.reset_timing_endpoint(); 
+            w.read_timing_status(rep);
+            rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetTimingStatus>()) {
             glog.log("get_timing_status\n");
             wib::GetTimingStatus::TimingStatus rep;    

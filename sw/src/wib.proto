@@ -240,6 +240,12 @@ message GetTimestamp {
     }
 }
 
+// resets the timing endpoint
+message ResetTiming {
+    
+    //replies GetTimingStatus.TimingStatus
+}
+
 // reads the status of the timing endpoint
 message GetTimingStatus {
 
