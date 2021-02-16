@@ -14,7 +14,7 @@ These are described in the following
   * [Dependencies and Building](#dependencies-and-building)
   * [Software Components](#software-components)
     + [wib_server](#wib_server)
-    + [wib_client](#wib_client)
+    + [wib_client.py](#wib_clientpy)
     + [spy_dump](#spy_dump)
     + [sync_fake_time](#sync_fake_time)
     + [wib_scope.py](#wib_scopepy)
@@ -24,9 +24,11 @@ These are described in the following
       - [Acquire](#acquire)
       - [Plotting data](#plotting-data)
       - [Creating useful display](#creating-useful-display)
-    + [femb0.py](#femb0py)
+    + [femb_diagnostic.py](#femb_diagnosticpy)
+    + [femb_linearity.py](#femb_linearitypy)
     + [wib_mon.py](#wib_monpy)
     + [wib_config.py](#wib_configpy)
+    + [wib_power.py](#wib_power)
   * [Functionality Overview](#functionality-overview)
     + [Low level functions](#low-level-functions)
     + [WIB scripts](#wib-scripts)
@@ -90,46 +92,45 @@ hardware. It will listen on TCP port `1234` for `Command` protobuf messages
 defined in [`wib.proto`](src/wib.proto). The `wib_server` will respond with 
 messages as described in the comments of [`wib.proto`](src/wib.proto).
 
-### wib_client
+### wib_client.py
 
-Usage: `./wib_client [-w ip] [cmd]`
+Usage: `wib_client.py [-h] [-w WIB_SERVER] [command] [args ...]`
 
-The `wib_client` can either be run on the WIB without specifying an IP (connects
+The WIB client can either be run on the WIB without specifying an IP (connects
 to `wib_server` listening on 127.0.0.1), or run remotely by specifying the WIBs
 IP address.
 
 The `cmd` option can be omitted, which will open a command interface with a `>>`
 prompt. Otherwise a single command and its arguments can be passed directly.
 
-The `help` command for `wib_server` will provide a list of commands and a brief
-description of each:
+The `help` command for `wib_client.py` will provide a list of commands and a
+brief description of each. Please see the output of the program for the most 
+up-to-date listing. Use `help [command]` for argument details for a specific 
+command.
 
 ```
-Available commands:
-Available commands:
-  reboot
-    Reboot the WIB
-  log [boot|clear]
-    Return the wib_server log (or return boot log, or clear the logs)
-  script filename
-    Run a WIB script (local file will be sent, otherwise filename is remote in /etc/wib/)
-  daqspy filename
-    Read 1MB from each daq spy buffer and write the 2MB data to filename
-  peek addr
-    Read a 32bit value from WIB address space
-  poke addr value
-    Write a 32bit value to WIB address space
-  cdpeek femb_idx cd_idx chip_addr reg_page reg_addr
-    Read a 8bit value from COLDATA I2C address space
-  cdpoke femb_idx cd_idx chip_addr reg_page reg_addr data
-    Write a 8bit value to COLDATA I2C address space
-  cdfastcmd cmd
-    Send the fast command cmd to all coldata chips
-  update root_archive boot_archive
-    Deploy a new root and boot archive to the WIB
-  exit
-    Closes the command interface
+commands:
+    reboot              Reboot the WIB
+    log                 Return or control the wib_server log
+    timestamp           Return firmware version timestamp
+    timing_reset        Reset the timing endpoint
+    timing_status       Return the status of the timing endpoint
+    script              Run a WIB script
+    config              Send frontend configuration to the WIB
+    daqspy              Read 1MB from each daq spy buffer and write the (up to) 2MB binary data
+    peek                Read a 32bit value from WIB address space
+    poke                Write a 32bit value to WIB address space
+    cdpeek              Read a 8bit value from COLDATA I2C address space
+    cdpoke              Write a 8bit value to COLDATA I2C address space
+    cdfastcmd           Send the fast command cmd to all coldata chips
+    update              Deploy a new root and boot archive to the WIB
+    exit                Closes the command interface
+    help                Show help message, optionally for a subcommand
 ```
+
+There is also a C++ version of this command, `wib_client`, with a reduced set
+of functionality for environments without Python or as a C++ reference for 
+communicating with the WIB via its ZMQ socket.
 
 ### spy_dump
 
@@ -154,7 +155,6 @@ This is a pyqt5 GUI interface to the WIB frontend configuration, calibration,
 and daq spy buffer readout functionality. Build the protobuf python library 
 for the WIB with `make python` before running it.
 
-#### Help
 ```
 usage: wib_scope.py [-h] [--wib_server WIB_SERVER] [--config CONFIG]
                     [--rows ROWS] [--cols COLS] [--layout LAYOUT]
@@ -208,32 +208,60 @@ the data.
 After creating a grid, select the signals and featureson each plot after 
 clicking it.
 
-### femb0.py
+### femb_diagnostic.py
 
-This is a pyqt5 GUI interface to produce diagnostic plots for FEMB 0 attached
+This is a pyqt5 GUI interface to produce diagnostic plots for FEMBs attached
 to a WIB. It has similar functionality to [wib_scope.py](#wib_scopepy) except
 that the data displayed includes:
 * A 2D histogram of ADC counts per channel on FEMB 0
 * The mean and RMS ADC values for each channel on FEMB 0
 * The power spectrum (FFT) of each channel on FEMB 0 as a 2D histogram
 
-By default this utility loads the `femb0.json` which only enables FEMB0. You
+By default this utility loads a configuration with only the selected FEMB. You
 must press `Configure` to load this onto the WIB, similar to `wib_scope.py`
 
-#### Help
 ```
-usage: femb0.py [-h] [--wib_server WIB_SERVER] [--config CONFIG]
+usage: femb_diagnostic.py [-h] [--wib_server WIB_SERVER] [--femb FEMB] [--cold] [--test] [--config CONFIG] [--grid] [--save_to SAVE_TO]
 
-Visually display diagnostic data plots from FEMB0 on a WIB
+Visually display diagnostic data plots from a FEMB on a WIB
 
 optional arguments:
   -h, --help            show this help message and exit
   --wib_server WIB_SERVER, -w WIB_SERVER
                         IP of wib_server to connect to [127.0.0.1]
+  --femb FEMB, -f FEMB  FEMB index to display 0-3 [0]
+  --cold, -c            The FEMBs will load the cold configuration with this option [default: warm]
+  --test, -t            ADCs will digitize a test pattern instead of digitized data [default: off]
   --config CONFIG, -C CONFIG
-                        WIB configuration to load [femb0.json]
+                        WIB configuration to load [default: generated with --femb and --cold]
+  --grid, -g            Split Mean/RMS into separate plots for a 2x2 grid
+  --save_to SAVE_TO, -s SAVE_TO
+                        Path to save plots to (only last plotted saved)
 ```
-                
+
+### femb_linearity.py
+
+This is a command line utility to acquire pulser data from one or several FEMBs
+at pulser DAC settings 0,5,10,15,20. It can additionally analyze the acquired
+data with a peakfinding algorithm to produce plots of peak ADC count vs pulser
+DAC setting per channel. This is intended to show that FEMBs are in a minimally
+working state.
+
+```
+usage: femb_linearity.py [--help [subcommand]] {acquire,analyze} ...
+
+Acquire pulser data from FEMBs and/or perform linearity test
+
+optional arguments:
+  --help [subcommand], -h [subcommand]
+                        show help message and exit
+
+subcommands:
+  {acquire,analyze}     subcommand help
+    acquire             Acquire data from a WIB using the spy buffer and save to HDF5 file
+    analyze             Analyze HDF5 file to find pulse peak values and produce linaerity plots
+```
+
 ### wib_mon.py
 
 This is another pyqt5 GUI interface to the WIBs onboard sensors. It can display
@@ -241,7 +269,6 @@ current, voltage, and temperatures from the integrated I2C sensors. Optionally
 this will print to the command line instead of opening a GUI for archival
 purposes.
 
-#### Help
 ```
 usage: wib_mon.py [-h] [--wib_server WIB_SERVER] [--cli]
 
@@ -260,7 +287,6 @@ This is a command line utility for loading a JSON config document specifying
 frontend electronics settings into the WIB. The format for this is identical to
 that [used by wib_scope.py](#configuration).
 
-#### Help
 ```
 usage: wib_config.py [-h] [--wib_server WIB_SERVER] [--config CONFIG]
 
@@ -272,6 +298,32 @@ optional arguments:
                         IP of wib_server to connect to [127.0.0.1]
   --config CONFIG, -C CONFIG
                         WIB configuration to load [default.json]
+```
+
+### wib_power.py
+
+This is a command line utility for setting the power state for the FEMBs
+attached to a particular WIB. Currently no other utilities have this 
+functionality implemented, though it is achieved with a ZMQ message like all
+other functionality. The power state is specified for each FEMB, and the WIB
+will run the appropriate sequence of commands to achieve the desired state.
+
+```
+usage: wib_power.py [-h] [--wib_server WIB_SERVER] [--cold] {on,off} {on,off} {on,off} {on,off}
+
+Send a configuration json document to a WIB
+
+positional arguments:
+  {on,off}              Power FEMB_0
+  {on,off}              Power FEMB_1
+  {on,off}              Power FEMB_2
+  {on,off}              Power FEMB_3
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --wib_server WIB_SERVER, -w WIB_SERVER
+                        IP of wib_server to connect to [127.0.0.1]
+  --cold, -c            The FEMBs will load the cold configuration with this option [default: warm]
 ```
 
 ## Functionality Overview
@@ -308,7 +360,7 @@ The following commands are valid:
   * An `i2c_reg_write` is performed if only one `data` is specified, or an `i2c_block_write` if there are multiple data (see `i2c.h`).
   * `bus` can be either `sel` or `pwr` to correspond to the WIB selectable I2C bus (see `wib.h`) or power I2C bus.
   * `chip` `register` and `data` are all hex values and single bytes.  
-- `i2c cd` with arguments `femb coldata chip page addr data` - Perform a COLDATA I2C write.
+- `cd-i2c` with arguments `femb coldata chip page addr data` - Perform a COLDATA I2C write.
   *  `cd` is a literal value (a specific `bus` above, but with different syntax).
   * `femb` should be 0-3 and `coldata` should be 0-1 to specify a specific COLDATA.
   *  `chip`, `page`, `addr`, and `data` are all hex values and single bytes.

@@ -2,8 +2,8 @@
 #define diagnostics_h
 
 #include "unpack.h"
-#include "wib.h"
+#include "wib_3asic.h"
 
-bool check_test_pattern(WIB &w, const bool femb_mask[4], bool cold);
+bool check_test_pattern(WIB_3ASIC &w, const bool femb_mask[4], bool cold);
 
 #endif

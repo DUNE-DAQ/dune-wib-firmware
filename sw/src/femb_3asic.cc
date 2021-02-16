@@ -1,4 +1,4 @@
-#include "femb.h"
+#include "femb_3asic.h"
 
 #include <unistd.h>
 #include <cstdio>
@@ -7,22 +7,22 @@ constexpr size_t CD_I2C_ADDR[] = { 0xA0010000, 0xA0040000, 0xA0050000, 0xA006000
 
 // for all coldata chips
 constexpr size_t CD_FASTCMD_ADDR = 0xA0030000;
-io_reg_t FEMB::coldata_fast_cmd;
+io_reg_t FEMB_3ASIC::coldata_fast_cmd;
 
-FEMB::FEMB(int _index) : index(_index) {
+FEMB_3ASIC::FEMB_3ASIC(int _index) : index(_index) {
     for (uint8_t i = 0; i < 2; i++) {
         io_reg_init(&this->coldata_i2c[i],CD_I2C_ADDR[i+index*2],2);
         last_coldata_i2c_chip[i] = -1;
     }
 }
 
-FEMB::~FEMB() {
+FEMB_3ASIC::~FEMB_3ASIC() {
     for (uint8_t i = 0; i < 2; i++) {
         io_reg_free(&this->coldata_i2c[i]);
     }
 }
 
-bool FEMB::configure_coldata(bool cold, FrameType frame) {
+bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame) {
     bool res = true;
     //See COLDATA datasheet
     for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
@@ -79,7 +79,7 @@ bool FEMB::configure_coldata(bool cold, FrameType frame) {
     return res;
 }
 
-bool FEMB::configure_coldadc(bool cold, bool test_pattern) {
+bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern) {
     bool res = true;
     //See COLDADC datasheet
     //FIXME do these options need to be configurable?
@@ -108,7 +108,7 @@ bool FEMB::configure_coldadc(bool cold, bool test_pattern) {
     return res;
 }
 
-bool FEMB::configure_larasic(const larasic_conf &c) {
+bool FEMB_3ASIC::configure_larasic(const larasic_conf &c) {
     bool res = true;
 
     // See LArASIC datasheet
@@ -156,7 +156,7 @@ bool FEMB::configure_larasic(const larasic_conf &c) {
     return res;
 }
 
-bool FEMB::set_fast_act(uint8_t act_cmd) {
+bool FEMB_3ASIC::set_fast_act(uint8_t act_cmd) {
     bool res = true;
     for (uint8_t i = 0; i < 2; i++) {
         res &= i2c_write_verify(i, 2, 0, 0x20, act_cmd);
@@ -165,7 +165,7 @@ bool FEMB::set_fast_act(uint8_t act_cmd) {
     return res;
 }
 
-void FEMB::log_spi_status() {
+void FEMB_3ASIC::log_spi_status() {
     bool res = true;
     for (uint8_t i = 0; i < 2; i++) {
         uint8_t status = i2c_read(i,2,0,0x23);
@@ -180,7 +180,7 @@ void FEMB::log_spi_status() {
 }
 
 
-bool FEMB::read_spi_status() {
+bool FEMB_3ASIC::read_spi_status() {
     bool res = true;
     for (uint8_t i = 0; i < 2; i++) {
         uint8_t status = i2c_read(i,2,0,0x23);
@@ -189,21 +189,21 @@ bool FEMB::read_spi_status() {
     return res;
 }
 
-bool FEMB::set_control_reg(uint8_t coldata_idx, bool ctrl_0, bool ctrl_1) {
+bool FEMB_3ASIC::set_control_reg(uint8_t coldata_idx, bool ctrl_0, bool ctrl_1) {
     return i2c_write_verify(coldata_idx,2,0,0x25,(ctrl_1?2:0)|(ctrl_0?1:0));
 }
 
-void FEMB::fast_cmd(uint8_t cmd_code) {
+void FEMB_3ASIC::fast_cmd(uint8_t cmd_code) {
     static bool fast_cmd_init = false;
     if (!fast_cmd_init) {
-        io_reg_init(&FEMB::coldata_fast_cmd,CD_FASTCMD_ADDR,2); //never free'd
-        io_reg_write(&FEMB::coldata_fast_cmd,REG_FAST_CMD_ACT_DELAY,19);
+        io_reg_init(&FEMB_3ASIC::coldata_fast_cmd,CD_FASTCMD_ADDR,2); //never free'd
+        io_reg_write(&FEMB_3ASIC::coldata_fast_cmd,REG_FAST_CMD_ACT_DELAY,19);
         fast_cmd_init = true;
     }
-    io_reg_write(&FEMB::coldata_fast_cmd,REG_FAST_CMD_CODE,cmd_code);
+    io_reg_write(&FEMB_3ASIC::coldata_fast_cmd,REG_FAST_CMD_CODE,cmd_code);
 }
 
-void FEMB::i2c_bugfix(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr) {
+void FEMB_3ASIC::i2c_bugfix(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr) {
     if (last_coldata_i2c_chip[bus_idx] != chip_addr) { // Coldata i2c bug latching chip_addr 
         last_coldata_i2c_chip[bus_idx] = chip_addr;
         i2c_read(bus_idx,chip_addr,reg_page,reg_addr);
@@ -211,7 +211,7 @@ void FEMB::i2c_bugfix(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint
     }
 }
 
-void FEMB::i2c_write(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data) {
+void FEMB_3ASIC::i2c_write(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data) {
     i2c_bugfix(bus_idx,chip_addr,reg_page,reg_addr);
     uint32_t ctrl = ((chip_addr & 0xF) << COLD_I2C_CHIP_ADDR)
                   | ((reg_page & 0x7) << COLD_I2C_REG_PAGE)
@@ -224,7 +224,7 @@ void FEMB::i2c_write(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8
     usleep(COLD_I2C_DELAY);
 }
 
-uint8_t FEMB::i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr) {
+uint8_t FEMB_3ASIC::i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr) {
     i2c_bugfix(bus_idx,chip_addr,reg_page,reg_addr);    
     uint32_t ctrl = ((chip_addr & 0xF) << COLD_I2C_CHIP_ADDR)
                   | ((reg_page & 0x7) << COLD_I2C_REG_PAGE)
@@ -240,7 +240,7 @@ uint8_t FEMB::i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uin
     return (ctrl >> COLD_I2C_DATA) & 0xFF;
 }
 
-bool FEMB::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries) {
+bool FEMB_3ASIC::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries) {
     uint8_t read;
     for (size_t i = 0; i <= retries; i++) {
         i2c_write(bus_idx,chip_addr,reg_page,reg_addr,data);
@@ -250,4 +250,3 @@ bool FEMB::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page
     glog.log("i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X :: 0x%X != 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
     return false;
 }
-

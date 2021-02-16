@@ -1,36 +1,36 @@
-#ifndef femb_h
-#define femb_h
+#ifndef femb_3asic_h
+#define femb_3asic_h
 
 #include <cstddef>
 #include "io_reg.h"
 #include "log.h"
 
 // Fast Command AXI registers
-constexpr uint32_t REG_FAST_CMD_CODE        = 0x0000/4;
-constexpr uint32_t REG_FAST_CMD_ACT_DELAY   = 0x0004/4;
+constexpr uint32_t REG_FAST_CMD_CODE       = 0x0000/4;
+constexpr uint32_t REG_FAST_CMD_ACT_DELAY  = 0x0004/4;
 
 // COLDATA I2C AXI registers
-constexpr uint32_t REG_COLD_I2C_START        = 0x0000/4;
-constexpr uint32_t REG_COLD_I2C_CTRL         = 0x0004/4;
+constexpr uint32_t REG_COLD_I2C_START      = 0x0000/4;
+constexpr uint32_t REG_COLD_I2C_CTRL       = 0x0004/4;
 
 // Fast Command bits
-constexpr uint8_t FAST_CMD_RESET = 1;
-constexpr uint8_t FAST_CMD_ACT = 2;
-constexpr uint8_t FAST_CMD_SYNC = 4;
-constexpr uint8_t FAST_CMD_EDGE = 8;
-constexpr uint8_t FAST_CMD_IDLE = 16;
+constexpr uint8_t FAST_CMD_RESET    = 1;
+constexpr uint8_t FAST_CMD_ACT      = 2;
+constexpr uint8_t FAST_CMD_SYNC     = 4;
+constexpr uint8_t FAST_CMD_EDGE     = 8;
+constexpr uint8_t FAST_CMD_IDLE     = 16;
 constexpr uint8_t FAST_CMD_EDGE_ACT = 32;
 
 // Fast Command Act commands
-constexpr uint8_t ACT_IDLE = 0x00;
-constexpr uint8_t ACT_LARASIC_PULSE = 0x01;
-constexpr uint8_t ACT_SAVE_TIME = 0x02;
-constexpr uint8_t ACT_SAVE_STATUS = 0x03;
-constexpr uint8_t ACT_CLEAR_SAVE = 0x04;
-constexpr uint8_t ACT_RESET_COLDADC = 0x05;
-constexpr uint8_t ACT_RESET_LARASIC = 0x06;
+constexpr uint8_t ACT_IDLE              = 0x00;
+constexpr uint8_t ACT_LARASIC_PULSE     = 0x01;
+constexpr uint8_t ACT_SAVE_TIME         = 0x02;
+constexpr uint8_t ACT_SAVE_STATUS       = 0x03;
+constexpr uint8_t ACT_CLEAR_SAVE        = 0x04;
+constexpr uint8_t ACT_RESET_COLDADC     = 0x05;
+constexpr uint8_t ACT_RESET_LARASIC     = 0x06;
 constexpr uint8_t ACT_RESET_LARASIC_SPI = 0x07;
-constexpr uint8_t ACT_PROGRAM_LARASIC = 0x08;
+constexpr uint8_t ACT_PROGRAM_LARASIC   = 0x08;
 
 // COLDATA I2C control bit packing scheme
 constexpr uint32_t COLD_I2C_CHIP_ADDR   = 23; //4 // 0x07800000;
@@ -71,12 +71,12 @@ typedef struct {
     uint8_t cal_skip, cal_delay, cal_length; // COLDATA registers controlling calibration strobe
 } larasic_conf;
 
-class FEMB {
+class FEMB_3ASIC {
 
 public:
     // Initialize a FEMB index [0-3]
-    FEMB(int index);
-    ~FEMB();
+    FEMB_3ASIC(int index);
+    ~FEMB_3ASIC();
     
     // Front end I2C configuration
     bool configure_coldata(bool cold, FrameType frame);

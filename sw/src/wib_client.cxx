@@ -7,7 +7,7 @@
 #include <readline/history.h>
 
 #include "wib.pb.h"
-#include "femb.h" //for fast command defines
+#include "femb_3asic.h" //for fast command defines
 #include "wib.h" //for spy buffer defines
 
 using namespace std;

@@ -5,6 +5,8 @@
 #include "unpack.h"
 #include "sensors.h"
 #include "wib.h"
+#include "wib_3asic.h"
+#include "wib_cryo.h"
 #include "log.h"
 
 int main(int argc, char **argv) {
@@ -12,10 +14,26 @@ int main(int argc, char **argv) {
     setvbuf(stdout, NULL, _IOLBF, 0);
     setvbuf(stderr, NULL, _IOLBF, 0);
     
-    glog.log("wib_server preparing hardware interface\n");
+    WIB *w;
+    if (argc <= 1) {
+        glog.log("wib_server using 3ASIC WIB interface\n");
+        w = new WIB_3ASIC();
+    } else {
+        std::string wib_type(argv[1]);
+        if (wib_type == "3ASIC") {
+            glog.log("wib_server using 3ASIC WIB interface\n");
+            w = new WIB_3ASIC();
+        } else if (wib_type == "CRYO") {
+            glog.log("wib_server using CRYO WIB interface\n");
+            w = new WIB_CRYO();
+        } else {
+            glog.log("Invalid WIB interface type: %s\n",wib_type.c_str());
+            return 1;
+        }
+    }
     
-    WIB w;
-    w.initialize();
+    glog.log("wib_server initializing hardware interface\n");
+    w->initialize();
     
     glog.log("wib_server will listen on port 1234\n");
     
@@ -39,7 +57,7 @@ int main(int argc, char **argv) {
         if (!command.ParseFromString(cmd_str)) {
             glog.log("Could not parse message %i size %li\n",i,cmd.size());
         } else if (command.cmd().Is<wib::StartFakeTime>()) {
-            w.start_fake_time(); //do this first to minimize possible latency
+            w->start_fake_time(); //do this first to minimize possible latency
             glog.log("start_fake_time\n");
             wib::Empty rep; 
             rep.SerializeToString(&reply_str);  
@@ -47,14 +65,14 @@ int main(int argc, char **argv) {
             glog.log("set_fake_time\n");
             wib::SetFakeTime req;    
             command.cmd().UnpackTo(&req);
-            w.set_fake_time(req.time());
+            w->set_fake_time(req.time());
             wib::Empty rep; 
             rep.SerializeToString(&reply_str);  
         } else if (command.cmd().Is<wib::Peek>()) {
             wib::Peek read;
             command.cmd().UnpackTo(&read);
             glog.log("peek 0x%lx\n",read.addr());
-            uint32_t rval = w.peek(read.addr());
+            uint32_t rval = w->peek(read.addr());
             wib::RegValue value;
             value.set_addr(read.addr());    
             value.set_value(rval);
@@ -63,49 +81,64 @@ int main(int argc, char **argv) {
             wib::Poke write;
             command.cmd().UnpackTo(&write);
             glog.log("poke 0x%lx = 0x%x\n",write.addr(),write.value());
-            w.poke(write.addr(),write.value());
+            w->poke(write.addr(),write.value());
             wib::RegValue value;   
             value.set_addr(write.addr());        
             value.set_value(write.value());
             value.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::CDPeek>()) {
-            wib::CDPeek read;
-            command.cmd().UnpackTo(&read);
-            glog.log("cdpeek femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x\n",read.femb_idx(),read.coldata_idx(),read.chip_addr(),read.reg_page(),read.reg_addr());
-            uint8_t rval = w.cdpeek((uint8_t)read.femb_idx(),(uint8_t)read.coldata_idx(),(uint8_t)read.chip_addr(),(uint8_t)read.reg_page(),(uint8_t)read.reg_addr());
-            wib::CDRegValue value;   
-            value.set_femb_idx(read.femb_idx());        
-            value.set_coldata_idx(read.coldata_idx());      
-            value.set_chip_addr(read.chip_addr());      
-            value.set_reg_page(read.reg_page());      
-            value.set_reg_addr(read.reg_addr());      
-            value.set_data(rval);
-            value.SerializeToString(&reply_str);
+            WIB_3ASIC *w3asic = dynamic_cast<WIB_3ASIC*>(w);
+            if (!w3asic) {
+                glog.log("cdpeek is only valid for 3ASIC WIBs\n");
+            } else {
+                wib::CDPeek read;
+                command.cmd().UnpackTo(&read);
+                glog.log("cdpeek femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x\n",read.femb_idx(),read.coldata_idx(),read.chip_addr(),read.reg_page(),read.reg_addr());
+                uint8_t rval = w3asic->cdpeek((uint8_t)read.femb_idx(),(uint8_t)read.coldata_idx(),(uint8_t)read.chip_addr(),(uint8_t)read.reg_page(),(uint8_t)read.reg_addr());
+                wib::CDRegValue value;   
+                value.set_femb_idx(read.femb_idx());        
+                value.set_coldata_idx(read.coldata_idx());      
+                value.set_chip_addr(read.chip_addr());      
+                value.set_reg_page(read.reg_page());      
+                value.set_reg_addr(read.reg_addr());      
+                value.set_data(rval);
+                value.SerializeToString(&reply_str);
+            }
         } else if (command.cmd().Is<wib::CDPoke>()) {
-            wib::CDPoke write;
-            command.cmd().UnpackTo(&write);
-            glog.log("cdpoke femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x = 0x%x\n",write.femb_idx(),write.coldata_idx(),write.chip_addr(),write.reg_page(),write.reg_addr(),write.data());
-            w.cdpoke((uint8_t)write.femb_idx(),(uint8_t)write.coldata_idx(),(uint8_t)write.chip_addr(),(uint8_t)write.reg_page(),(uint8_t)write.reg_addr(),(uint8_t)write.data());
-            wib::CDRegValue value;   
-            value.set_femb_idx(write.femb_idx());        
-            value.set_coldata_idx(write.coldata_idx());      
-            value.set_chip_addr(write.chip_addr());      
-            value.set_reg_page(write.reg_page());      
-            value.set_reg_addr(write.reg_addr());      
-            value.set_data(write.data());
-            value.SerializeToString(&reply_str);
+            WIB_3ASIC *w3asic = dynamic_cast<WIB_3ASIC*>(w);
+            if (!w3asic) {
+                glog.log("cdpoke is only valid for 3ASIC WIBs\n");
+            } else {
+                wib::CDPoke write;
+                command.cmd().UnpackTo(&write);
+                glog.log("cdpoke femb:%u cd:%u chip 0x%x page 0x%x addr 0x%x = 0x%x\n",write.femb_idx(),write.coldata_idx(),write.chip_addr(),write.reg_page(),write.reg_addr(),write.data());
+                w3asic->cdpoke((uint8_t)write.femb_idx(),(uint8_t)write.coldata_idx(),(uint8_t)write.chip_addr(),(uint8_t)write.reg_page(),(uint8_t)write.reg_addr(),(uint8_t)write.data());
+                wib::CDRegValue value;   
+                value.set_femb_idx(write.femb_idx());        
+                value.set_coldata_idx(write.coldata_idx());      
+                value.set_chip_addr(write.chip_addr());      
+                value.set_reg_page(write.reg_page());      
+                value.set_reg_addr(write.reg_addr());      
+                value.set_data(write.data());
+                value.SerializeToString(&reply_str);
+            }
         } else if (command.cmd().Is<wib::CDFastCmd>()) {
-            wib::CDFastCmd fc;
-            command.cmd().UnpackTo(&fc);
-            glog.log("cdfastcmd 0x%x\n",fc.cmd());
-            FEMB::fast_cmd((uint8_t)fc.cmd());
-            wib::Empty empty;   
-            empty.SerializeToString(&reply_str);
+            WIB_3ASIC *w3asic = dynamic_cast<WIB_3ASIC*>(w);
+            if (!w3asic) {
+                glog.log("cdfastcmd is only valid for 3ASIC WIBs\n");
+            } else {
+                wib::CDFastCmd fc;
+                command.cmd().UnpackTo(&fc);
+                glog.log("cdfastcmd 0x%x\n",fc.cmd());
+                FEMB_3ASIC::fast_cmd((uint8_t)fc.cmd());
+                wib::Empty empty;   
+                empty.SerializeToString(&reply_str);
+            }
         } else if (command.cmd().Is<wib::Script>()) {
             glog.log("script\n");
             wib::Script script;    
             command.cmd().UnpackTo(&script);
-            bool res = w.script(script.script(),script.file());
+            bool res = w->script(script.script(),script.file());
             wib::Status status;
             status.set_success(res);
             status.SerializeToString(&reply_str);
@@ -115,7 +148,7 @@ int main(int argc, char **argv) {
             command.cmd().UnpackTo(&req);
             char *buf0 = req.buf0() ? new char[DAQ_SPY_SIZE] : NULL;
             char *buf1 = req.buf1() ? new char[DAQ_SPY_SIZE] : NULL;
-            bool success = w.read_daq_spy(buf0,buf1);
+            bool success = w->read_daq_spy(buf0,buf1);
             if (!req.deframe()) {
                 wib::ReadDaqSpy::DaqSpy rep;
                 rep.set_success(success);
@@ -200,25 +233,25 @@ int main(int argc, char **argv) {
         } else if (command.cmd().Is<wib::GetSensors>()) {
             glog.log("get_sensors\n");
             wib::GetSensors::Sensors sensors;    
-            w.read_sensors(sensors);
+            w->read_sensors(sensors);
             sensors.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::ResetTiming>()) {
             glog.log("reset_timing\n");
             wib::GetTimingStatus::TimingStatus rep;    
-            w.reset_timing_endpoint(); 
-            w.read_timing_status(rep);
+            w->reset_timing_endpoint(); 
+            w->read_timing_status(rep);
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetTimingStatus>()) {
             glog.log("get_timing_status\n");
             wib::GetTimingStatus::TimingStatus rep;    
-            w.read_timing_status(rep);
+            w->read_timing_status(rep);
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetTimestamp>()) {
             glog.log("get_timestamp\n");
             wib::GetTimestamp req;
             command.cmd().UnpackTo(&req);
             wib::GetTimestamp::Timestamp rep;    
-            uint32_t ts = w.read_fw_timestamp();
+            uint32_t ts = w->read_fw_timestamp();
             rep.set_timestamp(ts);
             rep.set_day((ts>>27)&0x1f);
             rep.set_month((ts>>23)&0x0f);
@@ -233,7 +266,7 @@ int main(int argc, char **argv) {
             command.cmd().UnpackTo(&req);
             wib::Status rep;    
             glog.mark();
-            bool success = w.power_wib(req);
+            bool success = w->power_wib(req);
             glog.store_mark(rep.mutable_extra());
             rep.set_success(success);
             rep.SerializeToString(&reply_str);
@@ -243,7 +276,7 @@ int main(int argc, char **argv) {
             command.cmd().UnpackTo(&req);
             wib::Status rep;    
             glog.mark();
-            bool success = w.configure_wib(req);
+            bool success = w->configure_wib(req);
             glog.store_mark(rep.mutable_extra());
             rep.set_success(success);
             rep.SerializeToString(&reply_str);
@@ -276,14 +309,14 @@ int main(int argc, char **argv) {
             glog.log("reboot\n");
             wib::Empty empty; 
             empty.SerializeToString(&reply_str);   
-            w.reboot();
+            w->reboot();
         } else if (command.cmd().Is<wib::Update>()) {
             glog.log("update\n");
             wib::Update update;
             command.cmd().UnpackTo(&update);
             wib::Empty empty;
             empty.SerializeToString(&reply_str);
-            w.update(update.root_archive().c_str(),update.boot_archive().c_str());
+            w->update(update.root_archive().c_str(),update.boot_archive().c_str());
         } else {
 	        glog.log("Received an unknown message!\n");
 	    }
@@ -294,6 +327,8 @@ int main(int argc, char **argv) {
         socket.send(reply,zmq::send_flags::none);
         
     }
+    
+    delete w;
 
     return 0;
 }
