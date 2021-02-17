@@ -160,9 +160,9 @@ string WIB::gateway_ip() {
         glog.log("Using gateway %s from /etc/wib/gateway\n",ip.c_str());
         return ip;
     }
-    glog.log("Using default gateway: 192.168.121.52\n"); //iceberg01
+    glog.log("Using no default gateway\n"); //iceberg01
     glog.log("Create /etc/wib/gateway containing desired gateway to override\n");
-    return "192.168.121.52";
+    return "";
 }
 
 uint8_t WIB::timing_addr() {

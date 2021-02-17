@@ -191,10 +191,21 @@ bool WIB_3ASIC::power_wib(wib::PowerWIB &conf) {
     bool power_res = true;
     bool any_on = false;
     for (int i = 0; i < 4; i++) {
-        power_res &= femb_power_set(i, femb_i_on(conf, i)); // Sequences COLDATA -> COLDADC (except VDDA2P5, VDDD2P5)
-        if (femb_i_on(conf,i)) {
-            any_on = true;
-            femb[i]->set_fast_act(ACT_RESET_COLDADC); // Prepare COLDADC reset
+        if (conf.stage() == 2) { // only check that FEMBs were previously powered on
+            bool femb_state = frontend_power[i] == femb_i_on(conf,i);
+            if (!femb_state) {
+                glog.log("FEMB %i is %s but requested to be %s\n",i,frontend_power[i]?"ON":"OFF",femb_i_on(conf,i)?"ON":"OFF");
+            }
+            power_res &= femb_state;
+            if (femb_i_on(conf,i)) {
+                any_on = true;
+            }
+        } else { // other stages turn on FEMB power regulators
+            power_res &= femb_power_set(i, femb_i_on(conf, i)); // Sequences COLDATA -> COLDADC (except VDDA2P5, VDDD2P5)
+            if (femb_i_on(conf,i)) {
+                any_on = true;
+                femb[i]->set_fast_act(ACT_RESET_COLDADC); // Prepare COLDADC reset
+            }
         }
     }
     
@@ -205,8 +216,22 @@ bool WIB_3ASIC::power_wib(wib::PowerWIB &conf) {
     
     if (!any_on) return true; // Break out here of no FEMBs are ON
     
-    glog.log("Resetting and synchronizing COLDADCs\n");
-    FEMB_3ASIC::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT      
+    if (conf.stage() == 0) { // run the full sequence including a WIB-local ADC sync
+        glog.log("Resetting and synchronizing COLDADCs\n");
+        FEMB_3ASIC::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT    
+    } else if (conf.stage() == 1) { // stop here and way for some other utility to perform the EDGE+ACT globally
+        glog.log("Waiting for external COLDADC reset and synchronization\n");
+        for (int i = 0; i < 4; i++) {
+            if (femb_i_on(conf,i)) {
+                // disable VDDA VDDD power in prep for external reset & sync
+                power_res &= femb[i]->set_control_reg(0,false,false); //VDDA on U1 ctrl_0/ctrl_1
+                power_res &= femb[i]->set_control_reg(1,false,false);  //VDDD L/R on U2 ctrl_0/ctrl_1
+            }
+        }
+        return power_res;
+    } else if (conf.stage() == 2) { // resume power on sequence after a global EDGE+ACT
+        glog.log("Resuming power ON after external COLDADC reset and synchronization\n");
+    }
     
     for (int i = 0; i < 4; i++) {
         if (femb_i_on(conf,i)) {

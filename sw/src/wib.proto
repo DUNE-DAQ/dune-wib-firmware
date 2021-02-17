@@ -69,6 +69,11 @@ message PowerWIB {
     
     bool cold = 5; // True if front end is COLD (77k)
     
+    // 0 = full power-on sequence with COLDADC reset in software
+    // 1 = leave VDDD,VDDA off and no COLDADC reset (sync+reset driven externally)
+    // 2 = program externally reset COLDADCs and turn VDDD,VDDA on 
+    uint32 stage = 6; 
+    
     //replies Status
 } 
 
