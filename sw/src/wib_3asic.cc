@@ -221,6 +221,8 @@ bool WIB_3ASIC::power_wib(wib::PowerWIB &conf) {
         FEMB_3ASIC::fast_cmd(FAST_CMD_EDGE_ACT); // Perform EDGE+ACT    
     } else if (conf.stage() == 1) { // stop here and way for some other utility to perform the EDGE+ACT globally
         glog.log("Waiting for external COLDADC reset and synchronization\n");
+        // pdtbutler mst PROD_MASTER send-cmd 0 11
+        io_reg_write(&this->regs,REG_TIMING_CMD_1,0x0b00); // timing command 0xb == 11 will run EDGE+ACT
         for (int i = 0; i < 4; i++) {
             if (femb_i_on(conf,i)) {
                 // disable VDDA VDDD power in prep for external reset & sync
@@ -231,6 +233,7 @@ bool WIB_3ASIC::power_wib(wib::PowerWIB &conf) {
         return power_res;
     } else if (conf.stage() == 2) { // resume power on sequence after a global EDGE+ACT
         glog.log("Resuming power ON after external COLDADC reset and synchronization\n");
+        io_reg_write(&this->regs,REG_TIMING_CMD_1,0x00000); // zero out timing commands
     }
     
     for (int i = 0; i < 4; i++) {
