@@ -22,10 +22,10 @@ public:
     virtual bool set_pulser(bool on);
     
     // Control power sequence for this WIB's frontend 
-    virtual bool power_wib(wib::PowerWIB &conf);
+    virtual bool power_wib(const wib::PowerWIB &conf);
     
     // Configure the frontend for this WIB
-    virtual bool configure_wib(wib::ConfigureWIB &conf);
+    virtual bool configure_wib(const wib::ConfigureWIB &conf);
     
 protected:
 

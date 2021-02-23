@@ -160,7 +160,7 @@ bool WIB_3ASIC::set_pulser(bool on) {
 }
 
 // convenience method to index config
-bool femb_i_on(wib::PowerWIB &conf, int i) {
+bool femb_i_on(const wib::PowerWIB &conf, int i) {
     switch (i) {
         case 0:
             return conf.femb0();
@@ -175,7 +175,7 @@ bool femb_i_on(wib::PowerWIB &conf, int i) {
     }
 }
 
-bool WIB_3ASIC::power_wib(wib::PowerWIB &conf) {
+bool WIB_3ASIC::power_wib(const wib::PowerWIB &conf) {
 
     if (!frontend_initialized) {
         if (!start_frontend()) {
@@ -263,7 +263,7 @@ bool WIB_3ASIC::power_wib(wib::PowerWIB &conf) {
     return pulser_res && power_res && adc_test_res;
 }
 
-bool WIB_3ASIC::configure_wib(wib::ConfigureWIB &conf) {
+bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
 
     if (conf.fembs_size() != 4) {
         glog.log("Must supply exactly 4 FEMB configurations\n");
@@ -293,14 +293,34 @@ bool WIB_3ASIC::configure_wib(wib::ConfigureWIB &conf) {
         glog.log("COLDATA configuration failed!\n");
     }
     
+    coldadc_conf *adc_conf = NULL;
+    if (conf.has_adc_conf()) {
+        glog.log("Using provided set of alternate COLDADC values\n");
+        const wib::ConfigureWIB::ConfigureCOLDADC &adc_conf_msg = conf.adc_conf();
+        adc_conf = new coldadc_conf;
+        adc_conf->reg_0 = adc_conf_msg.reg_0();
+        adc_conf->reg_4 = adc_conf_msg.reg_4();
+        adc_conf->reg_24 = adc_conf_msg.reg_24();
+        adc_conf->reg_25 = adc_conf_msg.reg_25();
+        adc_conf->reg_26 = adc_conf_msg.reg_26();
+        adc_conf->reg_27 = adc_conf_msg.reg_27();
+        adc_conf->reg_29 = adc_conf_msg.reg_29();
+        adc_conf->reg_30 = adc_conf_msg.reg_30();
+    }
+    
     bool coldadc_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
-         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern());
+         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern(),adc_conf);
     }
     if (coldadc_res) {
         glog.log("COLDADC configured\n");
     } else {
         glog.log("COLDADC configuration failed!\n");
+    }
+    
+    if (adc_conf) {
+        delete adc_conf;
+        adc_conf = NULL;
     }
     
     // Pulser _must_ be off to program LArASIC

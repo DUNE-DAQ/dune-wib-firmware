@@ -19,14 +19,14 @@ bool WIB_CRYO::set_pulser(bool on) {
     return false;
 }
 
-bool WIB_CRYO::power_wib(wib::PowerWIB &conf) {
+bool WIB_CRYO::power_wib(const wib::PowerWIB &conf) {
 
     // FIXME do CRYO power on sequence
     
     return false;
 }
 
-bool WIB_CRYO::configure_wib(wib::ConfigureWIB &conf) {
+bool WIB_CRYO::configure_wib(const wib::ConfigureWIB &conf) {
 
     if (conf.fembs_size() != 4) {
         glog.log("Must supply exactly 4 FEMB configurations\n");

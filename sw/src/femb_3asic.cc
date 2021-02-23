@@ -79,24 +79,27 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame) {
     return res;
 }
 
-bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern) {
+bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *adc_conf) {
     bool res = true;
     //See COLDADC datasheet
-    //FIXME do these options need to be configurable?
     for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
         for (uint8_t j = 4; j <= 7; j++) { // For each COLADC attached to COLDATA
             res &= i2c_write_verify(i, j, 2, 0x01, 0x0c);  //start_data
             res &= i2c_write_verify(i, j, 2, 0x02, cold ? 0x7 : 0xF);  //lvds_current
+            if (adc_conf) {
+                res &= i2c_write_verify(i, j, 1, 0x80, adc_conf->reg_0);  //reg 0
+                res &= i2c_write_verify(i, j, 1, 0x84, adc_conf->reg_4);  //reg 4
+            } //FIXME reg 0&4 not being set without adc_conf specified presents a gotcha when reverting to defaults... power cycle or explicit set fixes
             res &= i2c_write_verify(i, j, 1, 0x96, 0xff);  //bjt_powerdown
             res &= i2c_write_verify(i, j, 1, 0x97, 0x2f);  //ref_bias
             res &= i2c_write_verify(i, j, 1, 0x93, 0x04);  //internal_ref
             res &= i2c_write_verify(i, j, 1, 0x9C, 0x15);  //vt45uA
-            res &= i2c_write_verify(i, j, 1, 0x98, cold ? 0xDF : 0xFF);  //vrefp //shanshan cold 0xE0
-            res &= i2c_write_verify(i, j, 1, 0x99, cold ? 0x33 : 0x00);  //vrefn //shanshan cold 0x10
-            res &= i2c_write_verify(i, j, 1, 0x9a, cold ? 0x89 : 0x80);  //vcmo  //shanshan cold 0x87
-            res &= i2c_write_verify(i, j, 1, 0x9b, cold ? 0x67 : 0x60);  //vcmi  //shanshan cold 0x60
-            res &= i2c_write_verify(i, j, 1, 0x9d, 0x27);  //ref-bias
-            res &= i2c_write_verify(i, j, 1, 0x9e, 0x27);  //ref-bias
+            res &= i2c_write_verify(i, j, 1, 0x98, adc_conf ? adc_conf->reg_24 : (cold ? 0xDF : 0xFF));  //reg 24 vrefp_ctrl_cmos //shanshan cold 0xE0
+            res &= i2c_write_verify(i, j, 1, 0x99, adc_conf ? adc_conf->reg_25 : (cold ? 0x33 : 0x00));  //reg 25 vrefn_ctrl_cmos //shanshan cold 0x10
+            res &= i2c_write_verify(i, j, 1, 0x9a, adc_conf ? adc_conf->reg_26 : (cold ? 0x89 : 0x80));  //reg 26 vcmo_ctrl_cmos  //shanshan cold 0x87
+            res &= i2c_write_verify(i, j, 1, 0x9b, adc_conf ? adc_conf->reg_27 : (cold ? 0x67 : 0x60));  //reg 27 vcmi_ctrl_cmos  //shanshan cold 0x60
+            res &= i2c_write_verify(i, j, 1, 0x9d, adc_conf ? adc_conf->reg_29 : 0x27);  //reg 29 ibuff0_cmos
+            res &= i2c_write_verify(i, j, 1, 0x9e, adc_conf ? adc_conf->reg_30 : 0x27);  //reg 30 ibuff1_cmos
             res &= i2c_write_verify(i, j, 1, 0x80, 0x63);  //sdc_bypassed
             res &= i2c_write_verify(i, j, 1, 0x84, 0x3b);  //single-ened_input_mode
             res &= i2c_write_verify(i, j, 1, 0x88, 0x0b);  //ADC-bias-current-50uA

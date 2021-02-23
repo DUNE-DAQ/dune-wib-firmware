@@ -105,10 +105,10 @@ public:
     virtual bool set_pulser(bool on) = 0;
     
     // Control power sequence for this WIB's frontend 
-    virtual bool power_wib(wib::PowerWIB &conf) = 0;
+    virtual bool power_wib(const wib::PowerWIB &conf) = 0;
     
     // Configure the frontend for this WIB
-    virtual bool configure_wib(wib::ConfigureWIB &conf) = 0;
+    virtual bool configure_wib(const wib::ConfigureWIB &conf) = 0;
 
     // Read the onboard I2C sensors and fill the sensor structure
     bool read_sensors(wib::GetSensors::Sensors &sensors);

@@ -71,6 +71,12 @@ typedef struct {
     uint8_t cal_skip, cal_delay, cal_length; // COLDATA registers controlling calibration strobe
 } larasic_conf;
 
+typedef struct {
+    uint8_t reg_0, reg_4;
+    uint8_t reg_24, reg_25, reg_26, reg_27;
+    uint8_t reg_29, reg_30;
+} coldadc_conf;
+
 class FEMB_3ASIC {
 
 public:
@@ -80,7 +86,7 @@ public:
     
     // Front end I2C configuration
     bool configure_coldata(bool cold, FrameType frame);
-    bool configure_coldadc(bool cold, bool test_pattern = false);
+    bool configure_coldadc(bool cold, bool test_pattern = false, coldadc_conf *conf = NULL);
     bool configure_larasic(const larasic_conf &c);
     bool set_fast_act(uint8_t act_cmd);
     bool read_spi_status(); // requires ACT_SAVE_STATUS first
