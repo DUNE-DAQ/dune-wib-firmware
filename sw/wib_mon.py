@@ -38,11 +38,12 @@ class Sensor(QtWidgets.QWidget):
         self.setPalette(p)
 
 class IVSensor(Sensor):
-    def __init__(self,parent,label,accessor,sense_ohms=0.1):
+    def __init__(self,parent,label,accessor,sense_ohms=0.1,disabled=False):
         super().__init__(parent)
         self.accessor = accessor
         self.label = label
         self.sense_ohms = sense_ohms
+        self.disabled = disabled
         
         layout = QtWidgets.QVBoxLayout(self)
         lbl = QtWidgets.QLabel(self.label)
@@ -66,8 +67,12 @@ class IVSensor(Sensor):
     def load_data(self,sensors):
         before,after = self.accessor(sensors)
         current = (before-after)/self.sense_ohms*1000.0 #mA
-        self.V.setText('%0.2f V'%before)
-        self.I.setText('%0.1f mA'%current)
+        if self.disabled:
+            self.V.setText('---- V')
+            self.I.setText('---- mA')
+        else:
+            self.V.setText('%0.2f V'%before)
+            self.I.setText('%0.1f mA'%current)
         print('  %-20s %0.2f V'%(self.label+' (before)',before))
         print('  %-20s %0.2f V'%(self.label+' (after)',after))
         print('  %-20s %0.1f mA'%(self.label+' (current)',current))
@@ -155,8 +160,8 @@ class FEMBPane(QtWidgets.QGroupBox):
             
         self.tpower_sensor = VTSensor(self,'Power Temp',lambda s: s.ltc2499_15_temps[self.idx])
         self.iv_sensors = []
-        self.iv_sensors.append(IVSensor(self,'LDO A0',lambda s: s.femb_ldo_a0_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.01))
-        self.iv_sensors.append(IVSensor(self,'LDO A1',lambda s: s.femb_ldo_a1_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.01))
+        self.iv_sensors.append(IVSensor(self,'LDO A0',lambda s: s.femb_ldo_a0_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.01,disabled=True))
+        self.iv_sensors.append(IVSensor(self,'LDO A1',lambda s: s.femb_ldo_a1_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.01,disabled=True))
         self.iv_sensors.append(IVSensor(self,'5V Bias',lambda s: s.femb_bias_ltc2991_voltages[self.idx*2:(self.idx+1)*2],sense_ohms=0.1))
         self.iv_sensors.append(IVSensor(self,'DC/DC V1',lambda s: dc2dc(s,self.idx)[0:2],sense_ohms=0.1))
         self.iv_sensors.append(IVSensor(self,'DC/DC V2',lambda s: dc2dc(s,self.idx)[2:4],sense_ohms=0.1))
