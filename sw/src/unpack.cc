@@ -41,82 +41,71 @@ void repack14(const uint16_t *unpacked, uint32_t *packed) {
     }
 }
 
-void unpack_frame(const frame14 *frame, frame14_unpacked *data) {
-    data->crate_num = frame->wib_pre[0] & 0xFF;
-    data->frame_version = (frame->wib_pre[0] >> 8) & 0xF;
-    data->wib_num = (frame->wib_pre[0] >> 12) & 0x7;
-    data->fiber_num = (frame->wib_pre[0] >> 15) & 0x1;
-    data->femb_valid = (frame->wib_pre[0] >> 16) & 0x3;
-    data->link_mask = (frame->wib_pre[0] >> 18) & 0xFF;
-    
-    data->wib_data = frame->wib_pre[1];
-    
-    data->timestamp = (((uint64_t)frame->wib_pre[3])<<32) | ((uint64_t)frame->wib_pre[2]);
-    
-    unpack14(frame->femb_a_seg,(uint16_t*)&data->femb[0]);
-    unpack14(frame->femb_b_seg,(uint16_t*)&data->femb[1]);
-    
-    data->crc20 = frame->wib_post[0] & 0xFFFFF;
-    data->flex12 = (frame->wib_post[0] >> 20) & 0xFFF;
-    data->flex24 = (frame->wib_post[1] >> 8) & 0xFFFFFF;
+void unpack_frame(const frame14 *frame, femb_data *femb_a, femb_data *femb_b) {
+    unpack14(frame->femb_a_seg,(uint16_t*)femb_a);
+    unpack14(frame->femb_b_seg,(uint16_t*)femb_b);
 }
 
-void repack_frame(const frame14_unpacked *data, frame14 *frame) {
-    memset(frame,0,sizeof(frame14)); //zero out frame
-    frame->start_frame = 0x3C;
-    frame->wib_pre[0] |= (data->crate_num & 0xFF);
-    frame->wib_pre[0] |= (data->frame_version & 0xF) << 8;
-    frame->wib_pre[0] |= (data->wib_num & 0x7) << 12;
-    frame->wib_pre[0] |= (data->fiber_num & 0x1) << 15;
-    frame->wib_pre[0] |= (data->femb_valid & 0x3) << 16;
-    frame->wib_pre[0] |= (data->link_mask & 0xFF) << 18;
-    
-    frame->wib_pre[1] = 0xbabeface;
-    
-    frame->wib_pre[2] = (uint32_t)(data->timestamp & 0xFFFFFFFF);
-    frame->wib_pre[3] = (uint32_t)((data->timestamp >> 32) & 0xFFFFFFFF);
-    
-    repack14((uint16_t*)&data->femb[0],frame->femb_a_seg);
-    repack14((uint16_t*)&data->femb[1],frame->femb_b_seg);
-    
-    frame->wib_post[0] |= data->crc20 & 0xFFFFF; // FIXME calculate crc of something
-    frame->wib_post[0] |= (data->flex12 & 0xFFF) << 20;
-    frame->wib_post[1] |= 0xDC;
-    frame->wib_post[1] |= (data->flex24 & 0xFFFFFF) << 8;
-    frame->idle_frame = 0xBC;
+void repack_frame(const femb_data *femb_a, const femb_data *femb_b, frame14 *frame) {
+    repack14((uint16_t*)femb_a,frame->femb_a_seg);
+    repack14((uint16_t*)femb_b,frame->femb_b_seg);
 }
 
-void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data) {
+void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, uint8_t version) {
     data.samples = nframes;
     for (size_t i = 0; i < 128; i++) {
         data.channels[0][i].resize(nframes);
         data.channels[1][i].resize(nframes);
     }
     data.timestamp.resize(nframes);
-    frame14_unpacked frame_data;
+    femb_data femb_a, femb_b;
     for (size_t i = 0; i < nframes; i++) {
-        unpack_frame(frame_buf+i,&frame_data);
+        unpack_frame(frame_buf+i,&femb_a,&femb_b);
         for (size_t j = 0; j < 48; j++) {
             int k;
             if (j < 40) {
                 k = u_to_ch[j];
-                data.channels[0][k][i] = frame_data.femb[0].u[j];
-                data.channels[1][k][i] = frame_data.femb[1].u[j];
+                data.channels[0][k][i] = femb_a.u[j];
+                data.channels[1][k][i] = femb_b.u[j];
                 k = v_to_ch[j];
-                data.channels[0][k][i] = frame_data.femb[0].v[j];
-                data.channels[1][k][i] = frame_data.femb[1].v[j];
+                data.channels[0][k][i] = femb_a.v[j];
+                data.channels[1][k][i] = femb_b.v[j];
             } 
             k = x_to_ch[j];
-            data.channels[0][k][i] = frame_data.femb[0].x[j];
-            data.channels[1][k][i] = frame_data.femb[1].x[j];
+            data.channels[0][k][i] = femb_a.x[j];
+            data.channels[1][k][i] = femb_b.x[j];
         }
-        data.timestamp[i] = frame_data.timestamp;;
+        switch (version) {
+            case 1: {
+                frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf+i);
+                data.timestamp[i] = frame->timestamp;
+                break;
+            }
+            case 2: {
+                frame14_bitfield_v2 *frame = (frame14_bitfield_v2*)(frame_buf+i);
+                data.timestamp[i] = frame->timestamp;
+                break;
+            }
+        }
+        
     }
-    data.crate_num = frame_data.crate_num;
-    data.wib_num = frame_data.wib_num;
+    switch (version) {
+        case 1: {
+            frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf);
+            data.crate_num = frame->crate_num;
+            data.wib_num = frame->slot_num;
+            break;
+        }
+        case 2: {
+            frame14_bitfield_v2 *frame = (frame14_bitfield_v2*)(frame_buf);
+            data.crate_num = frame->crate_num;
+            data.wib_num = frame->slot_num;
+            break;
+        }
+    }
 }
 
-void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data) {
+void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data, uint8_t version) {
     data.samples = nframes;
     for (size_t i = 0; i < 48; i++) {
         if (i < 40) {
@@ -129,48 +118,98 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data) {
         data.x[1][i].resize(nframes);
     }
     data.timestamp.resize(nframes);
-    frame14_unpacked frame_data;
+    femb_data femb_a, femb_b;
     for (size_t i = 0; i < nframes; i++) {
-        unpack_frame(frame_buf+i,&frame_data);
+        unpack_frame(frame_buf+i,&femb_a,&femb_b);
         for (size_t j = 0; j < 48; j++) {
             if (j < 40) {
-                data.u[0][j][i] = frame_data.femb[0].u[j];
-                data.v[0][j][i] = frame_data.femb[0].v[j];
-                data.u[1][j][i] = frame_data.femb[1].u[j];
-                data.v[1][j][i] = frame_data.femb[1].v[j];
+                data.u[0][j][i] = femb_a.u[j];
+                data.v[0][j][i] = femb_a.v[j];
+                data.u[1][j][i] = femb_b.u[j];
+                data.v[1][j][i] = femb_b.v[j];
             }
-            data.x[0][j][i] = frame_data.femb[0].x[j];
-            data.x[1][j][i] = frame_data.femb[1].x[j];
+            data.x[0][j][i] = femb_a.x[j];
+            data.x[1][j][i] = femb_b.x[j];
         }
-        data.timestamp[i] = frame_data.timestamp;
+        switch (version) {
+            case 1: {
+                frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf+i);
+                data.timestamp[i] = frame->timestamp;
+                break;
+            }
+            case 2: {
+                frame14_bitfield_v2 *frame = (frame14_bitfield_v2*)(frame_buf+i);
+                data.timestamp[i] = frame->timestamp;
+                break;
+            }
+        }
     }
-    data.crate_num = frame_data.crate_num;
-    data.wib_num = frame_data.wib_num;
-    //FIXME frame_version femb_valid link_mask fiber_num
+    switch (version) {
+        case 1: {
+            frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf);
+            data.crate_num = frame->crate_num;
+            data.wib_num = frame->slot_num;
+            break;
+        }
+        case 2: {
+            frame14_bitfield_v2 *frame = (frame14_bitfield_v2*)(frame_buf);
+            data.crate_num = frame->crate_num;
+            data.wib_num = frame->slot_num;
+            break;
+        }
+    }
 }
 
-void reframe_data(frame14 *frame_buf, size_t nframes, const channel_data &data) {
-    frame14_unpacked frame_data;
+void reframe_data(frame14 *frame_buf, size_t nframes, const channel_data &data, uint8_t version) {
+    femb_data femb_a, femb_b;
     for (size_t i = 0; i < nframes; i++) {
         for (size_t j = 0; j < 48; j++) {
             int k;
             if (j < 40) {
                 k = u_to_ch[j];
-                frame_data.femb[0].u[j] = data.channels[0][k][i];
-                frame_data.femb[1].u[j] = data.channels[1][k][i];
+                femb_a.u[j] = data.channels[0][k][i];
+                femb_b.u[j] = data.channels[1][k][i];
                 k = v_to_ch[j];
-                frame_data.femb[0].v[j] = data.channels[0][k][i];
-                frame_data.femb[1].v[j] = data.channels[1][k][i];
+                femb_a.v[j] = data.channels[0][k][i];
+                femb_b.v[j] = data.channels[1][k][i];
             } 
             k = x_to_ch[j];
-            frame_data.femb[0].x[j] = data.channels[0][k][i];
-            frame_data.femb[1].x[j] = data.channels[1][k][i];
+            femb_a.x[j] = data.channels[0][k][i];
+            femb_b.x[j] = data.channels[1][k][i];
         }
-        frame_data.timestamp = data.timestamp[i];
-        frame_data.crate_num = data.crate_num;
-        frame_data.wib_num = data.wib_num;
+        switch (version) {
+            case 1: {
+                frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf+i);
+                memset(frame,0,sizeof(frame14));
+                frame->start_frame = 0x3C;
+                frame->frame_version = 1;
+                frame->femb_valid = 0x3;
+                frame->wib_data = 0xbabeface;
+                frame->timestamp = data.timestamp[i];
+                frame->crate_num = data.crate_num;
+                frame->slot_num = data.wib_num;
+                //FIXME CRC
+                frame->eof = 0xDC;
+                frame->idle_frame = 0xBC;
+                break;
+            }
+            case 2: {
+                frame14_bitfield_v2 *frame = (frame14_bitfield_v2*)(frame_buf+i);
+                memset(frame,0,sizeof(frame14));
+                frame->start_frame = 0x3C;
+                frame->frame_version = 2;
+                frame->femb_valid = 0x3;
+                frame->timestamp = data.timestamp[i];
+                frame->crate_num = data.crate_num;
+                frame->slot_num = data.wib_num;
+                //FIXME CRC
+                frame->eof = 0xDC;
+                frame->idle_frame = 0xBC;
+                break;
+            }
+        }
         //FIXME frame_version femb_valid link_mask fiber_num
-        repack_frame(&frame_data, frame_buf+i);
+        repack_frame(&femb_a, &femb_b, frame_buf+i);
     }
 }
 

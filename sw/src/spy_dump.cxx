@@ -23,8 +23,7 @@ void femb_seg(uint32_t *seg,char *femb) {
     }
 }
 
-void dump_frames(frame14 *buffer, size_t nframes) {    
-    frame14_unpacked f;
+void dump_frames(frame14 *buffer, size_t nframes) { 
     for (size_t i = 0; i < nframes; i++) {
         glog.log("start_frame:  0x%08X\n",buffer[i].start_frame);
         glog.log("wib_header_0: 0x%08X\n",buffer[i].wib_pre[0]);
