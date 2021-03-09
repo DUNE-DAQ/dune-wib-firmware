@@ -1,4 +1,6 @@
-CCFLAGS = -g -O2 -Isrc
+#Generate src/version.cc if necessary
+$(shell echo -e "#include \"version.h\"\n\nchar const *const GIT_VERSION = \"$$(git describe --abbrev=6 --dirty --always --tags)\";" > src/version.cc.tmp; if diff -q src/version.cc.tmp src/version.cc >/dev/null 2>&1; then rm src/version.cc.tmp; else mv src/version.cc.tmp src/version.cc; fi)
+
 CXXFLAGS = -g -O2 -Isrc
 LFLAGS = -lprotobuf -lzmq -lreadline 
 
@@ -24,13 +26,11 @@ all: $(BINS)
 	@echo Finished building
 
 simulation: CXXFLAGS += -DSIMULATION
-simulation: CCFLAGS += -DSIMULATION
 simulation: $(BINS)
 	@echo Finished building
 
 # Use SIMULATION define to avoid building hardware interfaces
 client: CXXFLAGS += -DSIMULATION
-client: CCFLAGS += -DSIMULATION
 client: wib_client spy_dump
 	@echo Finished building
 

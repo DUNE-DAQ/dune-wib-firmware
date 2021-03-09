@@ -8,6 +8,7 @@
 #include "wib_3asic.h"
 #include "wib_cryo.h"
 #include "log.h"
+#include "version.h"
 
 int main(int argc, char **argv) {
     //set output to line buffering
@@ -259,6 +260,13 @@ int main(int argc, char **argv) {
             rep.set_hour((ts>>12)&0x1f);
             rep.set_min((ts>>6)&0x3f);
             rep.set_sec((ts>>0)&0x3f);
+            rep.SerializeToString(&reply_str);
+        } else if (command.cmd().Is<wib::GetSWVersion>()) {
+            glog.log("get_sw_version\n");
+            wib::GetSWVersion req;
+            command.cmd().UnpackTo(&req);
+            wib::GetSWVersion::Version rep;    
+            rep.set_version(GIT_VERSION);
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::PowerWIB>()) {
             glog.log("power_wib\n");

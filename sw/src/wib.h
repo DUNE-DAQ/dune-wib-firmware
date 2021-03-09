@@ -116,11 +116,8 @@ public:
     // Read the status of the timing endpoint 
     bool read_timing_status(wib::GetTimingStatus::TimingStatus &status);
     
-    // Read the firmware timestamp code
+    // Read the firmware version timestamp code
     uint32_t read_fw_timestamp();
-    
-    // Read the software timestamp code
-    uint32_t read_sw_timestamp();
     
 protected:
     

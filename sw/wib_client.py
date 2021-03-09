@@ -58,14 +58,22 @@ def log(args):
     print(rep.contents.decode('ascii'),end='')
 bind_parser(log_parser,log)
 
-timestamp_parser = sub.add_parser('timestamp',help='Return firmware version timestamp',add_help=False)
-def timestamp(args):
+fw_timestamp_parser = sub.add_parser('fw_timestamp',help='Return firmware version timestamp',add_help=False)
+def fw_timestamp(args):
     req = wibpb.GetTimestamp()
     rep = wibpb.GetTimestamp.Timestamp()
     wib.send_command(req,rep)
-    print('timestamp code: 0x%08X'%rep.timestamp);
+    print('fw_timestamp code: 0x%08X'%rep.timestamp);
     print('decoded: %i/%i/%i %i:%i:%i'%(rep.year,rep.month,rep.day,rep.hour,rep.min,rep.sec));
-bind_parser(timestamp_parser,timestamp)
+bind_parser(fw_timestamp_parser,fw_timestamp)
+
+sw_version_parser = sub.add_parser('sw_version',help='Return software build version',add_help=False)
+def sw_version(args):
+    req = wibpb.GetSWVersion()
+    rep = wibpb.GetSWVersion.Version()
+    wib.send_command(req,rep)
+    print('sw_version: %s'%rep.version);
+bind_parser(sw_version_parser,sw_version)
 
 timing_reset_parser = sub.add_parser('timing_reset',help='Reset the timing endpoint',add_help=False)
 def timing_reset(args):

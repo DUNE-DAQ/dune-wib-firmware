@@ -677,7 +677,3 @@ bool WIB::read_timing_status(wib::GetTimingStatus::TimingStatus &status) {
 uint32_t WIB::read_fw_timestamp() {
     return io_reg_read(&this->regs,REG_FW_TIMESTAMP);
 }
-
-uint32_t WIB::read_sw_timestamp() {
-    return 0x00000000;
-}

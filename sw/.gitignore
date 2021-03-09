@@ -1,6 +1,7 @@
 __pycache__/
 build/
 spy_dump
+src/version.cc
 src/wib.pb.cc
 src/wib.pb.h
 wib_client

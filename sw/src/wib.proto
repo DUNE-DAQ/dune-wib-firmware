@@ -259,6 +259,14 @@ message GetTimestamp {
     }
 }
 
+// reads the git version information built into the software
+message GetSWVersion {
+    
+    message Version {
+        string version = 1;
+    }
+}
+
 // resets the timing endpoint
 message ResetTiming {
     

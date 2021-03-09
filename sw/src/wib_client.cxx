@@ -20,8 +20,10 @@ void print_help() {
     glog.log("Available commands:\n");
     glog.log("  reboot\n");
     glog.log("    Reboot the WIB\n");
-    glog.log("  timestamp\n");
+    glog.log("  fw_timestamp\n");
     glog.log("    Return the firmware version timestamp\n");
+    glog.log("  sw_version\n");
+    glog.log("    Return the software build version\n");
     glog.log("  log [boot|clear]\n");
     glog.log("    Return the wib_server log (or return boot log, or clear the logs)\n");
     glog.log("  script filename\n");
@@ -75,12 +77,17 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         wib::GetSensors req;
         wib::GetSensors::Sensors rep;
         send_command(s,req,rep);
-    } else if (cmd == "timestamp") {
+    } else if (cmd == "fw_timestamp") {
         wib::GetTimestamp req;
         wib::GetTimestamp::Timestamp rep;
         send_command(s,req,rep);
-        glog.log("timestamp code: 0x%08X\n",rep.timestamp());
+        glog.log("fw_timestamp code: 0x%08X\n",rep.timestamp());
         glog.log("decoded: %i/%i/%i %i:%i:%i\n",rep.year(),rep.month(),rep.day(),rep.hour(),rep.min(),rep.sec());
+    } else if (cmd == "sw_version") {
+        wib::GetSWVersion req;
+        wib::GetSWVersion::Version rep;
+        send_command(s,req,rep);
+        glog.log("sw_version: %s\n",rep.version().c_str());
     } else if (cmd == "log") {
         if (argc > 2) {
             glog.log("Usage: log [clear|boot]\n");
