@@ -115,11 +115,16 @@ message ConfigureWIB {
     }
 
     repeated ConfigureFEMB fembs = 1; //must supply 4
+    
     bool cold = 2; // True if front end is COLD (77k)
+    
     bool pulser = 3; // True if pulser (and LArASIC sdacsw2) should be enabled
+    
     bool adc_test_pattern = 4; // enable ADC test pattern
     
     ConfigureCOLDADC adc_conf = 5; // specify non-hardcoded values for COLDADC (omit for defaults)
+    
+    bool frame_dd = 6; // enable Frame-DD from COLDATA instead of Frame-14 data
     
     //replies Status
 }

@@ -287,7 +287,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     
     bool coldata_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDATA
-        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),FRAME_14);
+        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),conf.frame_dd()?FRAME_DD:FRAME_14);
     }
     if (coldata_res) {
         glog.log("COLDATA configured\n");
