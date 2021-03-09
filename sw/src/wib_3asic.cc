@@ -76,6 +76,8 @@ bool WIB_3ASIC::start_frontend() {
     glog.log("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
     femb_rx_reset();
+    glog.log("Resetting FELIX transmitter\n");
+    reset_felix_tx();
     return success;
 }
 

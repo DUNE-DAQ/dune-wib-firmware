@@ -40,6 +40,7 @@ constexpr size_t REG_TIMING_CMD_0       = 0x0010/4;
 constexpr size_t REG_TIMING_CMD_1       = 0x0014/4;
 constexpr size_t REG_FAKE_TIME_L        = 0x0018/4;
 constexpr size_t REG_FAKE_TIME_H        = 0x001C/4;
+constexpr size_t REG_FELIX_CTRL         = 0x0038/4;
 constexpr size_t REG_DAQ_SPY_STATUS     = 0x0080/4;
 constexpr size_t REG_FW_TIMESTAMP       = 0x0088/4;
 constexpr size_t REG_BACKPLANE_ADDR     = 0x008C/4;
@@ -77,6 +78,9 @@ public:
     bool reset_timing_endpoint();
     // Returns true if timing endpoint is locked
     bool is_endpoint_locked();    
+    
+    // Reset the FELIX transmitters
+    void reset_felix_tx();
     
     // Set fake time generator start value and halt generator
     // This does not start timestamp increment, call start_fake_time for that

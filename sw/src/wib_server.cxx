@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
             wib::GetSWVersion req;
             command.cmd().UnpackTo(&req);
             wib::GetSWVersion::Version rep;    
-            rep.set_version(GIT_VERSION);
+            rep.set_version(GIT_VERSION); //set by build system
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::PowerWIB>()) {
             glog.log("power_wib\n");

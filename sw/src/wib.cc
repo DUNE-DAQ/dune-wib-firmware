@@ -121,6 +121,13 @@ bool WIB::is_endpoint_locked() {
     return ept_status == 0x8;
 }
 
+void WIB::reset_felix_tx() {
+    //assert and release RESET bits for both links
+    //FIXME need firmware documentation to better understand this
+    io_reg_write(&this->regs,REG_FELIX_CTRL,0x00000311);
+    io_reg_write(&this->regs,REG_FELIX_CTRL,0x00000300);
+}
+
 // read a single field from a file, stripping left and right whitespace
 string read_and_strip(ifstream &fin) {
     string param((istreambuf_iterator<char>(fin)), istreambuf_iterator<char>());
