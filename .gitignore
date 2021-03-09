@@ -5,3 +5,5 @@ DUNE_WIB/
 *.tar.gz
 *.tar.bz2
 *.img
+linux-2020.1/project-spec/hw-description
+linux-2019.1/project-spec/hw-description

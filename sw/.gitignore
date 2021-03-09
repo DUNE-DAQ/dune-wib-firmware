@@ -9,3 +9,6 @@ wib_pb2.py
 wib_server
 *.bin
 sync_fake_time
+.ipynb_checkpoints
+*.ipynb
+data
