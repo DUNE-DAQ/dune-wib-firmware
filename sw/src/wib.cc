@@ -450,7 +450,7 @@ void reorder_frames(const frame14_bitfield_v1 *unordered, const size_t nframes, 
     }
     if (min_index != 0) {
         size_t start = nframes-min_index;
-        size_t rest = min_index+1-nframes;
+        size_t rest = min_index;
         memcpy(ordered,unordered+min_index,start*sizeof(frame14_bitfield_v1));
         memcpy(ordered+start,unordered,rest*sizeof(frame14_bitfield_v1));
     } else {
@@ -464,7 +464,6 @@ size_t extract_frames(const uint32_t *buf, const size_t words, uint32_t *extract
     size_t nframes = 0;
     for (size_t i = 0; i < words; ) {
         if (buf[i] == SOF) { // start of frame
-            //glog.log("Frame %llu at word %llu\n",nframes,i);
             size_t j;
             for (j = i+1; j < i+119; j++) {
                 if (buf[j%words] == SOF || buf[j%words] == IDLE) {
@@ -473,11 +472,14 @@ size_t extract_frames(const uint32_t *buf, const size_t words, uint32_t *extract
                 }
             }
             if (i == j) continue; // wasn't a full frame (idle or sof found before end)
-            if (buf[(i+119)%words] != IDLE) continue; // wasn't a full frame (missing trailing idle)
+            if (buf[(i+119)%words] != IDLE) {
+		i++;
+	        continue; // wasn't a full frame (missing trailing idle)
+	    }
             // Frame is valid
-            if (i+119 >= words) { //wraps around
+            if (i+120 > words) { //wraps around
                 size_t start = words-i;
-                size_t rest = i+120-words;
+                size_t rest = 120-start;
                 memcpy(extracted+nframes*120,buf+i,4*start); //copy start from buf end
                 memcpy(extracted+nframes*120+start,buf,4*rest); //copy rest from buf start
             } else { //one segment 
@@ -508,8 +510,8 @@ bool WIB::read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uin
     bool success = false;
     size_t offset;
     if (trig_code == 0) { // no-trigger software kludge
-        // wait 1.1ms then re-assert reset to freeze buffer
-        usleep(1100); 
+        // wait 2ms then re-assert reset to freeze buffer
+        usleep(2000); 
         io_reg_write(&this->regs,REG_FW_CTRL,next);
         glog.log("Performed asynchronous acquisition\n");
         success = true;
@@ -529,23 +531,28 @@ bool WIB::read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uin
             glog.log("Acquisition took < %i ms\n",ms);
         }
     }
-    glog.log("Copying spydaq buffers\n");
+    char *buf = new char[DAQ_SPY_SIZE];
     char *tmp = new char[DAQ_SPY_SIZE];
     if (buf0) {
-        size_t nframes = extract_frames((uint32_t*)this->daq_spy[0],DAQ_SPY_SIZE/4,(uint32_t*)tmp);
+        glog.log("Copying spy buffer 0\n");
+	memcpy(buf,this->daq_spy[0],DAQ_SPY_SIZE);
+        size_t nframes = extract_frames((uint32_t*)buf,DAQ_SPY_SIZE/4,(uint32_t*)tmp);
         if (nframes0) *nframes0 = nframes;
         glog.log("Found %llu frames in buffer 0\n",nframes);
         reorder_frames((frame14_bitfield_v1*)tmp,nframes,(frame14_bitfield_v1*)buf0);
         success &= nframes > 0;
     }
     if (buf1) {
-        size_t nframes = extract_frames((uint32_t*)this->daq_spy[1],DAQ_SPY_SIZE/4,(uint32_t*)tmp);
+        glog.log("Copying spy buffer 1\n");
+        memcpy(buf,this->daq_spy[1],DAQ_SPY_SIZE);
+        size_t nframes = extract_frames((uint32_t*)buf,DAQ_SPY_SIZE/4,(uint32_t*)tmp);
         if (nframes1) *nframes1 = nframes;
         glog.log("Found %llu frames in buffer 1\n",nframes);
         reorder_frames((frame14_bitfield_v1*)tmp,nframes,(frame14_bitfield_v1*)buf1);
         success &= nframes > 0;
     }
     delete [] tmp;
+    delete [] buf;
     #ifdef SIMULATION
     //generate more "random" data for simulation
     glog.log("Generating random sin/cos data for next acquisiton\n");
