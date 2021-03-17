@@ -40,6 +40,7 @@ constexpr size_t REG_TIMING_CMD_0       = 0x0010/4;
 constexpr size_t REG_TIMING_CMD_1       = 0x0014/4;
 constexpr size_t REG_FAKE_TIME_L        = 0x0018/4;
 constexpr size_t REG_FAKE_TIME_H        = 0x001C/4;
+constexpr size_t REG_DAQ_SPY_REC        = 0x0024/4;
 constexpr size_t REG_FELIX_CTRL         = 0x0038/4;
 constexpr size_t REG_DAQ_SPY_STATUS     = 0x0080/4;
 constexpr size_t REG_FW_TIMESTAMP       = 0x0088/4;
@@ -99,7 +100,7 @@ public:
     
     // Instructs firmware to fill the daq spy buffers and copies them into the argument pointers
     // Preallocate DAQ_SPY_SIZE buffers, or pass NULL to ignore that buffer
-    bool read_daq_spy(void *buf0, void *buf1);
+    bool read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uint8_t trig_code=0, uint32_t spy_rec_time=0, uint32_t timeout_ms=60000);
     
     // Read/Write the WIB address space (AXI,etc)
     uint32_t peek(size_t addr);

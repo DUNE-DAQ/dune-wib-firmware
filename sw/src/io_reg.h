@@ -17,7 +17,7 @@ int io_reg_free(io_reg_t *reg);
 
 uint32_t io_reg_read(io_reg_t *reg, size_t idx);
 
-void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data);
+void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data, uint32_t mask = 0xFFFFFFFF);
 
 #endif
 

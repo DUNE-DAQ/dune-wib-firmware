@@ -149,15 +149,16 @@ int main(int argc, char **argv) {
             command.cmd().UnpackTo(&req);
             char *buf0 = req.buf0() ? new char[DAQ_SPY_SIZE] : NULL;
             char *buf1 = req.buf1() ? new char[DAQ_SPY_SIZE] : NULL;
-            bool success = w->read_daq_spy(buf0,buf1);
+            int nframes0,nframes1;
+            bool success = w->read_daq_spy(buf0,&nframes0,buf1,&nframes1);
             if (!req.deframe()) {
                 wib::ReadDaqSpy::DaqSpy rep;
                 rep.set_success(success);
-                if (buf0) rep.set_buf0(buf0,DAQ_SPY_SIZE); else rep.set_buf0("");
-                if (buf1) rep.set_buf1(buf1,DAQ_SPY_SIZE); else rep.set_buf1("");
+                if (buf0) rep.set_buf0(buf0,nframes0*sizeof(frame14)); else rep.set_buf0("");
+                if (buf1) rep.set_buf1(buf1,nframes1*sizeof(frame14)); else rep.set_buf1("");
                 rep.SerializeToString(&reply_str);
             } else {
-                const size_t nframes = DAQ_SPY_SIZE/sizeof(frame14);
+                int nframes = nframes0 < nframes1 ? nframes0 : nframes1;
                 wib::ReadDaqSpy::DeframedDaqSpy rep;
                 rep.set_success(success);
                 rep.set_num_samples(nframes);

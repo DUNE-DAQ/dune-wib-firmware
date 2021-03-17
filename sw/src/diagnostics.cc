@@ -46,13 +46,11 @@ bool adc_test_config(WIB_3ASIC &w, const bool femb_mask[4], bool cold) {
 bool acquire_data(WIB &w, const bool femb_mask[4], channel_data &dch0, channel_data &dch1) {
     char *buf0 = (femb_mask[0] || femb_mask[1]) ? new char[DAQ_SPY_SIZE] : NULL;
     char *buf1 = (femb_mask[2] || femb_mask[3]) ? new char[DAQ_SPY_SIZE] : NULL;
-    bool success = w.read_daq_spy(buf0,buf1);
-    
-    const size_t nframes = DAQ_SPY_SIZE/sizeof(frame14);
-    const size_t ch_len = nframes*sizeof(uint16_t);
+    int nframes0, nframes1;
+    bool success = w.read_daq_spy(buf0,&nframes0,buf1,&nframes1);
 
-    if (buf0) deframe_data((frame14*)buf0,nframes,dch0);
-    if (buf1) deframe_data((frame14*)buf1,nframes,dch1);
+    if (buf0) deframe_data((frame14*)buf0,nframes0,dch0);
+    if (buf1) deframe_data((frame14*)buf1,nframes1,dch1);
     
     delete [] buf0;
     delete [] buf1;

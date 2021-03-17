@@ -32,8 +32,14 @@ uint32_t io_reg_read(io_reg_t *reg, size_t idx) {
     return reg->ptr[idx];
 }
 
-void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data) {
-    reg->ptr[idx] = data;
+void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data, uint32_t mask) {
+    if (mask == 0xFFFFFFFF) {
+        reg->ptr[idx] = data;
+    } else {
+        uint32_t prev = io_reg_read(reg,idx);
+        data = (data & mask) | ((~mask) & prev)
+        reg->ptr[idx] = data;
+    }
 }
 
 #else
@@ -90,9 +96,16 @@ uint32_t io_reg_read(io_reg_t *reg, size_t idx) {
     return axi_server(READ,idx*4+reg->base_addr);
 }
 
-void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data) {
-    glog.log("axi_write %lx = %x\n",idx*4+reg->base_addr,data);
-    axi_server(WRITE,idx*4+reg->base_addr,data);
+void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data, uint32_t mask) {
+    if (mask == 0xFFFFFFFF) {
+        glog.log("axi_write %lx = %x\n",idx*4+reg->base_addr,data);
+        axi_server(WRITE,idx*4+reg->base_addr,data);
+    } else {
+        uint32_t prev = io_reg_read(reg,idx);
+        data = (data & mask) | ((~mask) & prev);
+        glog.log("axi_write %lx = %x\n",idx*4+reg->base_addr,data);
+        axi_server(WRITE,idx*4+reg->base_addr,data);
+    }
 }
 
 #endif
