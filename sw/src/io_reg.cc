@@ -37,7 +37,7 @@ void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data, uint32_t mask) {
         reg->ptr[idx] = data;
     } else {
         uint32_t prev = io_reg_read(reg,idx);
-        data = (data & mask) | ((~mask) & prev)
+        data = (data & mask) | ((~mask) & prev);
         reg->ptr[idx] = data;
     }
 }
