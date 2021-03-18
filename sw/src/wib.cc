@@ -464,6 +464,7 @@ size_t extract_frames(const uint32_t *buf, const size_t words, uint32_t *extract
     size_t nframes = 0;
     for (size_t i = 0; i < words; ) {
         if (buf[i] == SOF) { // start of frame
+            //glog.log("start of frame %llu %llu\n",nframes,i);
             size_t j;
             for (j = i+1; j < i+119; j++) {
                 if (buf[j%words] == SOF || buf[j%words] == IDLE) {
@@ -473,9 +474,9 @@ size_t extract_frames(const uint32_t *buf, const size_t words, uint32_t *extract
             }
             if (i == j) continue; // wasn't a full frame (idle or sof found before end)
             if (buf[(i+119)%words] != IDLE) {
-		i++;
-	        continue; // wasn't a full frame (missing trailing idle)
-	    }
+                i++;
+                continue; // wasn't a full frame (missing trailing idle)
+            }
             // Frame is valid
             if (i+120 > words) { //wraps around
                 size_t start = words-i;
@@ -488,6 +489,7 @@ size_t extract_frames(const uint32_t *buf, const size_t words, uint32_t *extract
             nframes++;
             i += 120; // move i to next word
         } else {
+            //glog.log("skipped %llu %08x\n",i,buf[i]);
             i++;
         }
     }
@@ -502,7 +504,7 @@ bool WIB::read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uin
     //acquisition start are bits 6 and 7 (one per buffer)
     prev &= (~(mask << 6));
     uint32_t next = prev | (mask << 6);
-    glog.log("Starting acquisition...\n"); 
+    glog.log("Starting acquisition...\n");
     io_reg_write(&this->regs,REG_TIMING_CMD_1,trig_code<<16,0xFF0000);
     io_reg_write(&this->regs,REG_DAQ_SPY_REC,spy_rec_time,0x3FFFF);
     io_reg_write(&this->regs,REG_FW_CTRL,next);
@@ -510,8 +512,8 @@ bool WIB::read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uin
     bool success = false;
     size_t offset;
     if (trig_code == 0) { // no-trigger software kludge
-        // wait 2ms then re-assert reset to freeze buffer
-        usleep(2000); 
+        // wait 10ms then re-assert reset to freeze buffer
+        usleep(10000); 
         io_reg_write(&this->regs,REG_FW_CTRL,next);
         glog.log("Performed asynchronous acquisition\n");
         success = true;
@@ -535,7 +537,7 @@ bool WIB::read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uin
     char *tmp = new char[DAQ_SPY_SIZE];
     if (buf0) {
         glog.log("Copying spy buffer 0\n");
-	memcpy(buf,this->daq_spy[0],DAQ_SPY_SIZE);
+        memcpy(buf,this->daq_spy[0],DAQ_SPY_SIZE);
         size_t nframes = extract_frames((uint32_t*)buf,DAQ_SPY_SIZE/4,(uint32_t*)tmp);
         if (nframes0) *nframes0 = nframes;
         glog.log("Found %llu frames in buffer 0\n",nframes);
