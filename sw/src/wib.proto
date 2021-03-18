@@ -38,6 +38,10 @@ message ReadDaqSpy {
     bool deframe = 3; //return deframed data if true, frames if false
     bool channels = 4; //if deframe is true, returns channels if true, uvx if false
     
+    uint32 trigger_command = 5; // 0 for immediate software trigger, or nonzero for a TLU command code trigger
+    uint32 trigger_rec_ticks = 6; // Time to record after TLU trigger in 4.15834 ns ticks (18 bit max)
+    uint32 trigger_timeout_ms = 7; // Maximum time to wait for a TLU trigger in ms (32 bit max)
+    
     //replies DaqSpy if deframe is false
     message DaqSpy {
         bytes buf0 = 1; //contents of spy buffer 0 (1MB)

@@ -118,10 +118,16 @@ bind_parser(config_parser,script)
 daqspy_parser = sub.add_parser('daqspy',help='Read 1MB from each daq spy buffer and write the (up to) 2MB binary data',add_help=False)
 daqspy_parser.add_argument('filename',help='Output file for binary data')
 daqspy_parser.add_argument('buffers',nargs='?',choices=['buf0','buf1','both'],default='both',help='Select specific buffers [both]')
+daqspy_parser.add_argument('--cmd',type=int,default=0,help='TLU commmand to use as trigge, or 0 for software trigger [0]')
+daqspy_parser.add_argument('--rec',type=int,default=180360,help='Record time after trigger in 4.158ns ticks [180360 ~750us]')
+daqspy_parser.add_argument('--timeout',type=int,default=60000,help='Trigger timeout time in ms [60000 ~1min]')
 def daqspy(args):
     req = wibpb.ReadDaqSpy()
     req.buf0 = args.buffers in ['buf0','both']
     req.buf1 = args.buffers in ['buf1','both']
+    req.trigger_command = args.cmd
+    req.trigger_rec_ticks = args.rec
+    req.trigger_timeout_ms = args.timeout
     rep = wibpb.ReadDaqSpy.DaqSpy()
     wib.send_command(req,rep)
     print('Successful:',rep.success)

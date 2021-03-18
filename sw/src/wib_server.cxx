@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
             char *buf0 = req.buf0() ? new char[DAQ_SPY_SIZE] : NULL;
             char *buf1 = req.buf1() ? new char[DAQ_SPY_SIZE] : NULL;
             int nframes0,nframes1;
-            bool success = w->read_daq_spy(buf0,&nframes0,buf1,&nframes1);
+            bool success = w->read_daq_spy(buf0,&nframes0,buf1,&nframes1,req.trigger_command(),req.trigger_rec_ticks(),req.trigger_timeout_ms());
             if (!req.deframe()) {
                 wib::ReadDaqSpy::DaqSpy rep;
                 rep.set_success(success);
