@@ -771,3 +771,8 @@ bool WIB::read_timing_status(wib::GetTimingStatus::TimingStatus &status) {
 uint32_t WIB::read_fw_timestamp() {
     return io_reg_read(&this->regs,REG_FW_TIMESTAMP);
 }
+
+bool WIB::calibrate() {
+    glog.log("Calibrate not implemented\n");
+    return false;
+}

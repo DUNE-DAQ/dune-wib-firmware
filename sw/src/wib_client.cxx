@@ -172,6 +172,19 @@ int run_command(zmq::socket_t &s, int argc, char **argv) {
         } else {
             glog.log("Failure\n");
         }
+    } else if (cmd == "calibrate") {
+        if (argc != 1) {
+            glog.log("Usage: calibrate\n");
+            return 0;
+        }
+        wib::Calibrate req;
+        wib::Status rep;
+        send_command(s,req,rep);
+        if (rep.success()) {
+            glog.log("Success\n");
+        } else {
+            glog.log("Failure\n");
+        }
     } else if (cmd == "update") {
         if (argc != 3) {
             glog.log("Usage: update root_archive boot_archive\n");

@@ -408,3 +408,55 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     
     return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res;
 }
+
+bool WIB_3ASIC::calibrate() {
+    channel_data link0, link1;
+    glog.log("Calibrating COLDADCs\n");
+    for (int stage = 6; stage >= 0; stage--) {
+        glog.log("Obtaining stage %i level constants\n",stage);
+        uint16_t sn_vals[4][8][2][4]; //4 FEMBs with 8 COLDADCs containing 2 pipelines with 4 sn values each
+        for (uint8_t sn = 0; sn < 5; sn++) { //sn=4 resets forcing
+            for (int i = 0; i < 4; i++) {
+                if (!frontend_power[i]) continue; // skip FEMBs that are off
+                if (!femb[i]->setup_calib(sn,stage)) {
+                    glog.log("Failed to setup stage %i S%i measurement for FEMB %i\n",stage,sn,i);
+                    return false;
+                }
+            }
+            if (sn == 4) break; //sn=4 resets forcing
+            acquire_data(*this,frontend_power,link0,link1);
+            for (int i = 0; i < 4; i++) { //femb
+                channel_data &link = i < 2 ? link0 : link1;
+                if (!frontend_power[i]) continue; // skip FEMBs that are off
+                for (int j = 0; j < 8; j++) { //coldadc
+                    for (int k = 0; k < 2; k++) { //pipeline
+                        double accum = 0;
+                        for (int ch = 0; ch < 8; ch++) {
+                            accum += mean(link.channels[i%2][j*16+k*8+ch]);
+                        }
+                        accum *= 4/8; //added 8 14bit means and want a 16bit number
+                        sn_vals[i][j][k][sn] = (uint16_t)accum; 
+                        glog.log("S%i (femb%i,cd%i,p%i) = %u\n",sn,i,j,k,sn_vals[i][j][k][sn]);
+                    }
+                }
+            }
+        }
+        glog.log("Programming stage %i weight constants\n",stage);
+        for (int i = 0; i < 4; i++) { //femb
+            if (!frontend_power[i]) continue; // skip FEMBs that are off
+            uint16_t w0_vals[8][2], w2_vals[8][2]; //8 COLDADCs containing 2 pipelines
+            for (int j = 0; j < 8; j++) { //coldadc
+                for (int k = 0; k < 2; k++) { //pipeline
+                    w0_vals[j][k] = (uint16_t)(sn_vals[i][j][k][1] - sn_vals[i][j][k][0]);
+                    w2_vals[j][k] = (uint16_t)(sn_vals[i][j][k][2] - sn_vals[i][j][k][3]);
+                }
+            }
+            if (!femb[i]->store_calib(w0_vals,w2_vals,stage)) {
+                glog.log("Failed to store stage %i weights for FEMB %i\n",stage,i);
+                return false;
+            }
+        }
+    }
+    glog.log("Calibration completed\n");
+    return true;
+}

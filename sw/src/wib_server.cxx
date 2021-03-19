@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
             }
             if (buf0) delete [] buf0;
             if (buf1) delete [] buf1;
-        } else if (command.cmd().Is<wib::GetSensors>()) {
+        }  else if (command.cmd().Is<wib::GetSensors>()) {
             glog.log("get_sensors\n");
             wib::GetSensors::Sensors sensors;    
             w->read_sensors(sensors);
@@ -289,7 +289,15 @@ int main(int argc, char **argv) {
             glog.store_mark(rep.mutable_extra());
             rep.set_success(success);
             rep.SerializeToString(&reply_str);
-        } else if (command.cmd().Is<wib::LogControl>()) {
+        } else if (command.cmd().Is<wib::Calibrate>()) {
+            glog.log("calibrate\n"); 
+            wib::Status rep;    
+            glog.mark();
+            bool success = w->calibrate();
+            glog.store_mark(rep.mutable_extra());
+            rep.set_success(success);
+            rep.SerializeToString(&reply_str);
+        }else if (command.cmd().Is<wib::LogControl>()) {
             glog.log("log_control\n");
             wib::LogControl req;    
             command.cmd().UnpackTo(&req);

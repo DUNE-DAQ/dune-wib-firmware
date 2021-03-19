@@ -115,6 +115,15 @@ def config(args):
     wib.config(args.filename)
 bind_parser(config_parser,script)
 
+log_parser = sub.add_parser('calibrate',help='Run the ADC calibration routine',add_help=False)
+def log(args):
+    req = wibpb.Calibrate()
+    rep = wibpb.Status()
+    wib.send_command(req,rep)
+    print(rep.extra.decode('ascii'),end='')
+    print('Successful:',rep.success)
+bind_parser(log_parser,log)
+
 daqspy_parser = sub.add_parser('daqspy',help='Read 1MB from each daq spy buffer and write the (up to) 2MB binary data',add_help=False)
 daqspy_parser.add_argument('filename',help='Output file for binary data')
 daqspy_parser.add_argument('buffers',nargs='?',choices=['buf0','buf1','both'],default='both',help='Select specific buffers [both]')

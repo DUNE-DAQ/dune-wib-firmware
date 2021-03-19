@@ -111,6 +111,65 @@ bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *a
     return res;
 }
 
+// must run sn = 0 first, then 1,2,3; any other sn resets
+// must run stage 6 first, ..., stage 0
+bool FEMB_3ASIC::setup_calib(uint8_t sn, uint8_t stage) {
+    bool res = true;
+    //Based on algorithm from Dave Christian
+    //See COLDADC datasheet
+    if (stage > 6) return false; //invalid
+    for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
+        for (uint8_t j = 4; j <= 7; j++) { // For each COLADC attached to COLDATA
+            switch (sn) {
+                case 0: {
+                    const uint8_t cal_stages = (stage+1) & 0x7;
+                    res &= i2c_write_verify(i, j, 1, 0x80+32, (cal_stages<<4)|0xF); //set number of stages
+                    res &= i2c_write_verify(i, j, 1, 0x80+44, (stage<<2)|0x3); //enable forcing for stage (both pipelines)
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x30); //clear calib registers (both pipelines)
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x00);
+                    } break; //acquire s0
+                case 1:
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x01);
+                    break; //acquire s1
+                case 2:
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x05);
+                    break; //acquire s2
+                case 3:
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x04); 
+                    res &= i2c_write_verify(i, j, 1, 0x80+45, 0x10);
+                    break; //acquire s3
+                default:
+                    res &= i2c_write_verify(i, j, 1, 0x80+44, 0x00);
+                    res &= i2c_write_verify(i, j, 1, 0x80+45, 0x00);
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x00);
+            }
+        }
+    }
+    return res;
+}
+
+
+bool FEMB_3ASIC::store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_vals[8][2], uint8_t stage) {
+    bool res = true;
+    //Based on algorithm from Dave Christian
+    //See COLDADC datasheet
+    if (stage > 6) return false; //invalid
+    for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
+        for (uint8_t j = 4; j <= 7; j++) { // For each COLADC attached to COLDATA
+            uint8_t k = i*4+(j-4); // coldadc index in w* arrays
+            for (uint8_t adc = 0; adc < 1; adc++) { // 0 = pipeline 0; 1 = pipeline 1
+                for (uint8_t byte = 0; byte < 1; byte++) { // 0 = low byte; 1 = high byte
+                    uint8_t w0_addr = (adc<<6)|(stage<<1)|byte;
+                    res &= i2c_write_verify(i, j, 1, w0_addr, (w0_vals[k][adc]>>(8*byte))&0xFF);
+                    uint8_t w2_addr = (adc<<6)|0x20|(stage<<1)|byte;
+                    res &= i2c_write_verify(i, j, 1, w2_addr, (w2_vals[k][adc]>>(8*byte))&0xFF);
+                }
+            }
+        }
+    }
+    return res;
+}
+
 bool FEMB_3ASIC::configure_larasic(const larasic_conf &c) {
     bool res = true;
 

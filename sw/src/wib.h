@@ -114,6 +114,9 @@ public:
     
     // Configure the frontend for this WIB
     virtual bool configure_wib(const wib::ConfigureWIB &conf) = 0;
+    
+    // Calibrate the ADCs
+    virtual bool calibrate();
 
     // Read the onboard I2C sensors and fill the sensor structure
     bool read_sensors(wib::GetSensors::Sensors &sensors);

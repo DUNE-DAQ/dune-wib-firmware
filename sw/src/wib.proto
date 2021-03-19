@@ -133,6 +133,13 @@ message ConfigureWIB {
     //replies Status
 }
 
+
+// Run the ADC calibration routine
+message Calibrate {
+    
+    //replies Status
+}
+
 /** System control commands **/
 
 // Deploy new root and boot archives to the WIB (send reboot after!)
@@ -309,8 +316,6 @@ message StartFakeTime {
     
     //replies Empty
 }
-
-
 
 // reads the wib_server (or boot) log, optionally clearing the log
 message LogControl {

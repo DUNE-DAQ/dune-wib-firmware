@@ -4,21 +4,6 @@
 
 using namespace std;
 
-template <typename T>
-double mean(vector<T> vec) {
-    double a = 0.0;
-    for (size_t i = 0; i < vec.size(); i++) a += vec[i];
-    return a / vec.size();
-}
-
-template <typename T>
-double stdev(vector<T> vec) {
-    double m = mean(vec);
-    double a = 0.0;
-    for (size_t i = 0; i < vec.size(); i++) a += pow(vec[i]-mean,2.0);
-    return sqrt(a / vec.size());
-}
-
 bool adc_test_config(WIB_3ASIC &w, const bool femb_mask[4], bool cold) {
     wib::ConfigureWIB conf;
     conf.set_cold(cold);
