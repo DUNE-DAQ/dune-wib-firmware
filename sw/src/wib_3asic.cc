@@ -417,7 +417,9 @@ bool WIB_3ASIC::calibrate() {
         uint16_t sn_vals[4][8][2][4]; //4 FEMBs with 8 COLDADCs containing 2 pipelines with 4 sn values each
         for (uint8_t sn = 0; sn < 5; sn++) { //sn=4 resets forcing
             for (int i = 0; i < 4; i++) {
+                #ifndef SIMULATION
                 if (!frontend_power[i]) continue; // skip FEMBs that are off
+                #endif
                 if (!femb[i]->setup_calib(sn,stage)) {
                     glog.log("Failed to setup stage %i S%i measurement for FEMB %i\n",stage,sn,i);
                     return false;
@@ -443,7 +445,9 @@ bool WIB_3ASIC::calibrate() {
         }
         glog.log("Programming stage %i weight constants\n",stage);
         for (int i = 0; i < 4; i++) { //femb
+            #ifndef SIMULATION
             if (!frontend_power[i]) continue; // skip FEMBs that are off
+            #endif
             uint16_t w0_vals[8][2], w2_vals[8][2]; //8 COLDADCs containing 2 pipelines
             for (int j = 0; j < 8; j++) { //coldadc
                 for (int k = 0; k < 2; k++) { //pipeline

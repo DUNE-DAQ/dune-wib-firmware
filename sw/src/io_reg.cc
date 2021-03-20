@@ -98,12 +98,12 @@ uint32_t io_reg_read(io_reg_t *reg, size_t idx) {
 
 void io_reg_write(io_reg_t *reg, size_t idx, uint32_t data, uint32_t mask) {
     if (mask == 0xFFFFFFFF) {
-        glog.log("axi_write %lx = %x\n",idx*4+reg->base_addr,data);
+        glog.log("axi_write %lx = %08X\n",idx*4+reg->base_addr,data);
         axi_server(WRITE,idx*4+reg->base_addr,data);
     } else {
         uint32_t prev = io_reg_read(reg,idx);
         data = (data & mask) | ((~mask) & prev);
-        glog.log("axi_write %lx = %x\n",idx*4+reg->base_addr,data);
+        glog.log("axi_write %lx = %08X mask %08X\n",idx*4+reg->base_addr,data,mask);
         axi_server(WRITE,idx*4+reg->base_addr,data);
     }
 }

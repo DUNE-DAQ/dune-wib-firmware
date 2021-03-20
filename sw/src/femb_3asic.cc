@@ -157,8 +157,9 @@ bool FEMB_3ASIC::store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_val
     for (uint8_t i = 0; i < 2; i++) { // For each COLDATA on FEMB
         for (uint8_t j = 4; j <= 7; j++) { // For each COLADC attached to COLDATA
             uint8_t k = i*4+(j-4); // coldadc index in w* arrays
-            for (uint8_t adc = 0; adc < 1; adc++) { // 0 = pipeline 0; 1 = pipeline 1
-                for (uint8_t byte = 0; byte < 1; byte++) { // 0 = low byte; 1 = high byte
+            for (uint8_t adc = 0; adc < 2; adc++) { // 0 = pipeline 0; 1 = pipeline 1
+                for (uint8_t byte = 0; byte < 2; byte++) { // 0 = low byte; 1 = high byte
+                    glog.log("Storing w0 = %04X w2 = %04X for femb %i coldadc %i pipeline %i\n",w0_vals[k][adc],w2_vals[k][adc],index,k,adc);
                     uint8_t w0_addr = (adc<<6)|(stage<<1)|byte;
                     res &= i2c_write_verify(i, j, 1, w0_addr, (w0_vals[k][adc]>>(8*byte))&0xFF);
                     uint8_t w2_addr = (adc<<6)|0x20|(stage<<1)|byte;
@@ -303,12 +304,17 @@ uint8_t FEMB_3ASIC::i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_pag
 }
 
 bool FEMB_3ASIC::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries) {
+    #ifdef SIMULATION
+    glog.log("simulated i2c_write_verify FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%02X :: 0x%02X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data);
+    return true;
+    #else
     uint8_t read;
     for (size_t i = 0; i <= retries; i++) {
         i2c_write(bus_idx,chip_addr,reg_page,reg_addr,data);
         read = i2c_read(bus_idx,chip_addr,reg_page,reg_addr);
         if (read == data) return true;
     }
-    glog.log("i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%X :: 0x%X != 0x%X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
+    glog.log("i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%02X :: 0x%02X != 0x%02X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
     return false;
+    #endif
 }
