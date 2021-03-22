@@ -158,7 +158,14 @@ int main(int argc, char **argv) {
                 if (buf1) rep.set_buf1(buf1,nframes1*sizeof(frame14)); else rep.set_buf1("");
                 rep.SerializeToString(&reply_str);
             } else {
-                int nframes = nframes0 < nframes1 ? nframes0 : nframes1;
+                int nframes;
+                if (!buf0) {
+                    nframes = nframes1;
+                } else if (!buf1) {
+                    nframes = nframes0;
+                } else {
+                    nframes = nframes0 < nframes1 ? nframes0 : nframes1;
+                }
                 wib::ReadDaqSpy::DeframedDaqSpy rep;
                 rep.set_success(success);
                 rep.set_num_samples(nframes);

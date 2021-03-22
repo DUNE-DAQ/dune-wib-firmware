@@ -74,6 +74,9 @@ bool check_test_pattern(WIB_3ASIC &w, const bool femb_mask[4], bool cold) {
                 valid &= (m > 6000) && (m < 10000);
             }
         }
+        #ifdef SIMULATION
+        valid = true;
+        #endif
         glog.log("FEMB %i ADC test pattern validation: %s\n",iFEMB,valid?"passed":"failed");
         all_valid &= valid;
     }

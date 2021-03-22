@@ -382,6 +382,10 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
                 verify_res &= femb[i]->read_spi_status();
             }
         }
+        #ifdef SIMULATION
+        verify_res = true;
+        break;
+        #endif
         if (verify_res) {
             spi_verified = true;
             break;
@@ -416,43 +420,57 @@ bool WIB_3ASIC::calibrate() {
         glog.log("Obtaining stage %i level constants\n",stage);
         uint16_t sn_vals[4][8][2][4]; //4 FEMBs with 8 COLDADCs containing 2 pipelines with 4 sn values each
         for (uint8_t sn = 0; sn < 5; sn++) { //sn=4 resets forcing
+            //put the COLDADCs in forcing mode for calibration
             for (int i = 0; i < 4; i++) {
-                #ifndef SIMULATION
                 if (!frontend_power[i]) continue; // skip FEMBs that are off
-                #endif
                 if (!femb[i]->setup_calib(sn,stage)) {
                     glog.log("Failed to setup stage %i S%i measurement for FEMB %i\n",stage,sn,i);
                     return false;
                 }
             }
             if (sn == 4) break; //sn=4 resets forcing
-            acquire_data(*this,frontend_power,link0,link1);
+            // each acquisition is roughly 2100 time samples, with 8 channels per pipeline
+            // so roughly 16k samples per pipeline; repeat this 5 times and average outputs
+            uint16_t avg_vals[4][8][2] = {0}; //4 FEMBs with 8 COLDADCs containing 2 pipelines
+            constexpr int NACQ = 5;
+            for (int acq = 0; acq < NACQ; acq++) { 
+                acquire_data(*this,frontend_power,link0,link1);
+                for (int i = 0; i < 4; i++) { //femb
+                    channel_data &link = i < 2 ? link0 : link1;
+                    if (!frontend_power[i]) continue; // skip FEMBs that are off
+                    for (int j = 0; j < 8; j++) { //coldadc
+                        for (int k = 0; k < 2; k++) { //pipeline
+                            double accum = 0;
+                            for (int ch = 0; ch < 8; ch++) {
+                                accum += mean(link.channels[i%2][j*16+k*8+ch]);
+                            }
+                            accum /= 2.0; //added 8 14bit means (/8 to get avg) and want a 16bit number (*4 to shift 2 bits) → (/2)
+                            avg_vals[i][j][k] = (((double)i)/((double)i+1.0)) * (avg_vals[i][j][k]/((double)i+1)) + (accum/((double)i+1));
+                        }
+                    }
+                }
+            }
+            // store average outputs in sn_vals arrray
             for (int i = 0; i < 4; i++) { //femb
-                channel_data &link = i < 2 ? link0 : link1;
                 if (!frontend_power[i]) continue; // skip FEMBs that are off
                 for (int j = 0; j < 8; j++) { //coldadc
                     for (int k = 0; k < 2; k++) { //pipeline
-                        double accum = 0;
-                        for (int ch = 0; ch < 8; ch++) {
-                            accum += mean(link.channels[i%2][j*16+k*8+ch]);
-                        }
-                        accum *= 4/8; //added 8 14bit means and want a 16bit number
-                        sn_vals[i][j][k][sn] = (uint16_t)accum; 
-                        glog.log("S%i (femb%i,cd%i,p%i) = %u\n",sn,i,j,k,sn_vals[i][j][k][sn]);
+                        sn_vals[i][j][k][sn] = (uint16_t)avg_vals[i][j][k]; 
+                        glog.log("S%i FEMB:%i COLDADC:%i PIPE:%i STAGE:%i :: 0x%04X\n",sn,i,j,k,stage,sn_vals[i][j][k][sn]);
                     }
                 }
             }
         }
         glog.log("Programming stage %i weight constants\n",stage);
         for (int i = 0; i < 4; i++) { //femb
-            #ifndef SIMULATION
             if (!frontend_power[i]) continue; // skip FEMBs that are off
-            #endif
             uint16_t w0_vals[8][2], w2_vals[8][2]; //8 COLDADCs containing 2 pipelines
             for (int j = 0; j < 8; j++) { //coldadc
                 for (int k = 0; k < 2; k++) { //pipeline
                     w0_vals[j][k] = (uint16_t)(sn_vals[i][j][k][1] - sn_vals[i][j][k][0]);
                     w2_vals[j][k] = (uint16_t)(sn_vals[i][j][k][2] - sn_vals[i][j][k][3]);
+                    glog.log("W0 FEMB:%i COLDADC:%i PIPE:%i STAGE:%i :: 0x%04X\n",i,j,k,stage,w0_vals[j][k]);
+                    glog.log("W2 FEMB:%i COLDADC:%i PIPE:%i STAGE:%i :: 0x%04X\n",i,j,k,stage,w2_vals[j][k]);
                 }
             }
             if (!femb[i]->store_calib(w0_vals,w2_vals,stage)) {
