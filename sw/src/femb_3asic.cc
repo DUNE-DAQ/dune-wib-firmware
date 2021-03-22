@@ -94,14 +94,14 @@ bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *a
             res &= i2c_write_verify(i, j, 1, 0x97, 0x2f);  //ref_bias
             res &= i2c_write_verify(i, j, 1, 0x93, 0x04);  //internal_ref
             res &= i2c_write_verify(i, j, 1, 0x9C, 0x15);  //vt45uA
-            res &= i2c_write_verify(i, j, 1, 0x98, adc_conf ? adc_conf->reg_24 : (cold ? 0xDF : 0xFF));  //reg 24 vrefp_ctrl_cmos //shanshan cold 0xE0
-            res &= i2c_write_verify(i, j, 1, 0x99, adc_conf ? adc_conf->reg_25 : (cold ? 0x33 : 0x00));  //reg 25 vrefn_ctrl_cmos //shanshan cold 0x10
-            res &= i2c_write_verify(i, j, 1, 0x9a, adc_conf ? adc_conf->reg_26 : (cold ? 0x89 : 0x80));  //reg 26 vcmo_ctrl_cmos  //shanshan cold 0x87
-            res &= i2c_write_verify(i, j, 1, 0x9b, adc_conf ? adc_conf->reg_27 : (cold ? 0x67 : 0x60));  //reg 27 vcmi_ctrl_cmos  //shanshan cold 0x60
+            res &= i2c_write_verify(i, j, 1, 0x98, adc_conf ? adc_conf->reg_24 : (cold ? 0xC7 : 0xFF));  //reg 24 vrefp_ctrl_cmos //shanshan cold 0xE0
+            res &= i2c_write_verify(i, j, 1, 0x99, adc_conf ? adc_conf->reg_25 : (cold ? 0x2D : 0x00));  //reg 25 vrefn_ctrl_cmos //shanshan cold 0x10
+            res &= i2c_write_verify(i, j, 1, 0x9a, adc_conf ? adc_conf->reg_26 : (cold ? 0x7A : 0x80));  //reg 26 vcmo_ctrl_cmos  //shanshan cold 0x87
+            res &= i2c_write_verify(i, j, 1, 0x9b, adc_conf ? adc_conf->reg_27 : (cold ? 0x5C : 0x60));  //reg 27 vcmi_ctrl_cmos  //shanshan cold 0x60
             res &= i2c_write_verify(i, j, 1, 0x9d, adc_conf ? adc_conf->reg_29 : 0x27);  //reg 29 ibuff0_cmos
             res &= i2c_write_verify(i, j, 1, 0x9e, adc_conf ? adc_conf->reg_30 : 0x27);  //reg 30 ibuff1_cmos
             res &= i2c_write_verify(i, j, 1, 0x80, 0x63);  //sdc_bypassed
-            res &= i2c_write_verify(i, j, 1, 0x84, 0x3b);  //single-ened_input_mode
+            res &= i2c_write_verify(i, j, 1, 0x84, 0x3b);  //single-ended_input_mode
             res &= i2c_write_verify(i, j, 1, 0x88, 0x0b);  //ADC-bias-current-50uA
             res &= i2c_write_verify(i, j, 1, 0x89, test_pattern ? 0x18 : 0x08);  //offset_binary_output_data_format
             res &= i2c_write_verify(i, j, 1, 0xb1, 0x0c);  //config_start_number, as recommended by David
@@ -159,7 +159,6 @@ bool FEMB_3ASIC::store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_val
             uint8_t k = i*4+(j-4); // coldadc index in w* arrays
             for (uint8_t adc = 0; adc < 2; adc++) { // 0 = pipeline 0; 1 = pipeline 1
                 for (uint8_t byte = 0; byte < 2; byte++) { // 0 = low byte; 1 = high byte
-                    glog.log("Storing w0 = %04X w2 = %04X for femb %i coldadc %i pipeline %i\n",w0_vals[k][adc],w2_vals[k][adc],index,k,adc);
                     uint8_t w0_addr = (adc<<6)|(stage<<1)|byte;
                     res &= i2c_write_verify(i, j, 1, w0_addr, (w0_vals[k][adc]>>(8*byte))&0xFF);
                     uint8_t w2_addr = (adc<<6)|0x20|(stage<<1)|byte;
