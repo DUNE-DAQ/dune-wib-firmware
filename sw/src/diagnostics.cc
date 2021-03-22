@@ -4,11 +4,11 @@
 
 using namespace std;
 
-bool adc_test_config(WIB_3ASIC &w, const bool femb_mask[4], bool cold) {
+bool adc_test_config(WIB_3ASIC &w, const bool femb_mask[4], bool cold, bool test = true) {
     wib::ConfigureWIB conf;
     conf.set_cold(cold);
     conf.set_pulser(false);
-    conf.set_adc_test_pattern(true);
+    conf.set_adc_test_pattern(test);
     for (size_t iFEMB = 0; iFEMB < 4; iFEMB++) {
         wib::ConfigureWIB::ConfigureFEMB *femb_conf = conf.add_fembs();
         femb_conf->set_enabled(femb_mask[iFEMB]);
@@ -80,5 +80,6 @@ bool check_test_pattern(WIB_3ASIC &w, const bool femb_mask[4], bool cold) {
         glog.log("FEMB %i ADC test pattern validation: %s\n",iFEMB,valid?"passed":"failed");
         all_valid &= valid;
     }
+    adc_test_config(w,femb_mask,cold,false);
     return all_valid;
 }

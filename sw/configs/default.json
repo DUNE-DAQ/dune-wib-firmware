@@ -1,6 +1,6 @@
 {
 
-"cold": false,
+"cold": true,
 "pulser": false,
 
 "enabled_fembs": [true, true, true, true],
