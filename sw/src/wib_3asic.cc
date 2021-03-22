@@ -445,7 +445,7 @@ bool WIB_3ASIC::calibrate() {
                                 accum += mean(link.channels[i%2][j*16+k*8+ch]);
                             }
                             accum /= 2.0; //added 8 14bit means (/8 to get avg) and want a 16bit number (*4 to shift 2 bits) → (/2)
-                            avg_vals[i][j][k] = (((double)i)/((double)i+1.0)) * (avg_vals[i][j][k]/((double)i+1)) + (accum/((double)i+1));
+                            avg_vals[i][j][k] = (((double)acq)/((double)acq+1.0)) * (avg_vals[acq][j][k]/((double)acq+1)) + (accum/((double)acq+1));
                         }
                     }
                 }
