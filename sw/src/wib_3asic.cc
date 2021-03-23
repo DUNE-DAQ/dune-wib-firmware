@@ -413,6 +413,8 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res;
 }
 
+#include <fstream>
+
 bool WIB_3ASIC::calibrate() {
     channel_data link0, link1;
     glog.log("Calibrating COLDADCs\n");
@@ -433,6 +435,10 @@ bool WIB_3ASIC::calibrate() {
             // so roughly 16k samples per pipeline; repeat this 5 times and average outputs
             uint16_t avg_vals[4][8][2] = {0}; //4 FEMBs with 8 COLDADCs containing 2 pipelines
             constexpr int NACQ = 5;
+            ofstream femb0_adc0_p0_sn;
+            ofstream femb0_adc0_p1_sn;
+            femb0_adc0_p0_sn.open("./femb0_adc0_p0_stage"+to_string(stage)+"_S"+to_string(sn)+".u16", ios::out | ios::binary);
+            femb0_adc0_p1_sn.open("./femb0_adc0_p1_stage"+to_string(stage)+"_S"+to_string(sn)+".u16", ios::out | ios::binary);
             for (int acq = 0; acq < NACQ; acq++) { 
                 acquire_data(*this,frontend_power,link0,link1);
                 for (int i = 0; i < 4; i++) { //femb
@@ -442,6 +448,11 @@ bool WIB_3ASIC::calibrate() {
                         for (int k = 0; k < 2; k++) { //pipeline
                             double accum = 0;
                             for (int ch = 0; ch < 8; ch++) {
+                                if (i==0 && j==0) {
+                                    ofstream &of = k == 0 ? femb0_adc0_p0_sn : femb0_adc0_p1_sn;
+                                    vector<uint16_t> &samples = link.channels[i%2][j*16+k*8+ch];
+                                    of.write((char*)samples.data(),samples.size()*sizeof(uint16_t));
+                                }
                                 accum += mean(link.channels[i%2][j*16+k*8+ch]);
                             }
                             accum /= 2.0; //added 8 14bit means (/8 to get avg) and want a 16bit number (*4 to shift 2 bits) → (/2)
@@ -450,6 +461,8 @@ bool WIB_3ASIC::calibrate() {
                     }
                 }
             }
+            femb0_adc0_p0_sn.close();
+            femb0_adc0_p1_sn.close();
             // store average outputs in sn_vals arrray
             for (int i = 0; i < 4; i++) { //femb
                 if (!frontend_power[i]) continue; // skip FEMBs that are off
