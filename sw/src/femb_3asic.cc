@@ -129,14 +129,14 @@ bool FEMB_3ASIC::setup_calib(uint8_t sn, uint8_t stage) {
                     res &= i2c_write_verify(i, j, 1, 0x80+46, 0x00);
                     } break; //acquire s0
                 case 1:
-                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x01);
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x03);
                     break; //acquire s1
                 case 2:
-                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x05);
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x0f);
                     break; //acquire s2
                 case 3:
-                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x04); 
-                    res &= i2c_write_verify(i, j, 1, 0x80+45, 0x10);
+                    res &= i2c_write_verify(i, j, 1, 0x80+46, 0x0c); 
+                    res &= i2c_write_verify(i, j, 1, 0x80+45, 0x30);
                     break; //acquire s3
                 default:
                     res &= i2c_write_verify(i, j, 1, 0x80+44, 0x00);

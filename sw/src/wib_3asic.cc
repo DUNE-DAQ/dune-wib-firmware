@@ -455,7 +455,7 @@ bool WIB_3ASIC::calibrate() {
                 if (!frontend_power[i]) continue; // skip FEMBs that are off
                 for (int j = 0; j < 8; j++) { //coldadc
                     for (int k = 0; k < 2; k++) { //pipeline
-                        sn_vals[i][j][k][sn] = (uint16_t)avg_vals[i][j][k]; 
+                        sn_vals[i][j][k][sn] = ((uint16_t)avg_vals[i][j][k]) ^ 0x8000; //convert offset binary to twos compliment 
                         glog.log("S%i FEMB:%i COLDADC:%i PIPE:%i STAGE:%i :: 0x%04X\n",sn,i,j,k,stage,sn_vals[i][j][k][sn]);
                     }
                 }
