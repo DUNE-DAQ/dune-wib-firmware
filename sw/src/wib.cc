@@ -118,7 +118,7 @@ bool WIB::reset_timing_endpoint() {
 bool WIB::is_endpoint_locked() {
     //read firmware timing endpoint status
     uint32_t ept_status = io_reg_read(&this->regs, REG_ENDPOINT_STATUS);
-    return ept_status == 0x8;
+    return (ept_status & 0x10F) == 0x108; // ts_ready && ept_locked
 }
 
 void WIB::reset_felix_tx() {
