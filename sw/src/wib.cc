@@ -182,12 +182,12 @@ uint8_t WIB::timing_addr() {
 
 uint8_t WIB::backplane_crate_num() {
     uint32_t addr_reg = io_reg_read(&this->regs,REG_BACKPLANE_ADDR);
-    return (uint8_t)((addr_reg>>8) & 0xFF);
+    return (uint8_t)((addr_reg>>4) & 0xF); //FIXME not enough bits
 }
 
 uint8_t WIB::backplane_slot_num() {
     uint32_t addr_reg = io_reg_read(&this->regs,REG_BACKPLANE_ADDR);
-    return (uint8_t)(addr_reg & 0xFF);
+    return (uint8_t)(addr_reg & 0xF);
 }
 
 void WIB::set_fake_time(uint64_t time) {
