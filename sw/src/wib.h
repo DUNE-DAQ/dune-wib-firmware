@@ -109,6 +109,9 @@ public:
     // Turns calibration pulser on or off 
     virtual bool set_pulser(bool on) = 0;
     
+    // Stores new FEMB voltage regulator output values (volts), then calls reset_frontend()
+    bool configure_power(double dc2dc_o1, double dc2dc_o2, double dc2dc_o3, double dc2dc_o4, double ldo_a0, double ldo_a1);
+    
     // Control power sequence for this WIB's frontend 
     virtual bool power_wib(const wib::PowerWIB &conf) = 0;
     
@@ -132,8 +135,14 @@ protected:
     // Timing endpoint PLL initialized
     bool pll_initialized = false;
     
+    // FELIX transmitter initialized
+    bool felix_initialized = false;
+    
     // Save the FEMB power state (could perhaps read from i2c)
     bool frontend_power[4] = { false, false, false, false };
+    
+    // Voltages to be programmed into frontend power control
+    double dc2dc_o1 = 4.0, dc2dc_o2 = 4.0, dc2dc_o3 = 4.0, dc2dc_o4 = 4.0, ldo_a0 = 2.5, ldo_a1 = 2.5;
     
     // I2C interface to the selectable I2C bus (see i2c_select)
     i2c_t selected_i2c;
@@ -167,6 +176,10 @@ protected:
     // Enable or disable FEMB power regulators; port_en is a bitmask 1/0::ON/OFF
     // Bits are DC2DC 0-3; LDO 0-1; BIAS for this femb_idx
     bool femb_power_en_ctrl(int femb_idx, uint8_t port_en);
+    
+    // Reset front end to a powered off state (ready to be turned on)
+    // At a minimum this should disable regulators femb_power_en_ctrl and configure them femb_power_config
+    virtual bool reset_frontend() = 0;
     
 };
 

@@ -54,8 +54,8 @@ protected:
     // Resets the coldata serial receivers
     bool femb_rx_reset();
     
-    // Initial configuration for frontend
-    bool start_frontend();
+    // Reset front end to a powered off state
+    virtual bool reset_frontend();
 };
 
 #endif

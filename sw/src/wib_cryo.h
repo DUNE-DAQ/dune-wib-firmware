@@ -25,6 +25,9 @@ protected:
     // Interface to each of the 4 FEMBs 
     FEMB_CRYO* femb[4];
     
+    // Reset front end to a powered off state
+    virtual bool reset_frontend();
+    
 };
 
 #endif

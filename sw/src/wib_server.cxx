@@ -276,7 +276,22 @@ int main(int argc, char **argv) {
             wib::GetSWVersion::Version rep;    
             rep.set_version(GIT_VERSION); //set by build system
             rep.SerializeToString(&reply_str);
-        } else if (command.cmd().Is<wib::PowerWIB>()) {
+        } else if (command.cmd().Is<wib::ConfigurePower>()) {
+            glog.log("configure_power\n");
+            wib::ConfigurePower req;
+            command.cmd().UnpackTo(&req);
+            wib::Status rep;    
+            glog.mark();
+            bool success = w->configure_power(req.dc2dc_o1(),
+                                              req.dc2dc_o2(),
+                                              req.dc2dc_o3(),
+                                              req.dc2dc_o4(),
+                                              req.ldo_a0(),
+                                              req.ldo_a1());
+            glog.store_mark(rep.mutable_extra());
+            rep.set_success(success);
+            rep.SerializeToString(&reply_str);
+        }else if (command.cmd().Is<wib::PowerWIB>()) {
             glog.log("power_wib\n");
             wib::PowerWIB req;
             command.cmd().UnpackTo(&req);

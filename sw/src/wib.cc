@@ -122,10 +122,12 @@ bool WIB::is_endpoint_locked() {
 }
 
 void WIB::reset_felix_tx() {
+    glog.log("Resetting FELIX transmitter\n");
     //assert and release RESET bits for both links
     //FIXME need firmware documentation to better understand this
     io_reg_write(&this->regs,REG_FELIX_CTRL,0x00000311);
     io_reg_write(&this->regs,REG_FELIX_CTRL,0x00000300);
+    felix_initialized = true;
 }
 
 // read a single field from a file, stripping left and right whitespace
@@ -257,15 +259,22 @@ bool WIB::femb_power_reg_ctrl(uint8_t femb_id, uint8_t regulator_id, double volt
 }
 
 bool WIB::femb_power_config() {
+    glog.log("Configuring front end power\n");
+    glog.log("\tdc2dc_o1 %0.2f\n",dc2dc_o1);
+    glog.log("\tdc2dc_o2 %0.2f\n",dc2dc_o2);
+    glog.log("\tdc2dc_o3 %0.2f\n",dc2dc_o3);
+    glog.log("\tdc2dc_o4 %0.2f\n",dc2dc_o4);
+    glog.log("\tDO_A0 %0.2f\n",ldo_a0);
+    glog.log("\tDO_A1 %0.2f\n",ldo_a1);
 
-    // default voltage config
+    // use the stored voltage config
     for (int i = 0; i <= 3; i++) {
-        femb_power_reg_ctrl(i, 0, 4.0);
-        femb_power_reg_ctrl(i, 1, 4.0);
-        femb_power_reg_ctrl(i, 2, 4.0);
-        femb_power_reg_ctrl(i, 3, 4.0);
-        femb_power_reg_ctrl(i, 4, 2.5);
-        femb_power_reg_ctrl(i, 5, 2.5);
+        femb_power_reg_ctrl(i, 0, dc2dc_o1); //dc2dc_O1
+        femb_power_reg_ctrl(i, 1, dc2dc_o2); //dc2dc_O2
+        femb_power_reg_ctrl(i, 2, dc2dc_o3); //dc2dc_O2
+        femb_power_reg_ctrl(i, 3, dc2dc_o4); //dc2dc_O2
+        femb_power_reg_ctrl(i, 4, ldo_a0); //ldo_A0
+        femb_power_reg_ctrl(i, 5, ldo_a1); //ldo_A1
     }
     
     // configure all pins as outputs for regulator enablers
@@ -277,6 +286,18 @@ bool WIB::femb_power_config() {
     i2c_reg_write(&this->femb_en_i2c, 0x22, 0xE, 0);
     
     return true;
+}
+
+bool WIB::configure_power(double dc2dc_o1, double dc2dc_o2, double dc2dc_o3, double dc2dc_o4, double ldo_a0, double ldo_a1) {
+    glog.log("Storing new power settings\n");
+    this->dc2dc_o1 = dc2dc_o1;
+    this->dc2dc_o2 = dc2dc_o2;
+    this->dc2dc_o3 = dc2dc_o3;
+    this->dc2dc_o4 = dc2dc_o4;
+    this->ldo_a0 = ldo_a0;
+    this->ldo_a1 = ldo_a1;
+    glog.log("Resetting frontend\n");
+    return reset_frontend();
 }
 
 bool WIB::femb_power_en_ctrl(int femb_idx, uint8_t port_en) {
@@ -314,7 +335,7 @@ bool WIB::femb_power_en_ctrl(int femb_idx, uint8_t port_en) {
         default:
             return false;
     }
-    i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, port_en); //COLDATA
+    i2c_reg_write(&this->femb_en_i2c, i2c_addr, i2c_reg, port_en);
     usleep(100000);
     frontend_power[femb_idx] = port_en != 0; // FEMB is "ON" if any regulators are ON
     return true;

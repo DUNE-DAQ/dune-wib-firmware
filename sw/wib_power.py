@@ -9,7 +9,7 @@ from wib import WIB
 import wib_pb2 as wibpb
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Send a configuration json document to a WIB')
+    parser = argparse.ArgumentParser(description='Change the FEMB power state on a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
     parser.add_argument('--cold','-c',action='store_true',help='The FEMBs will load the cold configuration with this option [default: warm]')
     parser.add_argument('--stage','-s',choices=['full','pre','post'],default='full',help='Run full power ON sequence or pre/post ADC synchronization stages [default: full]')

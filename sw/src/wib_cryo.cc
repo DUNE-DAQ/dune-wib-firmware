@@ -19,6 +19,20 @@ bool WIB_CRYO::set_pulser(bool on) {
     return false;
 }
 
+bool WIB_CRYO::reset_frontend() {
+    bool success = true;
+    glog.log("Disabling front end power\n");
+    femb_power_en_ctrl(0, 0x00);
+    femb_power_en_ctrl(1, 0x00);
+    femb_power_en_ctrl(2, 0x00);
+    femb_power_en_ctrl(3, 0x00);
+    femb_power_config();
+    
+    // FIXME add logic to reset WIB_CRYO frontend
+    
+    return true;
+}
+
 bool WIB_CRYO::power_wib(const wib::PowerWIB &conf) {
 
     // FIXME do CRYO power on sequence

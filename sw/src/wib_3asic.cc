@@ -60,24 +60,23 @@ bool WIB_3ASIC::script_extra(const vector<string> &tokens) {
     return false;
 }
 
-bool WIB_3ASIC::start_frontend() {
-    glog.log("Initializing front end...\n");
+bool WIB_3ASIC::reset_frontend() {
     bool success = true;
     glog.log("Disabling front end power\n");
     femb_power_set(0,false);
     femb_power_set(1,false);
     femb_power_set(2,false);
     femb_power_set(3,false);
-    glog.log("Configuring front end power\n");
     femb_power_config();
     if (!pll_initialized) {
         success &= reset_timing_endpoint();
     }
     glog.log("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
-    femb_rx_reset();
-    glog.log("Resetting FELIX transmitter\n");
-    reset_felix_tx();
+    if (!felix_initialized) {
+        femb_rx_reset();
+    }
+    frontend_initialized = true;
     return success;
 }
 
@@ -180,11 +179,11 @@ bool femb_i_on(const wib::PowerWIB &conf, int i) {
 bool WIB_3ASIC::power_wib(const wib::PowerWIB &conf) {
 
     if (!frontend_initialized) {
-        if (!start_frontend()) {
+        glog.log("Initializing front end...\n");
+        if (!reset_frontend()) {
             glog.log("Failed to start frontend electronics\n");
             return false;
         }
-        frontend_initialized = true;
     }
     
     //pulser will be off for any new FEMBs, so turn off for all old fembs
@@ -270,6 +269,13 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     if (conf.fembs_size() != 4) {
         glog.log("Must supply exactly 4 FEMB configurations\n");
         return false;
+    }
+    
+    if (!is_endpoint_locked()) {
+        glog.log("Timing endpoint must be locked to configure FEMBs\n");
+        #ifndef SIMULATION
+        return false;
+        #endif
     }
     
     bool fembs_powered = true;
@@ -384,6 +390,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
         }
         #ifdef SIMULATION
         verify_res = true;
+        spi_verified = true;
         break;
         #endif
         if (verify_res) {

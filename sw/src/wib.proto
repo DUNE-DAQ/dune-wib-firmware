@@ -62,6 +62,20 @@ message ReadDaqSpy {
     }
 }
  
+// Configure FEMB power setting used in subsequent PowerWIB messages
+message ConfigurePower {
+    
+    //Voltage settings for the FEMB power rails
+    double dc2dc_o1 = 1;
+    double dc2dc_o2 = 2;
+    double dc2dc_o3 = 3;
+    double dc2dc_o4 = 4;
+    double ldo_a0= 5;
+    double ldo_a1 = 6;
+    
+    //replies Status
+}
+ 
 // Turn power ON and OFF for the FEMBs
 message PowerWIB {
 
