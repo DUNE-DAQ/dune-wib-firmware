@@ -2,6 +2,9 @@
 
 This serves as documentation for the WIB software stack.
 
+This softare primarily runs on the WIB to perform the critical tasks of 
+configuring, controlling, and monitoring the frontend and firmware on the WIB.
+
 The software is usually built by the Peta Linux project and included in the WIB 
 root file system image, however for testing `wib_server` this can be compiled on 
 any system with the included `Makefile`. The `wib_client` is a standalone
@@ -28,7 +31,8 @@ These are described in the following
     + [femb_linearity.py](#femb_linearitypy)
     + [wib_mon.py](#wib_monpy)
     + [wib_config.py](#wib_configpy)
-    + [wib_power.py](#wib_power)
+    + [wib_power.py](#wib_powerpy)
+    + [wib_power_conf.py](#wib_power_confpy)
   * [Functionality Overview](#functionality-overview)
     + [Low level functions](#low-level-functions)
     + [WIB scripts](#wib-scripts)
@@ -112,11 +116,13 @@ command.
 commands:
     reboot              Reboot the WIB
     log                 Return or control the wib_server log
-    timestamp           Return firmware version timestamp
+    fw_timestamp        Return firmware version timestamp
+    sw_version          Return software build version
     timing_reset        Reset the timing endpoint
     timing_status       Return the status of the timing endpoint
     script              Run a WIB script
     config              Send frontend configuration to the WIB
+    calibrate           Run the ADC calibration routine
     daqspy              Read 1MB from each daq spy buffer and write the (up to) 2MB binary data
     peek                Read a 32bit value from WIB address space
     poke                Write a 32bit value to WIB address space
@@ -156,9 +162,7 @@ and daq spy buffer readout functionality. Build the protobuf python library
 for the WIB with `make python` before running it.
 
 ```
-usage: wib_scope.py [-h] [--wib_server WIB_SERVER] [--config CONFIG]
-                    [--rows ROWS] [--cols COLS] [--layout LAYOUT]
-
+usage: wib_scope.py [-h] [--wib_server WIB_SERVER] [--config CONFIG] [--rows ROWS] [--cols COLS] [--layout LAYOUT]
 
 Visually display data from a WIB
 
@@ -167,7 +171,7 @@ optional arguments:
   --wib_server WIB_SERVER, -w WIB_SERVER
                         IP of wib_server to connect to [127.0.0.1]
   --config CONFIG, -C CONFIG
-                        WIB configuration to load [default.json]
+                        WIB configuration to load [defaults]
   --rows ROWS, -r ROWS  Rows of plots [1]
   --cols COLS, -c COLS  Columns of plots [1]
   --layout LAYOUT, -l LAYOUT
@@ -272,7 +276,7 @@ purposes.
 ```
 usage: wib_mon.py [-h] [--wib_server WIB_SERVER] [--cli]
 
-Visually monitoring info from a WIB
+Visually display monitoring info from a WIB
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -297,7 +301,7 @@ optional arguments:
   --wib_server WIB_SERVER, -w WIB_SERVER
                         IP of wib_server to connect to [127.0.0.1]
   --config CONFIG, -C CONFIG
-                        WIB configuration to load [default.json]
+                        WIB configuration to load [defaults]
 ```
 
 ### wib_power.py
@@ -308,10 +312,13 @@ functionality implemented, though it is achieved with a ZMQ message like all
 other functionality. The power state is specified for each FEMB, and the WIB
 will run the appropriate sequence of commands to achieve the desired state.
 
-```
-usage: wib_power.py [-h] [--wib_server WIB_SERVER] [--cold] {on,off} {on,off} {on,off} {on,off}
+This will load the power configuration for the FEMBs stored on the WIB. To first
+change this configuration, use `wib_power_conf.py`.
 
-Send a configuration json document to a WIB
+```
+usage: wib_power.py [-h] [--wib_server WIB_SERVER] [--cold] [--stage {full,pre,post}] {on,off} {on,off} {on,off} {on,off}
+
+Change the FEMB power state on a WIB
 
 positional arguments:
   {on,off}              Power FEMB_0
@@ -324,6 +331,38 @@ optional arguments:
   --wib_server WIB_SERVER, -w WIB_SERVER
                         IP of wib_server to connect to [127.0.0.1]
   --cold, -c            The FEMBs will load the cold configuration with this option [default: warm]
+  --stage {full,pre,post}, -s {full,pre,post}
+                        Run full power ON sequence or pre/post ADC synchronization stages [default: full]
+```
+
+### wib_power_conf.py
+
+This utility will modify the power configuration for the FEMBs that is stored on
+the WIB. This will first power off the FEMBs if they are on, and then program
+the FEMB regulators. Use `wib_power.py` to then turn the FEMBs on with the new
+configuration.
+
+```
+usage: wib_power_conf.py [-h] [--wib_server WIB_SERVER] [--dc2dc-o1 DC2DC_O1] [--dc2dc-o2 DC2DC_O2] [--dc2dc-o3 DC2DC_O3] [--dc2dc-o4 DC2DC_O4] [--ldo-a0 LDO_A0] [--ldo-a1 LDO_A1]
+
+Change the FEMB voltages on a WIB (first turns FEMBs OFF)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --wib_server WIB_SERVER, -w WIB_SERVER
+                        IP of wib_server to connect to [127.0.0.1]
+  --dc2dc-o1 DC2DC_O1, --o1 DC2DC_O1
+                        DC2DC O1 output voltage [4.0V]
+  --dc2dc-o2 DC2DC_O2, --o2 DC2DC_O2
+                        DC2DC O2 output voltage [4.0V]
+  --dc2dc-o3 DC2DC_O3, --o3 DC2DC_O3
+                        DC2DC O3 output voltage [4.0V]
+  --dc2dc-o4 DC2DC_O4, --o4 DC2DC_O4
+                        DC2DC O4 output voltage [4.0V]
+  --ldo-a0 LDO_A0, --a0 LDO_A0
+                        LDO A0 output voltage [2.5V]
+  --ldo-a1 LDO_A1, --a1 LDO_A1
+                        LDO A1 output voltage [2.5V]
 ```
 
 ## Functionality Overview

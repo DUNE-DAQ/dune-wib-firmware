@@ -25,25 +25,17 @@ from wib import WIB
 import wib_pb2 as wibpb
 
 def configure_pulser_run(wib,pulser_dac,femb_mask=[False,False,False,False],cold=False):
-    req = wibpb.ConfigureWIB()
+    req = wib.defaults()
     req.cold = cold
     req.pulser = True
-
     for i in range(4):
-        femb_conf = req.fembs.add();
+        femb_conf = req.fembs[i]
         femb_conf.enabled = femb_mask[i]
         if not femb_conf.enabled:
             continue
         #see wib.proto for meanings
         femb_conf.test_cap = True
-        femb_conf.gain = 0
-        femb_conf.peak_time = 0
-        femb_conf.baseline = 0
         femb_conf.pulse_dac = pulser_dac
-        femb_conf.leak = 0
-        femb_conf.leak_10x = False
-        femb_conf.ac_couple = True
-        femb_conf.buffer = 1
         femb_conf.strobe_skip = 255
         femb_conf.strobe_delay = 255
         femb_conf.strobe_length = 255

@@ -12,15 +12,16 @@ bool adc_test_config(WIB_3ASIC &w, const bool femb_mask[4], bool cold, bool test
     for (size_t iFEMB = 0; iFEMB < 4; iFEMB++) {
         wib::ConfigureWIB::ConfigureFEMB *femb_conf = conf.add_fembs();
         femb_conf->set_enabled(femb_mask[iFEMB]);
+        // defaults for iceberg/protodune p1 chips
         femb_conf->set_test_cap(false);
-        femb_conf->set_gain(0);
-        femb_conf->set_peak_time(0);
+        femb_conf->set_gain(2);
+        femb_conf->set_peak_time(3);
         femb_conf->set_baseline(0);
         femb_conf->set_pulse_dac(0);
         femb_conf->set_leak(0);
         femb_conf->set_leak_10x(false);
         femb_conf->set_ac_couple(false);
-        femb_conf->set_buffer(1);
+        femb_conf->set_buffer(0);
         femb_conf->set_strobe_skip(255);
         femb_conf->set_strobe_delay(255);
         femb_conf->set_strobe_length(255);

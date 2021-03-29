@@ -494,7 +494,7 @@ class WIBScope(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Visually display data from a WIB')
     parser.add_argument('--wib_server','-w',default='127.0.0.1',help='IP of wib_server to connect to [127.0.0.1]')
-    parser.add_argument('--config','-C',default='configs/default.json',help='WIB configuration to load [configs/default.json]')
+    parser.add_argument('--config','-C',default=None,help='WIB configuration to load [defaults]')
     parser.add_argument('--rows','-r',default=1,type=int,help='Rows of plots [1]')
     parser.add_argument('--cols','-c',default=1,type=int,help='Columns of plots [1]')
     parser.add_argument('--layout','-l',default=None,help='Load a saved layout')

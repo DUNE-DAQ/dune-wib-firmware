@@ -17,46 +17,73 @@ class WIB:
         self.socket.send(cmd.SerializeToString())
         rep.ParseFromString(self.socket.recv())
         
-    def configure(self,config):
-        print('Loading config')
-        try:
-            with open(config,'rb') as fin:
-                config = json.load(fin)
-        except Exception as e:
-            print('Failed to load config:',e)
-            return
-            
-        print('Configuring FEMBs')
+    def defaults(self):
         req = wibpb.ConfigureWIB()
-        req.cold = config['cold']
-        req.pulser = config['pulser']
-        if 'adc_test_pattern' in config:
-            req.adc_test_pattern = config['adc_test_pattern']
-        if 'frame_dd' in config:
-            req.frame_dd = config['frame_dd']
-        
+        #see wib.proto for meanings
+        req.pulser = False
+        req.cold = False
+        req.adc_test_pattern = False
         for i in range(4):
             femb_conf = req.fembs.add();
+            femb_conf.enabled = False
+            femb_conf.test_cap = False
+            femb_conf.gain = 2
+            femb_conf.peak_time = 3
+            femb_conf.baseline = 0
+            femb_conf.pulse_dac = 0
+            femb_conf.leak = 0
+            femb_conf.leak_10x = False
+            femb_conf.ac_couple = False
+            femb_conf.buffer = 0
+            femb_conf.strobe_skip = 255
+            femb_conf.strobe_delay = 255
+            femb_conf.strobe_length = 255
+        return req
+        
+    def configure(self,config):
+        
+        if config is None:
+            print('Loading defaults')
+            req = self.defaults()
+        else:
+            print('Loading config')
+            try:
+                with open(config,'rb') as fin:
+                    config = json.load(fin)
+            except Exception as e:
+                print('Failed to load config:',e)
+                return
+                
+            req = wibpb.ConfigureWIB()
+            req.cold = config['cold']
+            req.pulser = config['pulser']
+            if 'adc_test_pattern' in config:
+                req.adc_test_pattern = config['adc_test_pattern']
+            if 'frame_dd' in config:
+                req.frame_dd = config['frame_dd']
             
-            femb_conf.enabled = config['enabled_fembs'][i]
-            
-            fconfig = config['femb_configs'][i]
-            
-            #see wib.proto for meanings
-            femb_conf.test_cap = fconfig['test_cap']
-            femb_conf.gain = fconfig['gain']
-            femb_conf.peak_time = fconfig['peak_time']
-            femb_conf.baseline = fconfig['baseline']
-            femb_conf.pulse_dac = fconfig['pulse_dac']
+            for i in range(4):
+                femb_conf = req.fembs.add();
+                
+                femb_conf.enabled = config['enabled_fembs'][i]
+                
+                fconfig = config['femb_configs'][i]
+                
+                #see wib.proto for meanings
+                femb_conf.test_cap = fconfig['test_cap']
+                femb_conf.gain = fconfig['gain']
+                femb_conf.peak_time = fconfig['peak_time']
+                femb_conf.baseline = fconfig['baseline']
+                femb_conf.pulse_dac = fconfig['pulse_dac']
 
-            femb_conf.leak = fconfig['leak']
-            femb_conf.leak_10x = fconfig['leak_10x']
-            femb_conf.ac_couple = fconfig['ac_couple']
-            femb_conf.buffer = fconfig['buffer']
+                femb_conf.leak = fconfig['leak']
+                femb_conf.leak_10x = fconfig['leak_10x']
+                femb_conf.ac_couple = fconfig['ac_couple']
+                femb_conf.buffer = fconfig['buffer']
 
-            femb_conf.strobe_skip = fconfig['strobe_skip']
-            femb_conf.strobe_delay = fconfig['strobe_delay']
-            femb_conf.strobe_length = fconfig['strobe_length']
+                femb_conf.strobe_skip = fconfig['strobe_skip']
+                femb_conf.strobe_delay = fconfig['strobe_delay']
+                femb_conf.strobe_length = fconfig['strobe_length']
         
         print('Sending ConfigureWIB command')
         rep = wibpb.Status()

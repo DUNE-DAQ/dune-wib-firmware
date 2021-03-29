@@ -378,29 +378,10 @@ class FEMBDiagnostics(QtWidgets.QMainWindow):
             self.wib.configure(self.config)
         else:
             print('Generating %s config with FEMB %i enabled'%('cold' if self.cold else 'warm',self.femb))
-            req = wibpb.ConfigureWIB()
+            req =  self.wib.defaults()
             req.cold = self.cold
-            req.pulser = False
             req.adc_test_pattern = self.test
-            for i in range(4):
-                femb_conf = req.fembs.add();
-                if i != self.femb:
-                    femb_conf.enabled = False
-                    continue
-                #see wib.proto for meanings
-                femb_conf.enabled = True
-                femb_conf.test_cap = False
-                femb_conf.gain = 0
-                femb_conf.peak_time = 0
-                femb_conf.baseline = 0
-                femb_conf.pulse_dac = 0
-                femb_conf.leak = 0
-                femb_conf.leak_10x = False
-                femb_conf.ac_couple = True
-                femb_conf.buffer = 1
-                femb_conf.strobe_skip = 255
-                femb_conf.strobe_delay = 255
-                femb_conf.strobe_length = 255
+            req.fembs[self.femb].enabled = True
             rep = wibpb.Status()
             print('Configuring WIB')
             self.wib.send_command(req,rep)
