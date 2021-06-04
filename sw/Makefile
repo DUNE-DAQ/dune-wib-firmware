@@ -1,5 +1,5 @@
 #Generate src/version.cc if necessary
-$(shell printf '#include "version.h"\n\nchar const *const GIT_VERSION = "%s";' $(shell git describe --long --dirty --always --tags) > src/version.cc.tmp; if diff -q src/version.cc.tmp src/version.cc >/dev/null 2>&1; then rm src/version.cc.tmp; else mv src/version.cc.tmp src/version.cc; fi)
+$(shell printf '#include "version.h"\n\nchar const *const GIT_VERSION = "%s";' `git describe --long --dirty --always --tags` > src/version.cc.tmp; if diff -q src/version.cc.tmp src/version.cc >/dev/null 2>&1; then rm src/version.cc.tmp; else mv src/version.cc.tmp src/version.cc; fi)
 
 CXXFLAGS = -g -O2 -Isrc
 LFLAGS = -lprotobuf -lzmq -lreadline 

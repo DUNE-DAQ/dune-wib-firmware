@@ -106,6 +106,14 @@ bool WIB::reset_timing_endpoint() {
     } else {
         glog.log("PLL already configured\n");
     }
+    if (backplane_slot_num() == 0xF) {
+        glog.log("Slot number is 0xF; assuming there is no backplane.\n");
+        glog.log("Using timing signal from SFP");
+        io_reg_write(&this->regs,REG_FW_CTRL,(1<<5),(1<<5));
+    } else {
+        glog.log("Using timing signal from backplane");
+        io_reg_write(&this->regs,REG_FW_CTRL,(0<<5),(1<<5));
+    }
     glog.log("Resetting timing endpoint\n");
     success &= script("pll_sticky_clear");
     uint32_t value = timing_addr(); //low 8 bits are addr 
