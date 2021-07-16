@@ -4221,6 +4221,7 @@ CONFIG_imagefeature-debug-tweaks=y
 # CONFIG_gpio-demo is not set
 CONFIG_peekpoke=y
 CONFIG_wib=y
+CONFIG_wibopcua=y
 CONFIG_xvcserver=y
 
 #

@@ -4,4 +4,5 @@
 CONFIG_gpio-demo
 CONFIG_peekpoke
 CONFIG_wib
+CONFIG_wibopcua
 CONFIG_xvcserver

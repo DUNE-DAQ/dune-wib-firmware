@@ -1,3 +1,6 @@
 [submodule "wib_sim"]
 	path = wib_sim
 	url = git@github.com:madorskya/wib_sim.git
+[submodule "wib_opcua"]
+	path = wib_opcua
+	url = git@github.com:BenLand100/wib_opcua.git
