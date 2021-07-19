@@ -23,9 +23,6 @@ do_install[nostamp] = "1"
 S = "${WORKDIR}"
 do_compile() {
     rm -rf build
-    echo "echo 1" > nproc
-    chmod +x nproc
-    export PATH="`pwd`:$PATH"
     export BOOST_ROOT="${STAGING_DIR_TARGET}/usr/" 
     python3 ./quasar.py build
 }
