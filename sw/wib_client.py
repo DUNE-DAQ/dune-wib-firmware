@@ -192,7 +192,7 @@ cdpoke_parser.add_argument('reg_page',type=int,help='DUNE I2C register page')
 cdpoke_parser.add_argument('reg_addr',type=int,help='DUNE I2C register address')
 cdpoke_parser.add_argument('data',type=int,help='Data to write over DUNE I2C')
 def cdpoke(args):
-    req = wibpb.CDPeek()
+    req = wibpb.CDPoke()
     rep = wibpb.CDRegValue()
     req.femb_idx = args.femb_idx
     req.coldata_idx = args.coldata_idx

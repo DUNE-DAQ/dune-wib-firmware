@@ -71,10 +71,12 @@ bool WIB_3ASIC::reset_frontend() {
     if (!pll_initialized) {
         success &= reset_timing_endpoint();
     }
-    glog.log("Resetting FEMB receiver\n");
     femb_rx_mask(0xFFFF); //all disabled
+    glog.log("Resetting FEMB receiver\n");
+    femb_rx_reset();
     if (!felix_initialized) {
-        femb_rx_reset();
+        glog.log("Resetting FELIX transmitter\n");
+        felix_tx_reset();
     }
     frontend_initialized = true;
     return success;

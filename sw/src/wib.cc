@@ -129,7 +129,7 @@ bool WIB::is_endpoint_locked() {
     return (ept_status & 0x10F) == 0x108; // ts_ready && ept_locked
 }
 
-void WIB::reset_felix_tx() {
+void WIB::felix_tx_reset() {
     glog.log("Resetting FELIX transmitter\n");
     //assert and release RESET bits for both links
     //FIXME need firmware documentation to better understand this

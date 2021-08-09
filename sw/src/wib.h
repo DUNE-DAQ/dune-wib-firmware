@@ -81,7 +81,7 @@ public:
     bool is_endpoint_locked();    
     
     // Reset the FELIX transmitters
-    void reset_felix_tx();
+    void felix_tx_reset();
     
     // Set fake time generator start value and halt generator
     // This does not start timestamp increment, call start_fake_time for that
