@@ -178,6 +178,7 @@ def cdpeek(args):
     rep = wibpb.CDRegValue()
     req.femb_idx = args.femb_idx
     req.coldata_idx = args.coldata_idx
+    req.chip_addr = args.chip_addr
     req.reg_page = args.reg_page
     req.reg_addr = args.reg_addr
     wib.send_command(req,rep)
