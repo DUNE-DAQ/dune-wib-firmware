@@ -76,6 +76,7 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, 
             data.channels[1][k][i] = femb_b.x[j];
         }
         switch (version) {
+	  /* Frames for Version 1 and 2 are incompatible with modern frames
             case 1: {
                 frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf+i);
                 data.timestamp[i] = frame->timestamp;
@@ -86,10 +87,17 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, 
                 data.timestamp[i] = frame->timestamp;
                 break;
             }
+	  */
+            case 3: {
+                frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf+i);
+                data.timestamp[i] = frame->timestamp;
+                break;
+            }
         }
         
     }
     switch (version) {
+      /* Frames for Version 1 and 2 are incompatible with modern frames
         case 1: {
             frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf);
             data.crate_num = frame->crate_num;
@@ -98,6 +106,13 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, 
         }
         case 2: {
             frame14_bitfield_v2 *frame = (frame14_bitfield_v2*)(frame_buf);
+            data.crate_num = frame->crate_num;
+            data.wib_num = frame->slot_num;
+            break;
+        }
+      */
+        case 3: {
+            frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf);
             data.crate_num = frame->crate_num;
             data.wib_num = frame->slot_num;
             break;
@@ -132,6 +147,7 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data, uint
             data.x[1][j][i] = femb_b.x[j];
         }
         switch (version) {
+	  /* Frames for Version 1 and 2 are incompatible with modern frames
             case 1: {
                 frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf+i);
                 data.timestamp[i] = frame->timestamp;
@@ -142,9 +158,16 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data, uint
                 data.timestamp[i] = frame->timestamp;
                 break;
             }
+	  */
+            case 3: {
+                frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf+i);
+                data.timestamp[i] = frame->timestamp;
+                break;
+            }
         }
     }
     switch (version) {
+      /* Frames for Version 1 and 2 are incompatible with modern frames
         case 1: {
             frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf);
             data.crate_num = frame->crate_num;
@@ -153,6 +176,13 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data, uint
         }
         case 2: {
             frame14_bitfield_v2 *frame = (frame14_bitfield_v2*)(frame_buf);
+            data.crate_num = frame->crate_num;
+            data.wib_num = frame->slot_num;
+            break;
+        }
+      */
+        case 3: {
+            frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf);
             data.crate_num = frame->crate_num;
             data.wib_num = frame->slot_num;
             break;
@@ -178,6 +208,7 @@ void reframe_data(frame14 *frame_buf, size_t nframes, const channel_data &data, 
             femb_b.x[j] = data.channels[1][k][i];
         }
         switch (version) {
+      /* Frames for Version 1 and 2 are incompatible with modern frames
             case 1: {
                 frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf+i);
                 memset(frame,0,sizeof(frame14));
@@ -195,6 +226,21 @@ void reframe_data(frame14 *frame_buf, size_t nframes, const channel_data &data, 
             }
             case 2: {
                 frame14_bitfield_v2 *frame = (frame14_bitfield_v2*)(frame_buf+i);
+                memset(frame,0,sizeof(frame14));
+                frame->start_frame = 0x3C;
+                frame->frame_version = 2;
+                frame->femb_valid = 0x3;
+                frame->timestamp = data.timestamp[i];
+                frame->crate_num = data.crate_num;
+                frame->slot_num = data.wib_num;
+                //FIXME CRC
+                frame->eof = 0xDC;
+                frame->idle_frame = 0xBC;
+                break;
+            }
+      */
+            case 3: {
+                frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf+i);
                 memset(frame,0,sizeof(frame14));
                 frame->start_frame = 0x3C;
                 frame->frame_version = 2;

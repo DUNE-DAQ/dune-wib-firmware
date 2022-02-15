@@ -6,13 +6,17 @@
 #include <vector>
 #include "log.h"
 
+
 // Suppress warnings from addressing word-aligned data in packed structs
 #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
 
+/*
+ * New (2022 Feb) format shifts metadata from post to pre
+ */
 // Words in the binary format of the FELIX frame14 from the WIB
 typedef struct {
     uint32_t start_frame;
-    uint32_t wib_pre[4];
+    uint32_t wib_pre[5];
     uint32_t femb_a_seg[56];
     uint32_t femb_b_seg[56];
     uint32_t wib_post[2];
@@ -34,7 +38,7 @@ typedef struct {
     uint32_t idle_frame;
 } __attribute__ ((packed)) frame14_bitfield_v1;
 
-static_assert(sizeof(frame14) == sizeof(frame14_bitfield_v1),"Frame14 packed datatypes inconsistent");
+//static_assert(sizeof(frame14) == sizeof(frame14_bitfield_v1),"Frame14 packed datatypes inconsistent");
 
 // Bitfields in the binary format of the Frame frame14 from the WIB v2
 // frame_version == 2
@@ -51,7 +55,22 @@ typedef struct {
     uint32_t idle_frame;
 } __attribute__ ((packed)) frame14_bitfield_v2;
 
-static_assert(sizeof(frame14) == sizeof(frame14_bitfield_v2),"Frame14 packed datatypes inconsistent");
+// Bitfields in the binary format of the Frame frame14 from the WIB v2 (with "final" metadata)
+// frame_version == 3
+typedef struct {
+    uint32_t start_frame;
+    uint32_t link_num: 6, slot_num: 4, crate_num: 10, det_id: 6, frame_version: 6;
+    uint64_t timestamp;
+    uint32_t TBD_1: 5, loss_of_lock: 1, link_mask: 8, femb_valid: 2, cdts_id: 3, reserved: 13;
+    uint32_t TBD_2: 1, colddata_ts: 15, femb_sync_flags: 8, femb_pulse_frame: 8;
+    uint32_t femb_a_seg[56];
+    uint32_t femb_b_seg[56];
+    uint32_t context_code: 8, ready: 1, psr_cal: 4, ws: 1, TBD_3: 2, flex_bits: 16;
+    uint32_t felix_reserved: 4, crc20: 20, eof: 8;
+    uint32_t idle_frame;
+} __attribute__ ((packed)) frame14_bitfield_v3;
+
+static_assert(sizeof(frame14) == sizeof(frame14_bitfield_v3),"Frame14 packed datatypes inconsistent");
 
 
 // Samples from the U, V, X channels in a femb_*_seg of a frame as 16bit arrays
