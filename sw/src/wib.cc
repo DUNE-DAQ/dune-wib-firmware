@@ -468,7 +468,7 @@ void WIB::i2c_select(uint8_t device) {
     io_reg_write(&this->regs,REG_FW_CTRL,next);
 }
 
-void reorder_frames(const frame14_bitfield_v1 *unordered, const size_t nframes, frame14_bitfield_v1 *ordered) {
+void reorder_frames(const frame14_bitfield_v3 *unordered, const size_t nframes, frame14_bitfield_v3 *ordered) {
     uint64_t min_timestamp = unordered[0].timestamp;
     size_t min_index = 0;
     for (size_t i = 0; i < nframes; i++) {
@@ -480,10 +480,10 @@ void reorder_frames(const frame14_bitfield_v1 *unordered, const size_t nframes, 
     if (min_index != 0) {
         size_t start = nframes-min_index;
         size_t rest = min_index;
-        memcpy(ordered,unordered+min_index,start*sizeof(frame14_bitfield_v1));
-        memcpy(ordered+start,unordered,rest*sizeof(frame14_bitfield_v1));
+        memcpy(ordered,unordered+min_index,start*sizeof(frame14_bitfield_v3));
+        memcpy(ordered+start,unordered,rest*sizeof(frame14_bitfield_v3));
     } else {
-        memcpy(ordered,unordered,nframes*sizeof(frame14_bitfield_v1));
+        memcpy(ordered,unordered,nframes*sizeof(frame14_bitfield_v3));
     }
 }
 
@@ -495,28 +495,28 @@ size_t extract_frames(const uint32_t *buf, const size_t words, uint32_t *extract
         if (buf[i] == SOF) { // start of frame
             //glog.log("start of frame %llu %llu\n",nframes,i);
             size_t j;
-            for (j = i+1; j < i+119; j++) {
+            for (j = i+1; j < i+120; j++) {
                 if (buf[j%words] == SOF || buf[j%words] == IDLE) {
                     i = j; // move i to j (bad frame word)
                     break;
                 }
             }
             if (i == j) continue; // wasn't a full frame (idle or sof found before end)
-            if (buf[(i+119)%words] != IDLE) {
+            if (buf[(i+120)%words] != IDLE) {
                 i++;
                 continue; // wasn't a full frame (missing trailing idle)
             }
             // Frame is valid
-            if (i+120 > words) { //wraps around
+            if (i+121 > words) { //wraps around
                 size_t start = words-i;
-                size_t rest = 120-start;
-                memcpy(extracted+nframes*120,buf+i,4*start); //copy start from buf end
-                memcpy(extracted+nframes*120+start,buf,4*rest); //copy rest from buf start
+                size_t rest = 121-start;
+                memcpy(extracted+nframes*121,buf+i,4*start); //copy start from buf end
+                memcpy(extracted+nframes*121+start,buf,4*rest); //copy rest from buf start
             } else { //one segment 
-                memcpy(extracted+nframes*120,buf+i,4*120);
+                memcpy(extracted+nframes*121,buf+i,4*121);
             }
             nframes++;
-            i += 120; // move i to next word
+            i += 121; // move i to next word
         } else {
             //glog.log("skipped %llu %08x\n",i,buf[i]);
             i++;
@@ -570,7 +570,7 @@ bool WIB::read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uin
         size_t nframes = extract_frames((uint32_t*)buf,DAQ_SPY_SIZE/4,(uint32_t*)tmp);
         if (nframes0) *nframes0 = nframes;
         glog.log("Found %llu frames in buffer 0\n",nframes);
-        reorder_frames((frame14_bitfield_v1*)tmp,nframes,(frame14_bitfield_v1*)buf0);
+        reorder_frames((frame14_bitfield_v3*)tmp,nframes,(frame14_bitfield_v3*)buf0);
         success &= nframes > 0;
     }
     if (buf1) {
@@ -579,7 +579,7 @@ bool WIB::read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uin
         size_t nframes = extract_frames((uint32_t*)buf,DAQ_SPY_SIZE/4,(uint32_t*)tmp);
         if (nframes1) *nframes1 = nframes;
         glog.log("Found %llu frames in buffer 1\n",nframes);
-        reorder_frames((frame14_bitfield_v1*)tmp,nframes,(frame14_bitfield_v1*)buf1);
+        reorder_frames((frame14_bitfield_v3*)tmp,nframes,(frame14_bitfield_v3*)buf1);
         success &= nframes > 0;
     }
     delete [] tmp;
