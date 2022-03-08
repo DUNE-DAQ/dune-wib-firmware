@@ -103,7 +103,7 @@ def script(args):
         req.file = False
     else:
         print('Executing remote script...')
-        req.script = args.filename
+        req.script = bytes(args.filename, 'utf-8')
         req.file = True
     wib.send_command(req,rep)
     print('Successful:',rep.success)
