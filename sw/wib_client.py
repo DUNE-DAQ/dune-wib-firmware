@@ -210,7 +210,7 @@ cdfastcmd_parser.add_argument('command',choices=['reset', 'act', 'sync', 'edge',
 def cdfastcmd(args):
     fast_cmds = { 'reset':1, 'act':2, 'sync':4, 'edge':8, 'idle':16, 'edge_act':32 }
     req = wibpb.CDFastCmd()
-    req.cmd = fast_cmds[argument.command]
+    req.cmd = fast_cmds[args.command]
     rep = wibpb.Empty()
     wib.send_command(req,rep)
     print('Fast command sent')
