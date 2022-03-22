@@ -28,7 +28,7 @@ bool WIB_3ASIC::script_extra(const vector<string> &tokens) {
         string fast(tokens[1]);
         if (fast == "reset") {
             FEMB_3ASIC::fast_cmd(FAST_CMD_RESET);
-        } else if (cmd == "act") {
+        } else if (fast == "act") {
             FEMB_3ASIC::fast_cmd(FAST_CMD_ACT);
         } else if (fast == "sync") {
             FEMB_3ASIC::fast_cmd(FAST_CMD_SYNC);

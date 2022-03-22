@@ -103,7 +103,7 @@ def script(args):
         req.file = False
     else:
         print('Executing remote script...')
-        req.script = args.filename
+        req.script = bytes(args.filename, 'utf-8')
         req.file = True
     wib.send_command(req,rep)
     print('Successful:',rep.success)
@@ -178,6 +178,7 @@ def cdpeek(args):
     rep = wibpb.CDRegValue()
     req.femb_idx = args.femb_idx
     req.coldata_idx = args.coldata_idx
+    req.chip_addr = args.chip_addr
     req.reg_page = args.reg_page
     req.reg_addr = args.reg_addr
     wib.send_command(req,rep)
@@ -196,6 +197,7 @@ def cdpoke(args):
     rep = wibpb.CDRegValue()
     req.femb_idx = args.femb_idx
     req.coldata_idx = args.coldata_idx
+    req.chip_addr = args.chip_addr
     req.reg_page = args.reg_page
     req.reg_addr = args.reg_addr
     req.data = args.data
@@ -208,7 +210,7 @@ cdfastcmd_parser.add_argument('command',choices=['reset', 'act', 'sync', 'edge',
 def cdfastcmd(args):
     fast_cmds = { 'reset':1, 'act':2, 'sync':4, 'edge':8, 'idle':16, 'edge_act':32 }
     req = wibpb.CDFastCmd()
-    req.cmd = fast_cmds[argument.command]
+    req.cmd = fast_cmds[args.command]
     rep = wibpb.Empty()
     wib.send_command(req,rep)
     print('Fast command sent')
