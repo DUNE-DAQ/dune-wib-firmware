@@ -92,8 +92,10 @@ public:
     bool read_spi_status(); // requires ACT_SAVE_STATUS first
     void log_spi_status(); // requires ACT_SAVE_STATUS first
     
+    bool setup_calib_auto();
+
     // for manual calibration 
-    bool setup_calib(uint8_t sn, uint8_t stage);
+    bool setup_calib_manual(uint8_t sn, uint8_t stage);
     bool store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_vals[8][2], uint8_t stage);
     
     // for setting the FMB_CONTROL_WORD

@@ -113,9 +113,23 @@ bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *a
     return res;
 }
 
+bool FEMB_3ASIC::setup_calib_auto() {
+    bool res = true;
+    for (uint8_t j = 4; j <= 11; j++) { // For each COLADC attached to COLDATA
+        glog.log("Starting calibration on COLDADC:%i!\n",j);
+        res &= i2c_write_verify(0, j, 1, 0x80+41, 0x00);
+        res &= i2c_write_verify(0, j, 1, 0x80+31, 0x03);
+        usleep(500000);
+        res &= i2c_write_verify(0, j, 1, 0x80+31, 0x00);
+        res &= i2c_write_verify(0, j, 1, 0x80+41, 0x01);
+        glog.log("Done calibration on COLDADC:%i!\n",j);
+    }
+    return res;
+}
+
 // must run sn = 0 first, then 1,2,3; any other sn resets
 // must run stage 6 first, ..., stage 0
-bool FEMB_3ASIC::setup_calib(uint8_t sn, uint8_t stage) {
+bool FEMB_3ASIC::setup_calib_manual(uint8_t sn, uint8_t stage) {
     bool res = true;
     //Based on algorithm from Dave Christian
     //See COLDADC datasheet

@@ -27,8 +27,10 @@ public:
     // Configure the frontend for this WIB
     virtual bool configure_wib(const wib::ConfigureWIB &conf);
     
-    // Calibrate the COLDADCs manually
     virtual bool calibrate();
+
+    // Calibrate the COLDADCs manually
+    virtual bool calibrate_manual();
     
 protected:
 
