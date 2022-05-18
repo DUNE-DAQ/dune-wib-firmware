@@ -45,6 +45,7 @@ install:
 	install -m 0755 extras/wib_update.sh "$(DESTDIR)/bin/"
 	install -d "$(DESTDIR)/etc/rc5.d/"
 	install -m 0755 extras/wib_init.sh "$(DESTDIR)/etc/rc5.d/S99wib_init.sh"
+	install -m 0755 extras/set_WIB_ip.py "$(DESTDIR)/etc/rc5.d/set_WIB_ip.py"
 	install -d "$(DESTDIR)/etc/wib/"
 	install -m 0755 scripts/* "$(DESTDIR)/etc/wib/"
 

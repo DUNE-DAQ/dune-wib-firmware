@@ -229,8 +229,8 @@ bool WIB_3ASIC::power_wib(const wib::PowerWIB &conf) {
         for (int i = 0; i < 4; i++) {
             if (femb_i_on(conf,i)) {
                 // disable VDDA VDDD power in prep for external reset & sync
-                power_res &= femb[i]->set_control_reg(0,false,false); //VDDA on U1 ctrl_0/ctrl_1
-                power_res &= femb[i]->set_control_reg(1,false,false);  //VDDD L/R on U2 ctrl_0/ctrl_1
+                power_res &= femb[i]->set_control_reg(2,false,false); //VDDA on U1 ctrl_0/ctrl_1
+                power_res &= femb[i]->set_control_reg(3,false,false);  //VDDD L/R on U2 ctrl_0/ctrl_1
             }
         }
         return power_res;
@@ -245,13 +245,13 @@ bool WIB_3ASIC::power_wib(const wib::PowerWIB &conf) {
             glog.log("Loading %s COLDADC config for FEMB %i\n",conf.cold()?"COLD":"WARM",i);
             power_res &= femb[i]->configure_coldadc(conf.cold()); //default config
             glog.log("Enabling FEMB %i U1 control signals\n",i);
-            power_res &= femb[i]->set_control_reg(0,true,true); //VDDA on U1 ctrl_1/ctrl_0
+            power_res &= femb[i]->set_control_reg(2,true,true); //VDDA on U1 ctrl_1/ctrl_0
             usleep(100000);
             glog.log("Enabling FEMB %i U2 control_0 signal\n",i);
-            power_res &= femb[i]->set_control_reg(1,false,true);  //VDDD L on U2 ctrl_0
+            power_res &= femb[i]->set_control_reg(3,false,true);  //VDDD L on U2 ctrl_0
             usleep(100000);
             glog.log("Enabling FEMB %i U2 control_1 signal\n",i);
-            power_res &= femb[i]->set_control_reg(1,true,true);  //VDDD R on U2 ctrl_1
+            power_res &= femb[i]->set_control_reg(3,true,true);  //VDDD R on U2 ctrl_1
             usleep(100000);
             if (!power_res) {
                 glog.log("Failed to enable COLDADC power for FEMB %i, aborting\n",i);
@@ -262,7 +262,8 @@ bool WIB_3ASIC::power_wib(const wib::PowerWIB &conf) {
     
     glog.log("Running power-on diagnostics\n");
     bool adc_test_res = check_test_pattern(*this,frontend_power,conf.cold());
-    
+    //glog.log("Eric is skipping the test pattern check");
+    //adc_test_res = true; 
     return pulser_res && power_res && adc_test_res;
 }
 
@@ -274,9 +275,9 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     if (!is_endpoint_locked()) {
-        glog.log("Timing endpoint must be locked to configure FEMBs\n");
+        glog.log("BNL-modified code to not require timing endpoint\n");
         #ifndef SIMULATION
-        return false;
+        //return false;
         #endif
     }
     
@@ -349,6 +350,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             c.sdc = femb_conf.ac_couple() == true;
             c.slkh = femb_conf.leak_10x() == true;
             c.slk = femb_conf.leak() == 1;
+	    c.sgp = femb_conf.gain_match() == true;
             c.sdac = femb_conf.pulse_dac() & 0x3F;
             c.sdacsw2 = conf.pulser(); //connect pulser to channels
             
@@ -385,12 +387,14 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
         }
         if (!verify_res) continue;
         FEMB_3ASIC::fast_cmd(FAST_CMD_ACT); // Perform ACT
+        FEMB_3ASIC::fast_cmd(FAST_CMD_ACT); // Perform ACT
         for (int i = 0; i < 4; i++) {
             if (conf.fembs(i).enabled()) {
                 verify_res &= femb[i]->read_spi_status();
             }
         }
         #ifdef SIMULATION
+	glog.log("Monolithic board - Ignoring SPI check\n");
         verify_res = true;
         spi_verified = true;
         break;
@@ -418,7 +422,14 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
-    
+//    glog.log("configure_wib result is\n \
+//		    coldata_res: %d\n \
+//		    coldadc_res: %d\n \
+//		    larasic_res: %d\n \
+//		    spi_verified:%d\n \
+//		    pulser_res: %d\n \
+//		    total: %d\n", coldata_res, coldadc_res, larasic_res, spi_verified, pulser_res,
+//		    coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res);
     return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res;
 }
 

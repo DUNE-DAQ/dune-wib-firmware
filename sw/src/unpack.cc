@@ -5,19 +5,26 @@
 
 void unpack14(const uint32_t *packed, uint16_t *unpacked) {
     for (size_t i = 0; i < 128; i++) { // i == n'th U,V,X value
-        const size_t low_bit = i*14;
+        const size_t low_bit = (i*14);
         const size_t low_word = low_bit / 32;
         const size_t high_bit = (i+1)*14-1;
         const size_t high_word = high_bit / 32;
-        //glog.log("word %li :: low %li (%li[%li]) high %li (%li[%li])\n",i,low_bit,low_word,low_bit%32,high_bit,high_word,high_bit%32);
+//        glog.log("word %li :: low %li (%li[%li]) high %li (%li[%li])\n",i,low_bit,low_word,low_bit%32,high_bit,high_word,high_bit%32);
+//	glog.log("Value of low word is %lx, value of high word is %lx\n",packed[low_word],packed[high_word]);
         if (low_word == high_word) { //all the bits are in the same word
             unpacked[i] = (packed[low_word] >> (low_bit%32)) & 0x3FFF;
+	   // if (i == 0) {
+	//	glog.log("1Channel 0 data is %u\n",(unpacked[i]));
+	//	glog.log("However bitshifting by 6 places gives %u\n",(packed[low_word] >> 6) & 0x3FFF);
+	//	unpacked[i] = (packed[low_word] >> 6) & 0x3FFF;
+//				}
         } else { //some of the bits are in the next word
             size_t high_off = high_word*32-low_bit;
             //glog.log("pre_mask 0x%X post_mask 0x%X\n", (0x3FFF >> (14-high_off)), ((0x3FFF << high_off) & 0x3FFF) );
             unpacked[i] = (packed[low_word] >> (low_bit%32)) & (0x3FFF >> (14-high_off));
             unpacked[i] |= (packed[high_word] << high_off) & ((0x3FFF << high_off) & 0x3FFF);
         }
+//	glog.log("Final value is %lx\n",unpacked[i]);
     }
 }
 
@@ -42,6 +49,11 @@ void repack14(const uint16_t *unpacked, uint32_t *packed) {
 }
 
 void unpack_frame(const frame14 *frame, femb_data *femb_a, femb_data *femb_b) {
+    for (size_t i = 0; i < 1; i++){
+//    glog.log("Frame 1 stats:\n Start frame=%lx\n Crate_num line=%lx\n FEMB line=%lx\n WIB_data=%lx\n Timestamp=%lx\n Data1=%lx\n Data2=%lx\n Crc=%lx\n EOF=%lx\n Idle=%lx\n"
+//		    ,frame->start_frame, frame->wib_pre[0], frame->wib_pre[1], frame->wib_pre[2], frame->wib_pre[3], 
+//		    frame->femb_a_seg[0], frame->femb_a_seg[1], frame->wib_post[0], frame->wib_post[1], frame->idle_frame);
+    }
     unpack14(frame->femb_a_seg,(uint16_t*)femb_a);
     unpack14(frame->femb_b_seg,(uint16_t*)femb_b);
 }
@@ -52,6 +64,7 @@ void repack_frame(const femb_data *femb_a, const femb_data *femb_b, frame14 *fra
 }
 
 void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, uint8_t version) {
+//    glog.log("unpack.cc, deframe_data, Version is %lx\n",version);
     data.samples = nframes;
     for (size_t i = 0; i < 128; i++) {
         data.channels[0][i].resize(nframes);
@@ -59,6 +72,7 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, 
     }
     data.timestamp.resize(nframes);
     femb_data femb_a, femb_b;
+//    for (size_t i = 0; i < 1; i++) {
     for (size_t i = 0; i < nframes; i++) {
         unpack_frame(frame_buf+i,&femb_a,&femb_b);
         for (size_t j = 0; j < 48; j++) {
@@ -75,6 +89,12 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, 
             data.channels[0][k][i] = femb_a.x[j];
             data.channels[1][k][i] = femb_b.x[j];
         }
+	if (i > 2120){
+//		glog.log("Frame %llu\n", i);
+//		for (size_t j =0; j < 128; j++){
+//			glog.log("Data is %lx\n", data.channels[0][i]);
+//		}
+	}
         switch (version) {
             case 1: {
                 frame14_bitfield_v1 *frame = (frame14_bitfield_v1*)(frame_buf+i);
@@ -86,6 +106,11 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, 
                 data.timestamp[i] = frame->timestamp;
                 break;
             }
+	    case 3: {
+		frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf+i);
+		data.timestamp[i] = frame->timestamp;
+		break;
+	    }
         }
         
     }
@@ -102,10 +127,17 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, channel_data &data, 
             data.wib_num = frame->slot_num;
             break;
         }
+	case 3: {
+	    frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf);
+	    data.crate_num = frame->crate_num;
+	    data.wib_num = frame->slot_num;
+	    break;
+	}
     }
 }
 
 void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data, uint8_t version) {
+    //glog.log("unpack.cc, deframe_data, Version is %lx\n",version);
     data.samples = nframes;
     for (size_t i = 0; i < 48; i++) {
         if (i < 40) {
@@ -142,6 +174,11 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data, uint
                 data.timestamp[i] = frame->timestamp;
                 break;
             }
+	    case 3: {
+		frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf+i);
+		data.timestamp[i] = frame->timestamp;
+		break;
+	    }
         }
     }
     switch (version) {
@@ -157,6 +194,12 @@ void deframe_data(const frame14 *frame_buf, size_t nframes, uvx_data &data, uint
             data.wib_num = frame->slot_num;
             break;
         }
+	case 3: {
+	    frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf);
+	    data.crate_num = frame->crate_num;
+	    data.wib_num = frame->slot_num;
+	    break;
+	}
     }
 }
 
@@ -199,6 +242,21 @@ void reframe_data(frame14 *frame_buf, size_t nframes, const channel_data &data, 
                 frame->start_frame = 0x3C;
                 frame->frame_version = 2;
                 frame->femb_valid = 0x3;
+                frame->timestamp = data.timestamp[i];
+                frame->crate_num = data.crate_num;
+                frame->slot_num = data.wib_num;
+                //FIXME CRC
+                frame->eof = 0xDC;
+                frame->idle_frame = 0xBC;
+                break;
+            }
+            case 3: {
+                frame14_bitfield_v3 *frame = (frame14_bitfield_v3*)(frame_buf+i);
+                memset(frame,0,sizeof(frame14));
+                frame->start_frame = 0x3C;
+                frame->frame_version = 1;
+                frame->femb_valid = 0x3;
+                frame->wib_data = 0xbabeface;
                 frame->timestamp = data.timestamp[i];
                 frame->crate_num = data.crate_num;
                 frame->slot_num = data.wib_num;
