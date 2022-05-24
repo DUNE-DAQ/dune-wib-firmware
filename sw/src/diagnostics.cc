@@ -35,8 +35,8 @@ bool acquire_data(WIB &w, const bool femb_mask[4], channel_data &dch0, channel_d
     int nframes0, nframes1;
     bool success = w.read_daq_spy(buf0,&nframes0,buf1,&nframes1);
 
-    if (buf0) deframe_data((frame14*)buf0,nframes0,dch0);
-    if (buf1) deframe_data((frame14*)buf1,nframes1,dch1);
+    if (buf0) deframe_data((frame14*)buf0,nframes0,dch0,3);
+    if (buf1) deframe_data((frame14*)buf1,nframes1,dch1,3);
     
     delete [] buf0;
     delete [] buf1;
@@ -63,21 +63,33 @@ bool check_test_pattern(WIB_3ASIC &w, const bool femb_mask[4], bool cold) {
     for (size_t iFEMB = 0; iFEMB < 4; iFEMB++) {
         if (!femb_mask[iFEMB]) continue;
         channel_data &dat = (iFEMB < 2 ? fembs01 : fembs23);
-        int idat = iFEMB%2;
+	int idat = iFEMB%2;
         bool valid = true;
         for (size_t ich = 0; ich < 128; ich++) {
+//	    glog.log("Some examples\n");
+//	    for (size_t i=0; i<100;i++) {
+//		glog.log("Val is %d\n",dat.channels[idat][ich]);
+//	    }
             double m = mean(dat.channels[idat][ich]);
             if (ich % 8 == 0) {
+//		glog.log("Channel %d should have a mean > 14000 and it's %u\n",ich,m);
                 valid &= m > 14000;
             } else if (ich % 8 == 2) {
+//		glog.log("Channel %d should have a mean <4000 and it's %u\n",ich,m);
                 valid &= m < 4000;
             } else {
+//		glog.log("Channel %d should have a mean >6000 and <10000 and it's %u\n",ich,m);
                 valid &= (m > 6000) && (m < 10000);
             }
+	    if (valid != true){
+		glog.log("Channel %d had a mean of %u \n",ich,m);
+//	    glog.log("Valid is %d \n",valid);
+	    }
         }
         #ifdef SIMULATION
         valid = true;
         #endif
+//	glog.log("Valid is %d \n",valid);
         glog.log("FEMB %i ADC test pattern validation: %s\n",iFEMB,valid?"passed":"failed");
         all_valid &= valid;
     }

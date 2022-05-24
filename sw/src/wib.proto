@@ -107,6 +107,7 @@ message ConfigureWIB {
         uint32 peak_time = 4; // 1.0, 0.5, 3, 2 us (0 - 3) NOTE: this mapping depends on LArASIC revision!
         uint32 baseline = 5; // 0 (900 mV), 1 (200 mV) NOTE: this mapping depends on LArASIC revision!
         uint32 pulse_dac = 6; // 6bit dac value
+	bool gain_match = 14; //0 is enabled, 1 is disabled, bit SGP in LArASIC datasheet
         
         // LArASIC channel
         uint32 leak = 7; // 0 (500 pA), 1 (100 pA)

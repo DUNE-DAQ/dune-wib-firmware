@@ -468,55 +468,78 @@ void WIB::i2c_select(uint8_t device) {
     io_reg_write(&this->regs,REG_FW_CTRL,next);
 }
 
-void reorder_frames(const frame14_bitfield_v1 *unordered, const size_t nframes, frame14_bitfield_v1 *ordered) {
+void reorder_frames(const frame14_bitfield_v3 *unordered, const size_t nframes, frame14_bitfield_v3 *ordered) {
     uint64_t min_timestamp = unordered[0].timestamp;
     size_t min_index = 0;
     for (size_t i = 0; i < nframes; i++) {
         if (unordered[i].timestamp < min_timestamp) {
+	    glog.log("min timestamp is %llx and this timestamp is %llx for frame %llu\n", min_timestamp, unordered[i].timestamp, i);
             min_timestamp = unordered[i].timestamp;
             min_index = i;
         }
     }
+    //force no reorder
+    //min_index = 0;
     if (min_index != 0) {
+	//glog.log("Had to reorder\n");
         size_t start = nframes-min_index;
         size_t rest = min_index;
-        memcpy(ordered,unordered+min_index,start*sizeof(frame14_bitfield_v1));
-        memcpy(ordered+start,unordered,rest*sizeof(frame14_bitfield_v1));
+        memcpy(ordered,unordered+min_index,start*sizeof(frame14_bitfield_v3));
+        memcpy(ordered+start,unordered,rest*sizeof(frame14_bitfield_v3));
     } else {
-        memcpy(ordered,unordered,nframes*sizeof(frame14_bitfield_v1));
+	glog.log("Did not have to reorder\n");
+        memcpy(ordered,unordered,nframes*sizeof(frame14_bitfield_v3));
     }
 }
 
 size_t extract_frames(const uint32_t *buf, const size_t words, uint32_t *extracted) {
     constexpr uint32_t SOF = 0x3C;
     constexpr uint32_t IDLE = 0xBC;
+    constexpr uint32_t PACKET_LENGTH = 119;
     size_t nframes = 0;
     for (size_t i = 0; i < words; ) {
-        if (buf[i] == SOF) { // start of frame
-            //glog.log("start of frame %llu %llu\n",nframes,i);
+	 if (i > 261200){
+             //glog.log("buf %zx is %lx\n",i,buf[i]);
+	 }
+         if (buf[i] == SOF) { // start of frame
+	     if (i > 261200){
+                 //glog.log("start of frame %llu %llu\n",nframes,i);
+	     }
             size_t j;
-            for (j = i+1; j < i+119; j++) {
+            for (j = i+1; j < i+PACKET_LENGTH; j++) {
+		if (i > 261200){
+		   // glog.log("buf %zx is %lx\n",j,buf[j]);
+		}
                 if (buf[j%words] == SOF || buf[j%words] == IDLE) {
-                    i = j; // move i to j (bad frame word)
+                    glog.log("bad frame word\n");
+		    i = j; // move i to j (bad frame word)
                     break;
                 }
             }
-            if (i == j) continue; // wasn't a full frame (idle or sof found before end)
-            if (buf[(i+119)%words] != IDLE) {
-                i++;
+            if (i == j) {
+		   glog.log("Wasn't a ful frame\n");
+		    continue; // wasn't a full frame (idle or sof found before end)
+	    }
+            if (buf[(i+PACKET_LENGTH+1)%words] != IDLE) {
+		glog.log("118 is %lx, 119 is %lx, 120 is %lx\n", buf[(i+PACKET_LENGTH-1)%words], buf[(i+PACKET_LENGTH)%words], buf[(i+PACKET_LENGTH+1)%words]);
+                glog.log("Error in the %lx th(hex) word, not a full frame\n",nframes);
+		i++;
                 continue; // wasn't a full frame (missing trailing idle)
             }
             // Frame is valid
-            if (i+120 > words) { //wraps around
+            if (i+PACKET_LENGTH+1 > words) { //wraps around
+		//glog.log("frame wrapped around\n");
                 size_t start = words-i;
-                size_t rest = 120-start;
-                memcpy(extracted+nframes*120,buf+i,4*start); //copy start from buf end
-                memcpy(extracted+nframes*120+start,buf,4*rest); //copy rest from buf start
+                size_t rest = (PACKET_LENGTH+1)-start;
+                memcpy(extracted+nframes*(PACKET_LENGTH+1),buf+i+1,4*start); //copy start from buf end
+                memcpy(extracted+nframes*(PACKET_LENGTH+1)+start,buf,4*rest); //copy rest from buf start
             } else { //one segment 
-                memcpy(extracted+nframes*120,buf+i,4*120);
+		//glog.log("one segment");
+                memcpy(extracted+nframes*(PACKET_LENGTH+1),buf+i+1,4*(PACKET_LENGTH+1));
             }
             nframes++;
-            i += 120; // move i to next word
+	//glog.log("move to next word\n");
+            i += (PACKET_LENGTH+1); // move i to next word
         } else {
             //glog.log("skipped %llu %08x\n",i,buf[i]);
             i++;
@@ -567,19 +590,20 @@ bool WIB::read_daq_spy(void *buf0, int *nframes0, void *buf1, int *nframes1, uin
     if (buf0) {
         glog.log("Copying spy buffer 0\n");
         memcpy(buf,this->daq_spy[0],DAQ_SPY_SIZE);
-        size_t nframes = extract_frames((uint32_t*)buf,DAQ_SPY_SIZE/4,(uint32_t*)tmp);
+        size_t nframes = extract_frames((uint32_t*)buf,(DAQ_SPY_SIZE/4)-200,(uint32_t*)tmp);
         if (nframes0) *nframes0 = nframes;
         glog.log("Found %llu frames in buffer 0\n",nframes);
-        reorder_frames((frame14_bitfield_v1*)tmp,nframes,(frame14_bitfield_v1*)buf0);
+        reorder_frames((frame14_bitfield_v3*)tmp,nframes,(frame14_bitfield_v3*)buf0);
+	//memcpy(tmp,buf0,nframes*sizeof(frame14_bitfield_v1));
         success &= nframes > 0;
     }
     if (buf1) {
         glog.log("Copying spy buffer 1\n");
         memcpy(buf,this->daq_spy[1],DAQ_SPY_SIZE);
-        size_t nframes = extract_frames((uint32_t*)buf,DAQ_SPY_SIZE/4,(uint32_t*)tmp);
+        size_t nframes = extract_frames((uint32_t*)buf,(DAQ_SPY_SIZE/4)-200,(uint32_t*)tmp);
         if (nframes1) *nframes1 = nframes;
         glog.log("Found %llu frames in buffer 1\n",nframes);
-        reorder_frames((frame14_bitfield_v1*)tmp,nframes,(frame14_bitfield_v1*)buf1);
+        reorder_frames((frame14_bitfield_v3*)tmp,nframes,(frame14_bitfield_v3*)buf1);
         success &= nframes > 0;
     }
     delete [] tmp;
