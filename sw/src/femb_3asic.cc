@@ -86,7 +86,7 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame) {
     return res;
 }
 
-bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *adc_conf) {
+bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *adc_conf, bool se_larasic) {
     bool res = true;
     //See COLDADC datasheet
     //See https://docs.google.com/document/d/1OAhVMvBe33dMkuIEOaqZNht0cjfUtLdNoIFy0QeGKp0/edit#
@@ -94,7 +94,7 @@ bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *a
         res &= i2c_write_verify(0, i, 2, 0x01, 0x0c);  //start_data
         res &= i2c_write_verify(0, i, 2, 0x02, cold ? 0x7 : 0xF);  //lvds_current
         res &= i2c_write_verify(0, i, 1, 0x80, adc_conf ? adc_conf->reg_0 : 0x23);//sdc_bypassed
-        res &= i2c_write_verify(0, i, 1, 0x84, adc_conf ? adc_conf->reg_4 : 0x3b);//single-ended_input_mode
+        res &= i2c_write_verify(0, i, 1, 0x84, se_larasic ? 0x3b : 0x33);//single-ended_input_mode
         res &= i2c_write_verify(0, i, 1, 0x88, 0x0b);  //ADC-bias-current-50uA
         res &= i2c_write_verify(0, i, 1, 0x89, test_pattern ? 0x18 : 0x08);  //offset_binary_output_data_format
         res &= i2c_write_verify(0, i, 1, 0x93, 0x04);  //internal_ref
@@ -102,12 +102,26 @@ bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *a
         res &= i2c_write_verify(0, i, 1, 0x97, 0x2f);  //ref_bias
         res &= i2c_write_verify(0, i, 1, 0x98, adc_conf ? adc_conf->reg_24 : 0xDF);  //reg 24 vrefp
         res &= i2c_write_verify(0, i, 1, 0x99, adc_conf ? adc_conf->reg_25 : 0x33);  //reg 25 vrefn
+	uint8_t vrefRead = i2c_read(0, i, 1, 0x98);
+	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x99\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9a, adc_conf ? adc_conf->reg_26 : 0x89);  //reg 26 vcmo
+	vrefRead = i2c_read(0, i, 1, 0x98);
+	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9a\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9b, adc_conf ? adc_conf->reg_27 : 0x67);  //reg 27 vcmi
+	vrefRead = i2c_read(0, i, 1, 0x98);
+	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9b\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9C, 0x15);  //vt45uA
+	vrefRead = i2c_read(0, i, 1, 0x98);
+	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9c\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9d, adc_conf ? adc_conf->reg_29 : 0x27);  //reg 29 ibuff0_cmos
+	vrefRead = i2c_read(0, i, 1, 0x98);
+	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9d\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9e, adc_conf ? adc_conf->reg_30 : 0x27);  //reg 30 ibuff1_cmos
+	vrefRead = i2c_read(0, i, 1, 0x98);
+	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9e\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0xb1, 0x0c);  //config_start_number, as recommended by David
+	vrefRead = i2c_read(0, i, 1, 0x98);
+	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0xb1\n",index,i,vrefRead);
     }
     if (!res) glog.log("COLDADC configuration failed for FEMB:%i!\n",index);
     return res;
@@ -329,6 +343,7 @@ bool FEMB_3ASIC::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t re
         i2c_write(bus_idx,chip_addr,reg_page,reg_addr,data);
         read = i2c_read(bus_idx,chip_addr,reg_page,reg_addr);
         if ((read & 0xFF) == data) return true;
+	
     }
     glog.log("read is 0x%02X\n",read);
 	    glog.log("complimentary read is 0x%02X\n",~read & 0xFF);

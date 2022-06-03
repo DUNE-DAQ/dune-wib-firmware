@@ -321,7 +321,9 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     
     bool coldadc_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
-         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern(),adc_conf);
+      if (conf.fembs(i).enabled()) {
+	coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern(),adc_conf,conf.fembs(i).buffer() != 2);
+      }
     }
     if (coldadc_res) {
         glog.log("COLDADC configured\n");
@@ -422,6 +424,12 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
+
+    for (int i = 0; i < 4; i++) {
+      if (conf.fembs(i).enabled()) {
+    	for (uint8_t chip = 4; chip <= 11; chip++) femb[i]->i2c_write_verify(0,chip, 1, 0x98, 0xDF, 5);
+      }
+    }
 //    glog.log("configure_wib result is\n \
 //		    coldata_res: %d\n \
 //		    coldadc_res: %d\n \
