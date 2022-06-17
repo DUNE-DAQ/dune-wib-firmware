@@ -436,10 +436,12 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
 bool WIB_3ASIC::calibrate() {
     for (int i = 0; i < 4; i++) { //femb
         if (!frontend_power[i]) continue; // skip FEMBs that are off
+        glog.log("Calibrating FEMB %i\n",i);
         if (!femb[i]->setup_calib_auto()) {
             glog.log("Failed to setup FEMB %i\n",i);
             return false;
         }
+        femb[i]->dump_calib_constants();
     }
     return true;
 }

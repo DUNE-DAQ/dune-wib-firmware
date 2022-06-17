@@ -162,6 +162,23 @@ bool FEMB_3ASIC::setup_calib_manual(uint8_t sn, uint8_t stage) {
     return res;
 }
 
+void FEMB_3ASIC::dump_calib_constants() {
+    for (uint8_t j = 4; j <= 11; j++) { // For each COLADC attached to COLDATA
+        for (uint8_t caladdr = 0x00; caladdr <= 0x1D; caladdr++) {
+            glog.log("Calibration constant %02x (W0, ADC0) on COLDADC %i: %02x\n",caladdr,j,i2c_read(0, j, 1, caladdr));
+        }
+        for (uint8_t caladdr = 0x20; caladdr <= 0x3D; caladdr++) {
+            glog.log("Calibration constant %02x (W2, ADC0) on COLDADC %i: %02x\n",caladdr,j,i2c_read(0, j, 1, caladdr));
+        }
+        for (uint8_t caladdr = 0x40; caladdr <= 0x5D; caladdr++) {
+            glog.log("Calibration constant %02x (W0, ADC1) on COLDADC %i: %02x\n",caladdr,j,i2c_read(0, j, 1, caladdr));
+        }
+        for (uint8_t caladdr = 0x60; caladdr <= 0x7D; caladdr++) {
+            glog.log("Calibration constant %02x (W2, ADC1) on COLDADC %i: %02x\n",caladdr,j,i2c_read(0, j, 1, caladdr));
+        }
+    }
+}
+
 bool FEMB_3ASIC::store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_vals[8][2], uint8_t stage) {
     bool res = true;
     //Based on algorithm from Dave Christian

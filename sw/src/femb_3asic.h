@@ -96,6 +96,7 @@ public:
 
     // for manual calibration 
     bool setup_calib_manual(uint8_t sn, uint8_t stage);
+    void dump_calib_constants();
     bool store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_vals[8][2], uint8_t stage);
     
     // for setting the FMB_CONTROL_WORD
