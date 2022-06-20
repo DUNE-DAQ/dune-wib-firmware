@@ -206,8 +206,19 @@ bool FEMB_3ASIC::configure_larasic(const larasic_conf &c) {
     for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
         for (uint8_t page = 1; page <= 4; page++) { // For each LArASIC page in COLDATA
             for (uint8_t addr = 0x82; addr < 0x92; addr++) { // set channel registers
-                res &= i2c_write_verify(0, i, page, addr, channel_reg);
-		//glog.log("Channel %lx is %lx\n",(addr-0x80),channel_reg);
+	      if (c.snc == 2) {		
+		int chip = (i-2)*4 + page - 1;
+		channel_reg = ((c.sts ? 1 : 0) << 7) // 1 = test capacitor enabled
+		  | ((APABaselineMapping[chip][addr-0x82]) << 6) // 0 = 900 mV baseline;1 = 200 mV baseline
+		  | ((c.gain & 0x1) << 5)
+		  | ((c.gain & 0x2) << 3) // 14, 25, 7.8, 4.7 mV/fC (0 - 3) reversed here
+		  | ((c.peak_time & 0x1) << 3)
+		  | ((c.peak_time & 0x2) << 1) // 1.0, 0.5, 3, 2 us (0 - 3) reversed here
+		  | ((c.smn ? 1 : 0) << 1) // 1 = monitor enable
+		  | ((c.sdf ? 1 : 0) << 0); // 1 = "SE" buffer enable	      
+	      }
+	      res &= i2c_write_verify(0, i, page, addr, channel_reg);
+	      //glog.log("Channel %lx is %lx\n",(addr-0x80),channel_reg);
             }
             res &= i2c_write_verify(0, i, page, 0x80, global_reg_2);
             res &= i2c_write_verify(0, i, page, 0x81, global_reg_1);
