@@ -357,7 +357,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             c.sdacsw2 = conf.pulser(); //connect pulser to channels
             
             c.sts = femb_conf.test_cap() == true;
-            c.snc = femb_conf.baseline() == 1;
+            c.snc = femb_conf.baseline(); // New method - 0 = 900 mV, 1 = 200 mV, 2 = use APA mapping
             c.gain = femb_conf.gain() & 0x3;
             c.peak_time = femb_conf.peak_time() & 0x3;
             c.sdf = femb_conf.buffer() == 1;    

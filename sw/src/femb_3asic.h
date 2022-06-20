@@ -67,7 +67,7 @@ enum FrameType {
 typedef struct {
     bool sdd,sdc,slkh,s16,stb,stb1,slk,sgp; //glog.reg 1
     uint8_t sdac; bool sdacsw1,sdacsw2; // glog.reg 2
-    bool sts,snc; uint8_t gain, peak_time; bool smn,sdf; // chan regs
+    bool sts; uint8_t gain, peak_time, snc; bool smn,sdf; // chan regs
     uint8_t cal_skip, cal_delay, cal_length; // COLDATA registers controlling calibration strobe
 } larasic_conf;
 
@@ -109,6 +109,17 @@ public:
     bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries = 30);
 
 protected:
+
+    int APABaselineMapping[8][16] = {
+      {1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0}, // ADC4
+      {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1}, // ADC1
+      {1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0}, // ADC3
+      {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1}, // ADC2
+      {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1}, // ADC5
+      {1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0}, // ADC8
+      {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1}, // ADC6
+      {1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0} // ADC7
+    };
 
     // The index'th FEMB connected to this WIB
     int index;
