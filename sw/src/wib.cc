@@ -286,13 +286,18 @@ bool WIB::femb_power_config() {
     }
     
     // configure all pins as outputs for regulator enablers
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
+//    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
+//    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
+ //   i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
+//i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x22, 0xD, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x22, 0xE, 0);
-    
+   
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x0C, 0x08);
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x0D, 0x08);
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x0E, 0x08);
+    i2c_reg_write(&this->femb_en_i2c, 0x22, 0x0C, 0x08);
+
     return true;
 }
 
