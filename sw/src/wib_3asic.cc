@@ -446,7 +446,7 @@ bool WIB_3ASIC::calibrate() {
     return true;
 }
 
-/*bool WIB_3ASIC::calibrate_manual() { // Old way of manual calibration, when register 31 didn't function properly
+bool WIB_3ASIC::calibrate_manual() { // Old way of manual calibration, when register 31 didn't function properly
     channel_data link0, link1;
     glog.log("Calibrating COLDADCs\n");
     for (int stage = 6; stage >= 0; stage--) {
@@ -513,5 +513,8 @@ bool WIB_3ASIC::calibrate() {
         }
     }
     glog.log("Calibration completed\n");
+    for (int i = 0; i < 4; i++) {
+        femb[i]->dump_calib_constants();
+    }
     return true;
-}*/
+}

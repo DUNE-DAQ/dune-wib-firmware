@@ -135,6 +135,7 @@ bool FEMB_3ASIC::setup_calib_manual(uint8_t sn, uint8_t stage) {
     //See COLDADC datasheet
     if (stage > 6) return false; //invalid
     for (uint8_t i = 4; i <= 11; i++) { // Each COLDATA is now directly accessed through the second argument
+        res &= i2c_write_verify(0, i, 1, 0x80+41, 0x00);
         switch (sn) {
             case 0: {
                 const uint8_t cal_stages = (stage+1) & 0x7;
@@ -158,6 +159,7 @@ bool FEMB_3ASIC::setup_calib_manual(uint8_t sn, uint8_t stage) {
                 res &= i2c_write_verify(0, i, 1, 0x80+45, 0x00);
                 res &= i2c_write_verify(0, i, 1, 0x80+46, 0x00);
         }
+        res &= i2c_write_verify(0, i, 1, 0x80+41, 0x01);
     }
     return res;
 }
