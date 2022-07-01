@@ -432,7 +432,18 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
 //		    pulser_res: %d\n \
 //		    total: %d\n", coldata_res, coldadc_res, larasic_res, spi_verified, pulser_res,
 //		    coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res);
-    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res;
+
+    bool final_check_res = true;
+    // Lastly we re-check all the registers have the values they should
+    for (int i = 0; i < 4; i++) {
+        if (conf.fembs(i).enabled()) {
+            final_check_res &= femb[i]->check_coldata_config();
+            final_check_res &= femb[i]->check_coldadc_config();
+            final_check_res &= femb[i]->check_larasic_config();
+        }
+    }
+
+    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res && final_check_res;
 }
 
 bool WIB_3ASIC::calibrate() {
