@@ -94,7 +94,7 @@ files can be copied to the SD card boot partition.
 2. For a new repository, or if block diagram has changed, run `petalinux-config --get-hw-description=../` ensuring that the hardare definition `../*.xsa` is up to date.
 3. `petalinux-config` will rewrite the u-boot configuration in a way that probably won't build. Consider reverting those changes with `git checkout project-spec/configs/u-boot-xlnx/config.cfg` unless you know what you are doing. 
 4. For a new repository, any changes to the wib software, or if block diagram has changed, run `petalinux-build` to build the linux system and bootloader into `images/linux/`. This can take a long time, but caches build progress for future builds.
-5. Run `./make_bootloader.sh` to generate required boot files (`BOOT.BIN`,`image.ub`,`boot.scr` in `images/linux/`) and a tar of the boot filesystem in `images/linux/bootfs.tar.gz`.
+5. Run `./make_bootloader_2019fsbl.sh` to generate required boot files (`BOOT.BIN`,`image.ub`,`boot.scr` in `images/linux/`) and a tar of the boot filesystem in `images/linux/bootfs.tar.gz`.
 
 ### Creating/Updating boot media
 
