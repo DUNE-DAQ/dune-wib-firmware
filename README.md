@@ -103,7 +103,7 @@ The `linux/make_sd_image.sh` script uses `mtools` and `losetup` to create a
 
 1. Ensure your `BOOT.BIN` and `image.ub` files are up-to-date and that `petalinux-build` has been run recently.
 2. `cd` into the `linux/` folder.
-3. Run `./make_sd_image.sh` to create `../rootfs.img`
+3. Run `sudo ./make_sd_image.sh` to create `../rootfs.img`
 4. Assuming your SD card is `/dev/sdX`, run `sudo dd if=../rootfs.img of=/dev/sdX bs=256M status=progress`
 5. Run `sync` to ensure the data is written to disk.
 6. The SD card is ready to boot the WIB.
@@ -133,10 +133,10 @@ machine with PetaLinux 2020.1 already installed. See the
 
 You will need a single file from the `ZCU 102` Board Support Package (BSP) 
 from Xilinx `pmu_rom_qemu_sha3.elf` which must be extracted to 
-`linux/pre-built/linux/images/`.
+`linux/pre-built/linux/images/` (you may need to create this directory).
 
 You can find the BSP here:
-https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/embedded-design-tools.html
+https://www.xilinx.com/member/forms/download/xef.html?filename=xilinx-zcu102-v2017.1-final.bsp&akdm=1
 
 This is really a `.tar.gz` archive, and the file is at: `xilinx-zcu102-2020.1/pre-built/linux/images/`
 
