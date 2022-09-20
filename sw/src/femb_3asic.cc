@@ -86,7 +86,7 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame) {
     return res;
 }
 
-bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *adc_conf) {
+bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *adc_conf, bool se_larasic) {
     bool res = true;
     //See COLDADC datasheet
     //See https://docs.google.com/document/d/1OAhVMvBe33dMkuIEOaqZNht0cjfUtLdNoIFy0QeGKp0/edit#
@@ -94,7 +94,7 @@ bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *a
         res &= i2c_write_verify(0, i, 2, 0x01, 0x0c);  //start_data
         res &= i2c_write_verify(0, i, 2, 0x02, cold ? 0x7 : 0xF);  //lvds_current
         res &= i2c_write_verify(0, i, 1, 0x80, adc_conf ? adc_conf->reg_0 : 0x23);//sdc_bypassed
-        res &= i2c_write_verify(0, i, 1, 0x84, adc_conf ? adc_conf->reg_4 : 0x3b);//single-ended_input_mode
+        res &= i2c_write_verify(0, i, 1, 0x84, se_larasic ? 0x3b : 0x33);//single-ended_input_mode
         res &= i2c_write_verify(0, i, 1, 0x88, 0x0b);  //ADC-bias-current-50uA
         res &= i2c_write_verify(0, i, 1, 0x89, test_pattern ? 0x18 : 0x08);  //offset_binary_output_data_format
         res &= i2c_write_verify(0, i, 1, 0x93, 0x04);  //internal_ref
