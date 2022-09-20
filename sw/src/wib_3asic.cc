@@ -434,6 +434,19 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
 }
 
 bool WIB_3ASIC::calibrate() {
+    for (int i = 0; i < 4; i++) { //femb
+        if (!frontend_power[i]) continue; // skip FEMBs that are off
+        glog.log("Calibrating FEMB %i\n",i);
+        if (!femb[i]->setup_calib_auto()) {
+            glog.log("Failed to setup FEMB %i\n",i);
+            return false;
+        }
+        femb[i]->dump_calib_constants();
+    }
+    return true;
+}
+
+bool WIB_3ASIC::calibrate_manual() { // Old way of manual calibration, when register 31 didn't function properly
     channel_data link0, link1;
     glog.log("Calibrating COLDADCs\n");
     for (int stage = 6; stage >= 0; stage--) {
@@ -443,7 +456,7 @@ bool WIB_3ASIC::calibrate() {
             //put the COLDADCs in forcing mode for calibration
             for (int i = 0; i < 4; i++) {
                 if (!frontend_power[i]) continue; // skip FEMBs that are off
-                if (!femb[i]->setup_calib(sn,stage)) {
+                if (!femb[i]->setup_calib_manual(sn,stage)) {
                     glog.log("Failed to setup stage %i S%i measurement for FEMB %i\n",stage,sn,i);
                     return false;
                 }
@@ -500,5 +513,8 @@ bool WIB_3ASIC::calibrate() {
         }
     }
     glog.log("Calibration completed\n");
+    for (int i = 0; i < 4; i++) {
+        femb[i]->dump_calib_constants();
+    }
     return true;
 }
