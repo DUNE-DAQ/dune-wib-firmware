@@ -321,9 +321,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     
     bool coldadc_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
-      if (conf.fembs(i).enabled()) {
-	coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern(),adc_conf,conf.fembs(i).buffer() != 2);
-      }
+         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern(),adc_conf,conf.fembs(i).buffer() != 2);
     }
     if (coldadc_res) {
         glog.log("COLDADC configured\n");
@@ -425,23 +423,23 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
 
-    for (int i = 0; i < 4; i++) {
-      if (conf.fembs(i).enabled()) {
-    	for (uint8_t chip = 4; chip <= 11; chip++) femb[i]->i2c_write_verify(0,chip, 1, 0x98, 0xDF, 5);
-      }
-    }
-//    glog.log("configure_wib result is\n \
-//		    coldata_res: %d\n \
-//		    coldadc_res: %d\n \
-//		    larasic_res: %d\n \
-//		    spi_verified:%d\n \
-//		    pulser_res: %d\n \
-//		    total: %d\n", coldata_res, coldadc_res, larasic_res, spi_verified, pulser_res,
-//		    coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res);
     return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res;
 }
 
 bool WIB_3ASIC::calibrate() {
+    for (int i = 0; i < 4; i++) { //femb
+        if (!frontend_power[i]) continue; // skip FEMBs that are off
+        glog.log("Calibrating FEMB %i\n",i);
+        if (!femb[i]->setup_calib_auto()) {
+            glog.log("Failed to setup FEMB %i\n",i);
+            return false;
+        }
+        femb[i]->dump_calib_constants();
+    }
+    return true;
+}
+
+/*bool WIB_3ASIC::calibrate_manual() { // Old way of manual calibration, when register 31 didn't function properly
     channel_data link0, link1;
     glog.log("Calibrating COLDADCs\n");
     for (int stage = 6; stage >= 0; stage--) {
@@ -451,7 +449,7 @@ bool WIB_3ASIC::calibrate() {
             //put the COLDADCs in forcing mode for calibration
             for (int i = 0; i < 4; i++) {
                 if (!frontend_power[i]) continue; // skip FEMBs that are off
-                if (!femb[i]->setup_calib(sn,stage)) {
+                if (!femb[i]->setup_calib_manual(sn,stage)) {
                     glog.log("Failed to setup stage %i S%i measurement for FEMB %i\n",stage,sn,i);
                     return false;
                 }
@@ -509,4 +507,4 @@ bool WIB_3ASIC::calibrate() {
     }
     glog.log("Calibration completed\n");
     return true;
-}
+}*/

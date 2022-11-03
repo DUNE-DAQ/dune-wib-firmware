@@ -627,13 +627,19 @@ uint32_t WIB::peek(size_t addr) {
     size_t page_addr = (addr & ~(sysconf(_SC_PAGESIZE)-1));
     size_t page_offset = addr-page_addr;
 
-    int fd = open("/dev/mem",O_RDWR);
+    int fd = open("/dev/mem",O_RDWR|O_SYNC);
     void *ptr = mmap(NULL,sysconf(_SC_PAGESIZE),PROT_READ|PROT_WRITE,MAP_SHARED,fd,(addr & ~(sysconf(_SC_PAGESIZE)-1)));
-
-    return *((uint32_t*)((char*)ptr+page_offset));
+    if (ptr == MAP_FAILED) {
+    	glog.log("Error: %s\n", strerror(errno));
+    	return -1;
+    }
+    //return *((uint32_t*)((char*)ptr+page_offset));
+    uint32_t val = *((uint32_t*)((char*)ptr+page_offset));
     
     munmap(ptr,sysconf(_SC_PAGESIZE));
     close(fd);
+
+    return val;
     #else
     return 0x0;
     #endif
@@ -647,6 +653,11 @@ void WIB::poke(size_t addr, uint32_t val) {
     int fd = open("/dev/mem",O_RDWR);
     void *ptr = mmap(NULL,sysconf(_SC_PAGESIZE),PROT_READ|PROT_WRITE,MAP_SHARED,fd,(addr & ~(sysconf(_SC_PAGESIZE)-1)));
 
+    if (ptr == MAP_FAILED) {
+		glog.log("Error: %s\n", strerror(errno));
+		return;
+	}
+    
     *((uint32_t*)((char*)ptr+page_offset)) = val;
     
     munmap(ptr,sysconf(_SC_PAGESIZE));
