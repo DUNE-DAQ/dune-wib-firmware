@@ -398,7 +398,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             c.sdc = femb_conf.ac_couple() == true;
             c.slkh = femb_conf.leak_10x() == true;
             c.slk = femb_conf.leak() == 1;
-	    c.sgp = femb_conf.gain_match() == true;
+	    c.sgp = femb_conf.gain_match() == false;
             c.sdac = femb_conf.pulse_dac() & 0x3F;
             c.sdacsw2 = conf.pulser(); //connect pulser to channels
             
