@@ -144,7 +144,8 @@ message ConfigureWIB {
     ConfigureCOLDADC adc_conf = 5; // specify non-hardcoded values for COLDADC (omit for defaults)
     
     bool frame_dd = 6; // enable Frame-DD from COLDATA instead of Frame-14 data
-    
+
+    uint32 detector_type = 7; // 0 for upper APA, 1 for lower APA, 2 for CRP
     //replies Status
 }
 

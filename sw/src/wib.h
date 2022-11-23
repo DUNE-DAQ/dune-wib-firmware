@@ -69,7 +69,7 @@ public:
     // Returns IP for the default gateway, else returns default 192.168.121.52
     virtual std::string gateway_ip();
     // Returns the timing endpoint address for the timing system
-    virtual uint8_t timing_addr();
+    virtual uint16_t timing_addr();
     
     // Reads the backplane crate and slot numbers
     uint8_t backplane_crate_num();
@@ -120,6 +120,10 @@ public:
     
     // Calibrate the ADCs
     virtual bool calibrate();
+
+    // Guess the detector type based on crate ID
+    // Returns 1 for upper APA, 2 for lower APA, 3 for CRP
+    virtual int getDetectorType();
 
     // Read the onboard I2C sensors and fill the sensor structure
     bool read_sensors(wib::GetSensors::Sensors &sensors);

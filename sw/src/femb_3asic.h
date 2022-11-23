@@ -85,7 +85,7 @@ public:
     ~FEMB_3ASIC();
     
     // Front end I2C configuration
-    bool configure_coldata(bool cold, FrameType frame);
+    bool configure_coldata(bool cold, FrameType frame, int detectorType);
     bool configure_coldadc(bool cold, bool test_pattern = false, coldadc_conf *conf = NULL, bool se_larasic = true);
     bool configure_larasic(const larasic_conf &c);
     bool set_fast_act(uint8_t act_cmd);
@@ -109,7 +109,7 @@ public:
     void i2c_write(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
     uint8_t i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page,  uint8_t reg_addr);
     // Perform a Write and a Read, returning read == data
-    bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries = 30);
+    bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries = 1);
 
 protected:
 

@@ -1,4 +1,5 @@
 #include "wib.h"
+
 #include "unpack.h"
 #include "sensors.h"
 
@@ -96,8 +97,8 @@ bool WIB::reset_timing_endpoint() {
     bool success = true;
     if (!pll_initialized) {
         glog.log("Configuring PLL\n");
-        success &= script("conf_pll_timing");
-        if (success) {
+        int ret = system("/etc/wib/si5345_config");
+        if (WEXITSTATUS(ret) == 0) {
             pll_initialized = true;
         } else {
             glog.log("Failed to configure PLL\n");
@@ -119,7 +120,8 @@ bool WIB::reset_timing_endpoint() {
     uint32_t value = timing_addr(); //low 8 bits are addr 
     io_reg_write(&this->regs,REG_TIMING,(1<<28)|value); // bit 28 is reset bit
     usleep(2000000);
-    io_reg_write(&this->regs,REG_TIMING,value); 
+    io_reg_write(&this->regs,REG_TIMING,value);
+    usleep(2000000);
     return success;
 }
 
@@ -182,7 +184,7 @@ string WIB::gateway_ip() {
     return "";
 }
 
-uint8_t WIB::timing_addr() {
+uint16_t WIB::timing_addr() {
     //FIXME 8 bits is _not enough bits_ for unique WIB addresses in DUNE
     //but this is the address size for the timing endpoint code in firmware
     return ((backplane_crate_num() << 3) | (backplane_slot_num() & 0x7)) & 0xFF;
@@ -844,4 +846,18 @@ uint32_t WIB::read_fw_timestamp() {
 bool WIB::calibrate() {
     glog.log("Calibrate not implemented\n");
     return false;
+}
+
+int WIB::getDetectorType() {
+    uint8_t crate_num = ~(backplane_crate_num()) & 0xF;
+    // For EHN1 running
+    int knownTypes[] = {0, 1, 1, 2, 2, 3, 3, 3};
+    if (crate_num > 7) {
+      glog.log("Detector type unknown for crate number %i, guessing upper APA as default\n", crate_num);
+      return 1;
+    } else if (knownTypes[crate_num] == 0) {
+      glog.log("Detector type unknown for crate number %i, guessing upper APA as default\n", crate_num);
+      return 1;
+    }
+    return knownTypes[crate_num];
 }

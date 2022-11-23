@@ -47,7 +47,16 @@ protected:
     // Set FEMB power on or off per FEMB
     // May subclass and override this as ASICs/FEMBs undergo revisions
     virtual bool femb_power_set(int femb_idx, bool on, bool cold = true);
-    
+
+    // Set value for COLDATA time stamp alignment
+    bool set_alignment(uint32_t cmd_stamp_sync);
+
+    // Set WIB frame channel mapping
+    bool set_channel_map(int detector_type);
+
+    // Reset CRC bits
+    bool reset_crc_bits();
+  
     // Set the coldata serial receiver mask value
     bool femb_rx_mask(uint32_t value, uint32_t mask = 0xFFFF);
     

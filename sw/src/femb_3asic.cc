@@ -22,7 +22,7 @@ FEMB_3ASIC::~FEMB_3ASIC() {
     }
 }
 
-bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame) {
+bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType) {
     bool res = true;
     //See COLDATA datasheet
     //See https://docs.google.com/document/d/1OAhVMvBe33dMkuIEOaqZNht0cjfUtLdNoIFy0QeGKp0/edit#
@@ -42,27 +42,55 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame) {
 
         //res &= i2c_write_verify(0, i, 5, 0x46, 0x1);    //CONFIG_SER_MODE
         //res &= i2c_write_verify(0, i, 5, 0x47, 0x0);    //CONFIG_SER_INV_SER_CLK
+
+	if (detectorType == 1) {
+	  // Upper APA line driver configuration
+	  res &= i2c_write_verify(0, i, 5, 0x48, 0x0);    //CONFIG_DRV_VMBOOST
+	  //25m cable values
+	  //res &= i2c_write_verify(i, 2, 5, 0x48, cold ? 0x3 : 0x7);    //CONFIG_DRV_VMBOOST
+	  res &= i2c_write_verify(0, i, 5, 0x49, 0x0);    //CONFIG_DRV_VMDRIVER
         
-        res &= i2c_write_verify(0, i, 5, 0x48, 0x0);    //CONFIG_DRV_VMBOOST
-        //25m cable values
-        //res &= i2c_write_verify(i, 2, 5, 0x48, cold ? 0x3 : 0x7);    //CONFIG_DRV_VMBOOST
-        res &= i2c_write_verify(0, i, 5, 0x49, 0x0);    //CONFIG_DRV_VMDRIVER
+	  res &= i2c_write_verify(0, i, 5, 0x4a, 0x0);    //CONFIG_DRV_SELPRE
+	  res &= i2c_write_verify(0, i, 5, 0x4b, 0x0);    //CONFIG_DRV_SELPST1
+	  res &= i2c_write_verify(0, i, 5, 0x4c, 0x0);    //CONFIG_DRV_SELPST2
+	  //25m cable values
+	  //res &= i2c_write_verify(i, 2, 5, 0x4a, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPRE
+	  //res &= i2c_write_verify(i, 2, 5, 0x4b, cold ? 0x2 : 0xA);    //CONFIG_DRV_SELPST1
+	  //res &= i2c_write_verify(i, 2, 5, 0x4c, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPST2
+	  res &= i2c_write_verify(0, i, 5, 0x4d, 0x0F);    //CONFIG_DRV_SELCM_MAIN
+	  res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
+	  res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
+	  res &= i2c_write_verify(0, i, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
+	  res &= i2c_write_verify(0, i, 5, 0x51, 0x0F);    //CONFIG_DRV_DELAY_CS
+	  res &= i2c_write_verify(0, i, 5, 0x52, 0x1);    //CONFIG_DRV_CML
+	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
+	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
+	} else if (detectorType == 2 || detectorType == 3) {
+	  // Lower APA or CRP line driver configuration
+	  res &= i2c_write_verify(0, i, 5, 0x48, 0x3);    //CONFIG_DRV_VMBOOST
+	  //25m cable values
+	  //res &= i2c_write_verify(i, 2, 5, 0x48, cold ? 0x3 : 0x7);    //CONFIG_DRV_VMBOOST
+	  res &= i2c_write_verify(0, i, 5, 0x49, 0x7);    //CONFIG_DRV_VMDRIVER
         
-        res &= i2c_write_verify(0, i, 5, 0x4a, 0x0);    //CONFIG_DRV_SELPRE
-        res &= i2c_write_verify(0, i, 5, 0x4b, 0x0);    //CONFIG_DRV_SELPST1
-        res &= i2c_write_verify(0, i, 5, 0x4c, 0x0);    //CONFIG_DRV_SELPST2
-        //25m cable values
-        //res &= i2c_write_verify(i, 2, 5, 0x4a, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPRE
-        //res &= i2c_write_verify(i, 2, 5, 0x4b, cold ? 0x2 : 0xA);    //CONFIG_DRV_SELPST1
-        //res &= i2c_write_verify(i, 2, 5, 0x4c, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPST2
-        res &= i2c_write_verify(0, i, 5, 0x4d, 0x0F);    //CONFIG_DRV_SELCM_MAIN
-        res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
-        res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
-        res &= i2c_write_verify(0, i, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
-        res &= i2c_write_verify(0, i, 5, 0x51, 0x0F);    //CONFIG_DRV_DELAY_CS
-        res &= i2c_write_verify(0, i, 5, 0x52, 0x1);    //CONFIG_DRV_CML
-        res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
-        res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
+	  res &= i2c_write_verify(0, i, 5, 0x4a, 0x0);    //CONFIG_DRV_SELPRE
+	  res &= i2c_write_verify(0, i, 5, 0x4b, 0x2);    //CONFIG_DRV_SELPST1
+	  res &= i2c_write_verify(0, i, 5, 0x4c, 0x0);    //CONFIG_DRV_SELPST2
+	  //25m cable values
+	  //res &= i2c_write_verify(i, 2, 5, 0x4a, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPRE
+	  //res &= i2c_write_verify(i, 2, 5, 0x4b, cold ? 0x2 : 0xA);    //CONFIG_DRV_SELPST1
+	  //res &= i2c_write_verify(i, 2, 5, 0x4c, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPST2
+	  res &= i2c_write_verify(0, i, 5, 0x4d, 0x0);    //CONFIG_DRV_SELCM_MAIN
+	  res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
+	  res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
+	  res &= i2c_write_verify(0, i, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
+	  res &= i2c_write_verify(0, i, 5, 0x51, 0x0F);    //CONFIG_DRV_DELAY_CS
+	  res &= i2c_write_verify(0, i, 5, 0x52, 0x0);    //CONFIG_DRV_CML
+	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
+	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
+	} else {
+	  glog.log("Detector type %i not implemented", detectorType);
+	  return false;
+	}
 
         switch (frame) {
             case FRAME_DD:
@@ -102,26 +130,12 @@ bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *a
         res &= i2c_write_verify(0, i, 1, 0x97, 0x2f);  //ref_bias
         res &= i2c_write_verify(0, i, 1, 0x98, adc_conf ? adc_conf->reg_24 : 0xDF);  //reg 24 vrefp
         res &= i2c_write_verify(0, i, 1, 0x99, adc_conf ? adc_conf->reg_25 : 0x33);  //reg 25 vrefn
-	uint8_t vrefRead = i2c_read(0, i, 1, 0x98);
-	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x99\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9a, adc_conf ? adc_conf->reg_26 : 0x89);  //reg 26 vcmo
-	vrefRead = i2c_read(0, i, 1, 0x98);
-	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9a\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9b, adc_conf ? adc_conf->reg_27 : 0x67);  //reg 27 vcmi
-	vrefRead = i2c_read(0, i, 1, 0x98);
-	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9b\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9C, 0x15);  //vt45uA
-	vrefRead = i2c_read(0, i, 1, 0x98);
-	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9c\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9d, adc_conf ? adc_conf->reg_29 : 0x27);  //reg 29 ibuff0_cmos
-	vrefRead = i2c_read(0, i, 1, 0x98);
-	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9d\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0x9e, adc_conf ? adc_conf->reg_30 : 0x27);  //reg 30 ibuff1_cmos
-	vrefRead = i2c_read(0, i, 1, 0x98);
-	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0x9e\n",index,i,vrefRead);
         res &= i2c_write_verify(0, i, 1, 0xb1, 0x0c);  //config_start_number, as recommended by David
-	vrefRead = i2c_read(0, i, 1, 0x98);
-	if (vrefRead != 0xDF) glog.log("FEMB:%i chip:%i reg:0x98 reads 0x%02X after writing to 0xb1\n",index,i,vrefRead);
     }
     if (!res) glog.log("COLDADC configuration failed for FEMB:%i!\n",index);
     return res;
@@ -130,13 +144,13 @@ bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *a
 bool FEMB_3ASIC::setup_calib_auto() {
     bool res = true;
     for (uint8_t j = 4; j <= 11; j++) { // For each COLADC attached to COLDATA
-        glog.log("Starting calibration on COLDADC:%i!\n",j);
+      //        glog.log("Starting calibration on COLDADC:%i!\n",j);
         res &= i2c_write_verify(0, j, 1, 0x80+41, 0x00);
         res &= i2c_write_verify(0, j, 1, 0x80+31, 0x03);
         usleep(500000);
         res &= i2c_write_verify(0, j, 1, 0x80+31, 0x00);
         res &= i2c_write_verify(0, j, 1, 0x80+41, 0x01);
-        glog.log("Done calibration on COLDADC:%i!\n",j);
+	//        glog.log("Done calibration on COLDADC:%i!\n",j);
     }
     return res;
 }
