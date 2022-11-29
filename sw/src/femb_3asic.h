@@ -2,6 +2,9 @@
 #define femb_3asic_h
 
 #include <cstddef>
+#include <vector>
+#include <tuple>
+#include <map>
 #include "io_reg.h"
 #include "log.h"
 
@@ -86,7 +89,8 @@ public:
     
     // Front end I2C configuration
     bool configure_coldata(bool cold, FrameType frame);
-    bool configure_coldadc(bool cold, bool test_pattern = false, coldadc_conf *conf = NULL);
+    bool reset_coldadc(uint8_t coldata_i);
+    bool configure_coldadc(bool cold, bool test_pattern = false, coldadc_conf *conf = NULL, bool se_larasic = true);
     bool configure_larasic(const larasic_conf &c);
     bool set_fast_act(uint8_t act_cmd);
     bool read_spi_status(); // requires ACT_SAVE_STATUS first
@@ -106,7 +110,11 @@ public:
     void i2c_write(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data);
     uint8_t i2c_read(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page,  uint8_t reg_addr);
     // Perform a Write and a Read, returning read == data
-    bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries = 30);
+    bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries = 0);
+
+    bool check_coldata_config();
+    bool check_coldadc_config();
+    bool check_larasic_config();
 
 protected:
 
@@ -124,6 +132,15 @@ protected:
     
     // Called internally before any I2C access to ensure the chip address is correctly latched
     void i2c_bugfix(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr);
+
+    void generate_coldata_register_values(bool cold, FrameType frame);
+    void generate_coldadc_register_values(bool cold, bool test_pattern, coldadc_conf *conf, bool se_larasic);
+    void generate_larasic_register_values(const larasic_conf &c);
+
+	// Holds list of register info as {page, addr, value}
+    std::vector< std::tuple<uint8_t,uint8_t,uint8_t> > coldata_reg_conf;
+    std::vector< std::tuple<uint8_t,uint8_t,uint8_t> > coldadc_reg_conf;
+    std::map< uint8_t, std::vector< std::tuple<uint8_t,uint8_t,uint8_t> > > larasic_reg_conf;
     
 };
 

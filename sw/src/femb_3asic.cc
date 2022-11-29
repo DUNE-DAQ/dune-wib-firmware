@@ -22,94 +22,185 @@ FEMB_3ASIC::~FEMB_3ASIC() {
     }
 }
 
+void FEMB_3ASIC::generate_coldata_register_values(bool cold, FrameType frame) {
+    coldata_reg_conf.clear();
+
+    uint8_t frame_value;
+    switch (frame) {
+        case FRAME_DD:
+            frame_value = 3;
+            break;
+        case FRAME_12:
+            frame_value = 0;
+            break;
+        case FRAME_14:
+            frame_value = 1;
+            break;
+    }
+    /* COLDATA configuration options to write 				*/
+    /*										   ( page, 	addr, 	value)		*/
+    coldata_reg_conf.push_back( std::make_tuple( 0, 	0x3, 	0x3c) );
+    coldata_reg_conf.push_back( std::make_tuple( 0, 	0x11, 	0x7) );
+    coldata_reg_conf.push_back( std::make_tuple( 0, 	0x25, 	0x40) );
+    coldata_reg_conf.push_back( std::make_tuple( 0, 	0x27, 	0x1F) );
+
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x48, 	0x0) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x49, 	0x0) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x4a, 	0x0) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x4b, 	0x0) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x4c, 	0x0) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x4d, 	0x0F) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x4e, 	0x1) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x4f, 	0x0) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x50, 	0x0) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x51, 	0x0F) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x52, 	0x1) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x53, 	0x1) );
+    coldata_reg_conf.push_back( std::make_tuple( 5, 	0x54, 	0x1) );
+    
+    coldata_reg_conf.push_back( std::make_tuple( 0, 	1, 		frame_value) );
+    coldata_reg_conf.push_back( std::make_tuple( 0, 	3, 		0x3c) );
+}
+
+bool FEMB_3ASIC::reset_coldadc(uint8_t coldata_i) {
+    return i2c_write_verify(0, coldata_i, 0, 0x20, ACT_RESET_COLDADC);
+}
+
 bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame) {
     bool res = true;
     //See COLDATA datasheet
     //See https://docs.google.com/document/d/1OAhVMvBe33dMkuIEOaqZNht0cjfUtLdNoIFy0QeGKp0/edit#
+
+    generate_coldata_register_values(cold, frame);    
+
+    uint8_t page, addr, value, rvalue;
     for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
-        res &= i2c_write_verify(0, i, 0, 0x3, 0x3c);    //Set Coldata 8b10b
-        res &= i2c_write_verify(0, i, 0, 0x11, 0x7);    //Set LVDS Current Strength
-        res &= i2c_write_verify(0, i, 0, 0x20, 0x5);    //Ready for ADC SYNC RESET Fast command
-        res &= i2c_write_verify(0, i, 0, 0x25, 0x40);	//Lengthen SCK time during SPI write for more stability
-        res &= i2c_write_verify(0, i, 0, 0x27, 0x1F);	//Shanshan recommendation
-
-        //res &= i2c_write_verify(0, i, 5, 0x40, 0x3);    //CONFIG_PLL_ICP
-        //res &= i2c_write_verify(0, i, 5, 0x41, cold ? 0x08 : 0x10);    //CONFIG_PLL_BAND
-        //res &= i2c_write_verify(0, i, 5, 0x42, 0x2);    //CONFIG_PLL_LPFR
-        //res &= i2c_write_verify(0, i, 5, 0x43, 0x2);    //CONFIG_PLL_ATO
-        //res &= i2c_write_verify(0, i, 5, 0x44, 0x0);    //CONFIG_PLL_PDCP
-        //res &= i2c_write_verify(0, i, 5, 0x45, 0x0);    //CONFIG_PLL_OPEN
-
-        //res &= i2c_write_verify(0, i, 5, 0x46, 0x1);    //CONFIG_SER_MODE
-        //res &= i2c_write_verify(0, i, 5, 0x47, 0x0);    //CONFIG_SER_INV_SER_CLK
-        
-        res &= i2c_write_verify(0, i, 5, 0x48, 0x0);    //CONFIG_DRV_VMBOOST
-        //25m cable values
-        //res &= i2c_write_verify(i, 2, 5, 0x48, cold ? 0x3 : 0x7);    //CONFIG_DRV_VMBOOST
-        res &= i2c_write_verify(0, i, 5, 0x49, 0x0);    //CONFIG_DRV_VMDRIVER
-        
-        res &= i2c_write_verify(0, i, 5, 0x4a, 0x0);    //CONFIG_DRV_SELPRE
-        res &= i2c_write_verify(0, i, 5, 0x4b, 0x0);    //CONFIG_DRV_SELPST1
-        res &= i2c_write_verify(0, i, 5, 0x4c, 0x0);    //CONFIG_DRV_SELPST2
-        //25m cable values
-        //res &= i2c_write_verify(i, 2, 5, 0x4a, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPRE
-        //res &= i2c_write_verify(i, 2, 5, 0x4b, cold ? 0x2 : 0xA);    //CONFIG_DRV_SELPST1
-        //res &= i2c_write_verify(i, 2, 5, 0x4c, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPST2
-        res &= i2c_write_verify(0, i, 5, 0x4d, 0x0F);    //CONFIG_DRV_SELCM_MAIN
-        res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
-        res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
-        res &= i2c_write_verify(0, i, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
-        res &= i2c_write_verify(0, i, 5, 0x51, 0x0F);    //CONFIG_DRV_DELAY_CS
-        res &= i2c_write_verify(0, i, 5, 0x52, 0x1);    //CONFIG_DRV_CML
-        res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
-        res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
-
-        switch (frame) {
-            case FRAME_DD:
-                res &= i2c_write_verify(0, i, 0, 1, 3);
-                break;
-            case FRAME_12:
-                res &= i2c_write_verify(0, i, 0, 1, 0);
-                break;
-            case FRAME_14:
-                res &= i2c_write_verify(0, i, 0, 1, 1);
-                break;
+        for (auto entry : coldata_reg_conf) {
+            std::tie(page, addr, value) = entry;
+            rvalue = i2c_read(0, i, page, addr);
+            if (value != rvalue) res &= i2c_write_verify(0, i, page, addr, value);
         }
-        
-        
-        
-        //i2c_write (i, 2, 0, 3, 0xc3);  // PRBS7, no 8b10b
-        res &= i2c_write_verify(0, i, 0, 3, 0x3c);  // normal operation
-        res &= i2c_write_verify(0, i, 0, 0x20, ACT_RESET_COLDADC); // ACT = COLDADC reset
+        res &= reset_coldadc(i);
     }
     if (!res) glog.log("COLDATA configuration failed for FEMB:%i!\n",index);
     return res;
 }
 
-bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *adc_conf) {
+bool FEMB_3ASIC::check_coldata_config() {
+    bool res = true;
+
+    uint8_t page, addr, value, rvalue;
+    for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
+        for (auto entry : coldata_reg_conf) {
+            std::tie(page, addr, value) = entry;
+            rvalue = i2c_read(0, i, page, addr);
+            res &= (value == rvalue);
+            if (value != rvalue) glog.log("COLDATA register check failed: COLDATA: %i, page: 0x%02X, address: 0x%02X, expected value: 0x%02X, read value: 0x%02X\n", i, page, addr, value, rvalue);
+        }
+    }
+    return res;
+}
+
+void FEMB_3ASIC::generate_coldadc_register_values(bool cold, bool test_pattern = false, coldadc_conf *conf = NULL, bool se_larasic = true) {
+    if (conf != NULL) glog.log("Using provided set of alternate COLDADC values\n");
+    coldadc_reg_conf.clear();
+    /* COLDADC configuration options to write 	*/
+    /*					        			   ( page, 	addr, 	value)	*/
+    coldadc_reg_conf.push_back( std::make_tuple( 2,		0x01, 	0x0c) );
+    coldadc_reg_conf.push_back( std::make_tuple( 2, 	0x02, 	cold ? 0x7 : 0xF) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x80, 	(conf != NULL) ? conf->reg_0 : 0x23) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x84,	se_larasic ? 0x3b : 0x33) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x89, 	test_pattern ? 0x18 : 0x08) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x98, 	(conf != NULL) ? conf->reg_24 : 0xDF) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x99, 	(conf != NULL) ? conf->reg_25 : 0x33) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x9a, 	(conf != NULL) ? conf->reg_26 : 0x89) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x9b, 	(conf != NULL) ? conf->reg_27 : 0x67) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x9d, 	(conf != NULL) ? conf->reg_29 : 0x27) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x9e, 	(conf != NULL) ? conf->reg_30 : 0x27) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xb1, 	0x0c) );
+    
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x81, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x82, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x83, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x85, 	0x33) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x86, 	0x33) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x87, 	0x33) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x88, 	0x0b) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x8a, 	0xf1) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x8b, 	0x29) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x8c, 	0x8d) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x8d, 	0x65) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x8e, 	0x55) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x8f, 	0xff) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x90, 	0xff) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x91, 	0xff) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x92, 	0xff) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x93, 	0x04) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x94, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x95, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x96, 	0xff) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x97, 	0x2f) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0x9f, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa0, 	0x7f) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa1, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa2, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa3, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa4, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa5, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa6, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa7, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa8, 	0x00) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xa9, 	0x01) );
+    coldadc_reg_conf.push_back( std::make_tuple( 1, 	0xaa, 	0x00) );
+    
+}
+
+bool FEMB_3ASIC::configure_coldadc(bool cold, bool test_pattern, coldadc_conf *conf, bool se_larasic) {
     bool res = true;
     //See COLDADC datasheet
     //See https://docs.google.com/document/d/1OAhVMvBe33dMkuIEOaqZNht0cjfUtLdNoIFy0QeGKp0/edit#
+    
+    generate_coldadc_register_values(cold, test_pattern, conf, se_larasic);
+    
+    uint8_t page, addr, value, rvalue;
     for (uint8_t i = 4; i <= 11; i++) { // Each COLDATA is now directly accessed through the second argument
-        res &= i2c_write_verify(0, i, 2, 0x01, 0x0c);  //start_data
-        res &= i2c_write_verify(0, i, 2, 0x02, cold ? 0x7 : 0xF);  //lvds_current
-        res &= i2c_write_verify(0, i, 1, 0x80, adc_conf ? adc_conf->reg_0 : 0x23);//sdc_bypassed
-        res &= i2c_write_verify(0, i, 1, 0x84, adc_conf ? adc_conf->reg_4 : 0x3b);//single-ended_input_mode
-        res &= i2c_write_verify(0, i, 1, 0x88, 0x0b);  //ADC-bias-current-50uA
-        res &= i2c_write_verify(0, i, 1, 0x89, test_pattern ? 0x18 : 0x08);  //offset_binary_output_data_format
-        res &= i2c_write_verify(0, i, 1, 0x93, 0x04);  //internal_ref
-        res &= i2c_write_verify(0, i, 1, 0x96, 0xff);  //bjt_powerdown
-        res &= i2c_write_verify(0, i, 1, 0x97, 0x2f);  //ref_bias
-        res &= i2c_write_verify(0, i, 1, 0x98, adc_conf ? adc_conf->reg_24 : 0xDF);  //reg 24 vrefp
-        res &= i2c_write_verify(0, i, 1, 0x99, adc_conf ? adc_conf->reg_25 : 0x33);  //reg 25 vrefn
-        res &= i2c_write_verify(0, i, 1, 0x9a, adc_conf ? adc_conf->reg_26 : 0x89);  //reg 26 vcmo
-        res &= i2c_write_verify(0, i, 1, 0x9b, adc_conf ? adc_conf->reg_27 : 0x67);  //reg 27 vcmi
-        res &= i2c_write_verify(0, i, 1, 0x9C, 0x15);  //vt45uA
-        res &= i2c_write_verify(0, i, 1, 0x9d, adc_conf ? adc_conf->reg_29 : 0x27);  //reg 29 ibuff0_cmos
-        res &= i2c_write_verify(0, i, 1, 0x9e, adc_conf ? adc_conf->reg_30 : 0x27);  //reg 30 ibuff1_cmos
-        res &= i2c_write_verify(0, i, 1, 0xb1, 0x0c);  //config_start_number, as recommended by David
+        for (auto entry : coldadc_reg_conf) {
+            std::tie(page, addr, value) = entry;
+            rvalue = i2c_read(0, i, page, addr);
+            if (value != rvalue) res &= i2c_write_verify(0, i, page, addr, value);
+        }
     }
+    
     if (!res) glog.log("COLDADC configuration failed for FEMB:%i!\n",index);
+    return res;
+}
+
+bool FEMB_3ASIC::check_coldadc_config() {
+    bool res = true;
+
+    uint8_t page, addr, value, rvalue;
+    for (uint8_t i = 4; i <= 11; i++) { // Each COLDATA is now directly accessed through the second argument
+        for (auto entry : coldadc_reg_conf) {
+            std::tie(page, addr, value) = entry;
+            rvalue = i2c_read(0, i, page, addr);
+            res &= (value == rvalue);
+            if (value != rvalue) glog.log("COLDADC register check failed: COLDATA: %i, page: 0x%02X, address: 0x%02X, expected value: 0x%02X, read value: 0x%02X\n", i, page, addr, value, rvalue);
+        }
+    }
+    return res;
+}
+
+bool FEMB_3ASIC::setup_calib_auto() {
+    bool res = true;
+    for (uint8_t j = 4; j <= 11; j++) { // For each COLADC attached to COLDATA
+        glog.log("Starting calibration on COLDADC:%i!\n",j);
+        res &= i2c_write_verify(0, j, 1, 0x80+41, 0x00);
+        res &= i2c_write_verify(0, j, 1, 0x80+31, 0x03);
+        usleep(500000);
+        res &= i2c_write_verify(0, j, 1, 0x80+31, 0x00);
+        res &= i2c_write_verify(0, j, 1, 0x80+41, 0x01);
+        glog.log("Done calibration on COLDADC:%i!\n",j);
+    }
     return res;
 }
 
@@ -167,67 +258,100 @@ bool FEMB_3ASIC::store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_val
     return res;
 }
 
-bool FEMB_3ASIC::configure_larasic(const larasic_conf &c) {
-    bool res = true;
-
-    // See LArASIC datasheet
+void FEMB_3ASIC::generate_larasic_register_values(const larasic_conf &c) {
+    larasic_reg_conf.clear();
+    
     uint8_t global_reg_1 = ((c.sgp ? 1 : 0) << 7) //SGP bit for DAC gain matching (0 is enabled, 1 is disabled)
-	    		 | ((c.sdd ? 1 : 0) << 6) // 1 = "SEDC" buffer enabled
-                         | ((c.sdc ? 1 : 0) << 5) // 0 = dc; 1 = ac
-                         | ((c.slkh ? 1 : 0) << 4) // 1 = "RQI" * 10 enable
-                         | ((c.s16 ? 1 : 0) << 3) // 1 = ch15 high filter enable
-                         | ((c.stb ? 1 : 0) << 2) // 0 = mon analog channel; 1 = use stb1
-                         | ((c.stb1 ? 1 : 0) << 1) // 0 = mon temp; 1 = mon bandgap
-                         | ((c.slk ? 1 : 0) << 0); // 0 = 500 pA RQI; 1 = 100 pA RQI
+            | ((c.sdd ? 1 : 0) << 6) // 1 = "SEDC" buffer enabled
+            | ((c.sdc ? 1 : 0) << 5) // 0 = dc; 1 = ac
+            | ((c.slkh ? 1 : 0) << 4) // 1 = "RQI" * 10 enable
+            | ((c.s16 ? 1 : 0) << 3) // 1 = ch15 high filter enable
+            | ((c.stb ? 1 : 0) << 2) // 0 = mon analog channel; 1 = use stb1
+            | ((c.stb1 ? 1 : 0) << 1) // 0 = mon temp; 1 = mon bandgap
+            | ((c.slk ? 1 : 0) << 0); // 0 = 500 pA RQI; 1 = 100 pA RQI
                          
     uint8_t global_reg_2 = (((c.sdac & 0x20) >> 5) << 2) // 6 bit current scaling daq reversed here
-	    		 | (((c.sdac & 0x10) >> 4) << 3)
-			 | (((c.sdac & 0x08) >> 3) << 4)
-			 | (((c.sdac & 0x04) >> 2) << 5)
-			 | (((c.sdac & 0x02) >> 1) << 6)
-			 | (((c.sdac & 0x01) >> 0) << 7)
-                         | ((c.sdacsw1 ? 1 : 0) << 1) // 1 = connected to external test pin
-                         | ((c.sdacsw2 ? 1 : 0) << 0); // 1 = connected to DAC output
+            | (((c.sdac & 0x10) >> 4) << 3)
+            | (((c.sdac & 0x08) >> 3) << 4)
+            | (((c.sdac & 0x04) >> 2) << 5)
+            | (((c.sdac & 0x02) >> 1) << 6)
+            | (((c.sdac & 0x01) >> 0) << 7)
+            | ((c.sdacsw1 ? 1 : 0) << 1) // 1 = connected to external test pin
+            | ((c.sdacsw2 ? 1 : 0) << 0); // 1 = connected to DAC output
                          
     uint8_t channel_reg = ((c.sts ? 1 : 0) << 7) // 1 = test capacitor enabled
-                        | ((c.snc ? 1 : 0) << 6) // 0 = 900 mV baseline;1 = 200 mV baseline
-			| ((c.gain & 0x1) << 5)
-                        | ((c.gain & 0x2) << 3) // 14, 25, 7.8, 4.7 mV/fC (0 - 3) reversed here
-			| ((c.peak_time & 0x1) << 3)
-                        | ((c.peak_time & 0x2) << 1) // 1.0, 0.5, 3, 2 us (0 - 3) reversed here
-                        | ((c.smn ? 1 : 0) << 1) // 1 = monitor enable
-                        | ((c.sdf ? 1 : 0) << 0); // 1 = "SE" buffer enable
-                        
+            | ((c.snc ? 1 : 0) << 6) // 0 = 900 mV baseline;1 = 200 mV baseline
+            | ((c.gain & 0x1) << 5)
+            | ((c.gain & 0x2) << 3) // 14, 25, 7.8, 4.7 mV/fC (0 - 3) reversed here
+            | ((c.peak_time & 0x1) << 3)
+            | ((c.peak_time & 0x2) << 1) // 1.0, 0.5, 3, 2 us (0 - 3) reversed here
+            | ((c.smn ? 1 : 0) << 1) // 1 = monitor enable
+            | ((c.sdf ? 1 : 0) << 0); // 1 = "SE" buffer enable
+
     // See COLDATA datasheet
     // MSB goes first
     // [MSB] Ch15 .. Ch0 global_reg_1 global_reg_2 [LSB]
     // COLDATA registers 0x80 .. 0x91
-    
-    for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
+
+	for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
         for (uint8_t page = 1; page <= 4; page++) { // For each LArASIC page in COLDATA
             for (uint8_t addr = 0x82; addr < 0x92; addr++) { // set channel registers
-                res &= i2c_write_verify(0, i, page, addr, channel_reg);
-		//glog.log("Channel %lx is %lx\n",(addr-0x80),channel_reg);
+                if (c.snc == 2) {		
+                    int chip = (i-2)*4 + page - 1;
+                    channel_reg = ((c.sts ? 1 : 0) << 7) // 1 = test capacitor enabled
+                            | ((APABaselineMapping[chip][addr-0x82]) << 6) // 0 = 900 mV baseline;1 = 200 mV baseline
+                            | ((c.gain & 0x1) << 5)
+                            | ((c.gain & 0x2) << 3) // 14, 25, 7.8, 4.7 mV/fC (0 - 3) reversed here
+                            | ((c.peak_time & 0x1) << 3)
+                            | ((c.peak_time & 0x2) << 1) // 1.0, 0.5, 3, 2 us (0 - 3) reversed here
+                            | ((c.smn ? 1 : 0) << 1) // 1 = monitor enable
+                            | ((c.sdf ? 1 : 0) << 0); // 1 = "SE" buffer enable	      
+                }
+                /*					        	              ( page, addr, value)	*/
+                larasic_reg_conf[i].push_back( std::make_tuple( page, addr, channel_reg) );
             }
-            res &= i2c_write_verify(0, i, page, 0x80, global_reg_2);
-            res &= i2c_write_verify(0, i, page, 0x81, global_reg_1);
+            larasic_reg_conf[i].push_back(     std::make_tuple( page, 0x80, global_reg_2) );
+            larasic_reg_conf[i].push_back(     std::make_tuple( page, 0x81, global_reg_1) );
             
             // COLDATA calibration stobe parameters
-            res &= i2c_write_verify(0, i, page, 0x06, c.cal_skip);
-            res &= i2c_write_verify(0, i, page, 0x07, c.cal_delay);
-            res &= i2c_write_verify(0, i, page, 0x08, c.cal_length);
-
-	    //glog.log("Register 0x90 is %lx\n",global_reg_1);
-	    //glog.log("Register 0x91 is %lx\n",global_reg_2);
-	    //glog.log("Register 0x06 is %lx\n",c.cal_skip);
-	    //glog.log("Register 0x07 is %lx\n",c.cal_delay);
-	    //glog.log("Register 0x08 is %lx\n",c.cal_length);
+            larasic_reg_conf[i].push_back(     std::make_tuple( page, 0x06, c.cal_skip) );
+            larasic_reg_conf[i].push_back(     std::make_tuple( page, 0x07, c.cal_delay) );
+            larasic_reg_conf[i].push_back(     std::make_tuple( page, 0x08, c.cal_length) );
         }
-       //res &= i2c_write_verify(0, i, 0, 0x20, ACT_PROGRAM_LARASIC); // ACT = Program LArASIC SPI
-       set_fast_act(ACT_PROGRAM_LARASIC);
+    }
+}
+
+bool FEMB_3ASIC::configure_larasic(const larasic_conf &c) {
+    bool res = true;
+
+    generate_larasic_register_values(c);
+
+    uint8_t page, addr, value, rvalue;
+    for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
+        for (auto entry : larasic_reg_conf.at(i)) {
+            std::tie(page, addr, value) = entry;
+            rvalue = i2c_read(0, i, page, addr);
+            if (value != rvalue) res &= i2c_write_verify(0, i, page, addr, value);
+        }
+        set_fast_act(ACT_PROGRAM_LARASIC);
     }
     
     if (!res) glog.log("Failed to store LArASIC configuration for FEMB:%i!\n",index);
+    return res;
+}
+
+bool FEMB_3ASIC::check_larasic_config() {
+    bool res = true;
+
+    uint8_t page, addr, value, rvalue;
+    for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
+        for (auto entry : larasic_reg_conf.at(i)) {
+            std::tie(page, addr, value) = entry;
+            rvalue = i2c_read(0, i, page, addr);
+            res &= (value == rvalue);
+            if (value != rvalue) glog.log("LArASIC register check failed: COLDATA: %i, page: 0x%02X, address: 0x%02X, expected value: 0x%02X, read value: 0x%02X\n", i, page, addr, value, rvalue);
+        }
+    }
     return res;
 }
 
@@ -245,9 +369,9 @@ void FEMB_3ASIC::log_spi_status() {
     bool res = true;
     for (uint8_t i = 2; i < 4; i++) {
         uint8_t status = i2c_read(0,i,0,0x24);
-	glog.log("status is 0x%02X\n", status);
+        glog.log("status is 0x%02X\n", status);
         for (uint8_t j = 0; j < 4; j++) {
-	    glog.log("the way it gets it is %i and %i\n",(j*2), (j*2+1));
+            glog.log("the way it gets it is %i and %i\n",(j*2), (j*2+1));
             bool done = (status >> (j*2+0)) & 0x1 == 0x1;
             bool success = (status >> (j*2+1)) & 0x1 == 0x1;
             if (!done || !success) {
@@ -331,7 +455,7 @@ bool FEMB_3ASIC::i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t re
         if ((read & 0xFF) == data) return true;
     }
     glog.log("read is 0x%02X\n",read);
-	    glog.log("complimentary read is 0x%02X\n",~read & 0xFF);
+    glog.log("complimentary read is 0x%02X\n",~read & 0xFF);
     glog.log("i2c_write_verify failed FEMB:%i COLDATA:%i chip:0x%X page:0x%X reg:0x%02X :: 0x%02X != 0x%02X\n",index,bus_idx,chip_addr,reg_page,reg_addr,data,read);
     return false;
     #endif
