@@ -9,7 +9,7 @@ bool adc_test_config(WIB_3ASIC &w, const bool femb_mask[4], bool cold, bool test
     conf.set_cold(cold);
     conf.set_pulser(false);
     conf.set_adc_test_pattern(test);
-    conf.set_detector_type(1);
+    conf.set_detector_type(0);
     for (size_t iFEMB = 0; iFEMB < 4; iFEMB++) {
         wib::ConfigureWIB::ConfigureFEMB *femb_conf = conf.add_fembs();
         femb_conf->set_enabled(femb_mask[iFEMB]);

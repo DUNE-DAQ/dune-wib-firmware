@@ -335,8 +335,10 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     // Write cable delay value for timestamp synchronization
     if (detector_type == 1) {
       set_alignment(0x7fea);
-    } else if (detector_type == 2 || detector_type == 3) {
+    } else if (detector_type == 2) {
       set_alignment(0x7fe6);
+    } else if (detector_type == 3) {
+      set_alignment(0x7fe4);
     }
 
     // Set appropriate channel map
@@ -387,6 +389,9 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     
     bool larasic_res = true;
     uint32_t rx_mask = 0x0000;
+
+    // FEMB number assignments for crpFEMBs[wibSlot][fembIdx]
+    int crpFEMBs[6][4] = {{6,5,2,1}, {8,7,4,3}, {14,13,10,9}, {16,15,12,11}, {22,21,18,17}, {24,23,20,19}};
     for (int i = 0; i < 4; i++) {
         if (conf.fembs(i).enabled()) {
             larasic_conf c;
@@ -411,8 +416,13 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             c.cal_skip = femb_conf.strobe_skip();
             c.cal_delay = femb_conf.strobe_delay();
             c.cal_length = femb_conf.strobe_length();    
-            
-            larasic_res &= femb[i]->configure_larasic(c); // Sets ACT to ACT_PROGRAM_LARASIC
+
+	    // FEMBs 13-24 are identical to 1-12 for CRP baseline mappings	    
+            int fembNum = crpFEMBs[backplane_slot_num() & 0x7][i];
+	    if (fembNum > 12) fembNum -= 12;
+	    if (detector_type != 3) fembNum = 0; // FEMB number is currently irrelevant for non-CRP configurations
+	    
+            larasic_res &= femb[i]->configure_larasic(c, detector_type, fembNum); // Sets ACT to ACT_PROGRAM_LARASIC
         } else {
             rx_mask |= (0xF << (i*4));
         }

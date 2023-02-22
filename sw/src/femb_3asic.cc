@@ -46,17 +46,11 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
 	if (detectorType == 1) {
 	  // Upper APA line driver configuration
 	  res &= i2c_write_verify(0, i, 5, 0x48, 0x0);    //CONFIG_DRV_VMBOOST
-	  //25m cable values
-	  //res &= i2c_write_verify(i, 2, 5, 0x48, cold ? 0x3 : 0x7);    //CONFIG_DRV_VMBOOST
 	  res &= i2c_write_verify(0, i, 5, 0x49, 0x0);    //CONFIG_DRV_VMDRIVER
         
 	  res &= i2c_write_verify(0, i, 5, 0x4a, 0x0);    //CONFIG_DRV_SELPRE
 	  res &= i2c_write_verify(0, i, 5, 0x4b, 0x0);    //CONFIG_DRV_SELPST1
 	  res &= i2c_write_verify(0, i, 5, 0x4c, 0x0);    //CONFIG_DRV_SELPST2
-	  //25m cable values
-	  //res &= i2c_write_verify(i, 2, 5, 0x4a, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPRE
-	  //res &= i2c_write_verify(i, 2, 5, 0x4b, cold ? 0x2 : 0xA);    //CONFIG_DRV_SELPST1
-	  //res &= i2c_write_verify(i, 2, 5, 0x4c, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPST2
 	  res &= i2c_write_verify(0, i, 5, 0x4d, 0x0F);    //CONFIG_DRV_SELCM_MAIN
 	  res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
 	  res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
@@ -65,8 +59,9 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
 	  res &= i2c_write_verify(0, i, 5, 0x52, 0x1);    //CONFIG_DRV_CML
 	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
 	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
-	} else if (detectorType == 2 || detectorType == 3) {
-	  // Lower APA or CRP line driver configuration
+	} else if (detectorType == 2) {
+	  // Lower APA line driver configuration
+	  // 25 meter cold cable settings in COLDATA datasheet
 	  res &= i2c_write_verify(0, i, 5, 0x48, 0x3);    //CONFIG_DRV_VMBOOST
 	  //25m cable values
 	  //res &= i2c_write_verify(i, 2, 5, 0x48, cold ? 0x3 : 0x7);    //CONFIG_DRV_VMBOOST
@@ -87,6 +82,23 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
 	  res &= i2c_write_verify(0, i, 5, 0x52, 0x0);    //CONFIG_DRV_CML
 	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
 	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
+	} else if (detectorType == 3) {
+	  // Bottom CRP line driver configuration
+	  // 35 meter cold cable settings in COLDATA datasheet
+	  res &= i2c_write_verify(0, i, 5, 0x48, 0x3);    //CONFIG_DRV_VMBOOST
+	  res &= i2c_write_verify(0, i, 5, 0x49, 0x7);    //CONFIG_DRV_VMDRIVER
+        
+	  res &= i2c_write_verify(0, i, 5, 0x4a, 0x0);    //CONFIG_DRV_SELPRE
+	  res &= i2c_write_verify(0, i, 5, 0x4b, 0x5);    //CONFIG_DRV_SELPST1
+	  res &= i2c_write_verify(0, i, 5, 0x4c, 0x2);    //CONFIG_DRV_SELPST2
+	  res &= i2c_write_verify(0, i, 5, 0x4d, 0x0);    //CONFIG_DRV_SELCM_MAIN
+	  res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
+	  res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
+	  res &= i2c_write_verify(0, i, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
+	  res &= i2c_write_verify(0, i, 5, 0x51, 0x0F);    //CONFIG_DRV_DELAY_CS
+	  res &= i2c_write_verify(0, i, 5, 0x52, 0x0);    //CONFIG_DRV_CML
+	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
+	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL	  
 	} else {
 	  glog.log("Detector type %i not implemented", detectorType);
 	  return false;
@@ -226,7 +238,7 @@ bool FEMB_3ASIC::store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_val
     return res;
 }
 
-bool FEMB_3ASIC::configure_larasic(const larasic_conf &c) {
+bool FEMB_3ASIC::configure_larasic(const larasic_conf &c, int detectorType, int femb) {
     bool res = true;
 
     // See LArASIC datasheet
@@ -265,8 +277,8 @@ bool FEMB_3ASIC::configure_larasic(const larasic_conf &c) {
     for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
         for (uint8_t page = 1; page <= 4; page++) { // For each LArASIC page in COLDATA
             for (uint8_t addr = 0x82; addr < 0x92; addr++) { // set channel registers
-	      if (c.snc == 2) {		
-		int chip = (i-2)*4 + page - 1;
+	      if (c.snc == 2 && (detectorType == 1 || detectorType == 2)) { // Set baseline according to APA mapping
+		int chip = (i==2)*4 + page - 1;
 		channel_reg = ((c.sts ? 1 : 0) << 7) // 1 = test capacitor enabled
 		  | ((APABaselineMapping[chip][addr-0x82]) << 6) // 0 = 900 mV baseline;1 = 200 mV baseline
 		  | ((c.gain & 0x1) << 5)
@@ -275,6 +287,18 @@ bool FEMB_3ASIC::configure_larasic(const larasic_conf &c) {
 		  | ((c.peak_time & 0x2) << 1) // 1.0, 0.5, 3, 2 us (0 - 3) reversed here
 		  | ((c.smn ? 1 : 0) << 1) // 1 = monitor enable
 		  | ((c.sdf ? 1 : 0) << 0); // 1 = "SE" buffer enable	      
+	      } else if (c.snc == 2 && detectorType == 3 && femb != 0) { // Set baseline according to CRP mapping		
+		int chip = (i==2)*4 + page - 1;
+		channel_reg = ((c.sts ? 1 : 0) << 7) // 1 = test capacitor enabled
+		  | ((CRPBaselineMapping[femb-1][chip*16+addr-0x82]) << 6) // 0 = 900 mV baseline;1 = 200 mV baseline
+		  | ((c.gain & 0x1) << 5)
+		  | ((c.gain & 0x2) << 3) // 14, 25, 7.8, 4.7 mV/fC (0 - 3) reversed here
+		  | ((c.peak_time & 0x1) << 3)
+		  | ((c.peak_time & 0x2) << 1) // 1.0, 0.5, 3, 2 us (0 - 3) reversed here
+		  | ((c.smn ? 1 : 0) << 1) // 1 = monitor enable
+		  | ((c.sdf ? 1 : 0) << 0); // 1 = "SE" buffer enable	      
+	      } else if (c.snc == 2) {
+		glog.log("Requested detector-specific baseline setting \"baseline\": 2, but combo of detector_type %d + FEMB %d is unknown", detectorType, femb);
 	      }
 	      res &= i2c_write_verify(0, i, page, addr, channel_reg);
 	      //glog.log("Channel %lx is %lx\n",(addr-0x80),channel_reg);
