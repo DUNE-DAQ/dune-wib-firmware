@@ -51,6 +51,9 @@ protected:
     // Set value for COLDATA time stamp alignment
     bool set_alignment(uint32_t cmd_stamp_sync);
 
+    // Set value for delay before each EDGE command for synchronization
+    bool set_edge_delay(uint8_t edge_delay);
+  
     // Set WIB frame channel mapping
     bool set_channel_map(int detector_type);
 

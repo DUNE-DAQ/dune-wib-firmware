@@ -126,6 +126,18 @@ bool WIB_3ASIC::set_alignment(uint32_t cmd_stamp_sync) {
     return true;
 }
 
+bool WIB_3ASIC::set_edge_delay(uint8_t edge_delay) {
+    if (edge_delay > 32) {
+        glog.log("Edge delay of %d is too large, aborting setting", edge_delay);
+	return false;
+    }
+    uint32_t prev = io_reg_read(&this->regs, 0x0020/4);
+    uint32_t mask = 0xffffffff ^ (0x3F << 9);
+    uint32_t write = (edge_delay & 0x3F) << 9;
+    io_reg_write(&this->regs, 0x0020/4, (prev & mask) | write);
+    return true;
+}
+
 bool WIB_3ASIC::set_channel_map(int detector_type) {
   uint32_t value = io_reg_read(&this->regs, REG_FW_CTRL);
   if (detector_type == 1 || detector_type == 2) {
@@ -335,10 +347,13 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     // Write cable delay value for timestamp synchronization
     if (detector_type == 1) {
       set_alignment(0x7fea);
+      set_edge_delay(6);
     } else if (detector_type == 2) {
       set_alignment(0x7fe6);
+      set_edge_delay(2);
     } else if (detector_type == 3) {
       set_alignment(0x7fe4);
+      set_edge_delay(0);
     }
 
     // Set appropriate channel map
