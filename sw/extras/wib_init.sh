@@ -49,11 +49,13 @@ sleep 0.1
 sleep 1
 /etc/rc5.d/devreg.sh cmd_code_edge 0
 /etc/rc5.d/devreg.sh cmd_en_edge 1
-/etc/rc5.d/devreg.sh cmd_stamp_sync 0x7fe6
+/etc/rc5.d/devreg.sh cmd_stamp_sync 0x7fea
 /etc/rc5.d/devreg.sh cmd_stamp_sync_en 1
-/etc/rc5.d/devreg.sh dts_time_delay 0x58
+/etc/rc5.d/devreg.sh dts_time_delay 0x7a
 /etc/rc5.d/devreg.sh align_en 1
 
+sleep 20
+/etc/rc5.d/monitor_timing.sh &
 #Evidentally this crashes the whole system somehow...
 #echo "Starting xvcserver"
 #/usr/bin/xvcserver  2>/var/log/xvcserver.err >/var/log/xvcserver.log &

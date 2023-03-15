@@ -91,7 +91,7 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
         }
         glog.log("Powering on FEMB %i COLDATA\n",femb_idx);
         femb_power_en_ctrl(femb_idx, 0x6B); //COLDATA ON
-        usleep(100000);
+        usleep(1000000);
         glog.log("Loading %s COLDATA config\n",cold?"COLD":"WARM");
         power_res &= femb[femb_idx]->configure_coldata(cold,FRAME_14,1); //default config
         if (!power_res) {
@@ -101,7 +101,7 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
         }
         glog.log("Powering on FEMB %i COLDADC\n",femb_idx);
         femb_power_en_ctrl(femb_idx, 0xFF); //COLDATA+COLDADC ON
-        usleep(100000);
+        usleep(1000000);
         glog.log("Loading %s COLDADC config\n",cold?"COLD":"WARM");
         power_res &= femb[femb_idx]->configure_coldadc(cold); //default config
         if (!power_res) {
@@ -198,7 +198,7 @@ bool WIB_3ASIC::set_pulser(bool on) {
         }
         FEMB_3ASIC::fast_cmd(FAST_CMD_ACT); // Perform ACT
         pulser_on = on;
-        if (!pulser_res) glog.log("Pulser failed to toggle, pulser state unknown\n");
+        if (!pulser_res) glog.log("ERROR: Pulser failed to toggle, pulser state unknown\n");
         return pulser_res;
     } else {
         glog.log(on ? "Pulser already started\n" : "Pulser already stopped\n");
@@ -358,6 +358,9 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
 
     // Set appropriate channel map
     set_channel_map(detector_type);
+    if (conf.adc_test_pattern()) {
+      set_channel_map(1);
+    }
     
     bool coldata_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDATA
@@ -400,7 +403,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
 
     // Pulser _must_ be off to program LArASIC
-    set_pulser(false);
+    bool pulser_res = set_pulser(false);
     
     bool larasic_res = true;
     uint32_t rx_mask = 0x0000;
@@ -490,7 +493,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
         glog.log("LArASIC SPI verification failed!\n");
     }
     
-    bool pulser_res = set_pulser(conf.pulser());
+    pulser_res &= set_pulser(conf.pulser());
         
     femb_rx_mask(rx_mask); 
     femb_rx_reset();

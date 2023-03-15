@@ -32,9 +32,9 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
         res &= i2c_write_verify(0, i, 0, 0x20, 0x5);    //Ready for ADC SYNC RESET Fast command
         res &= i2c_write_verify(0, i, 0, 0x25, 0x40);	//Lengthen SCK time during SPI write for more stability
         res &= i2c_write_verify(0, i, 0, 0x27, 0x1F);	//Shanshan recommendation
-
+        res &= i2c_write_verify(0, i, 5, 0x41, 0x25);    //CONFIG_PLL_BAND (datasheet suggests 0x25 for cold, 0x26 for warm)
+	
         //res &= i2c_write_verify(0, i, 5, 0x40, 0x3);    //CONFIG_PLL_ICP
-        //res &= i2c_write_verify(0, i, 5, 0x41, cold ? 0x08 : 0x10);    //CONFIG_PLL_BAND
         //res &= i2c_write_verify(0, i, 5, 0x42, 0x2);    //CONFIG_PLL_LPFR
         //res &= i2c_write_verify(0, i, 5, 0x43, 0x2);    //CONFIG_PLL_ATO
         //res &= i2c_write_verify(0, i, 5, 0x44, 0x0);    //CONFIG_PLL_PDCP
