@@ -79,7 +79,10 @@ public:
     bool reset_timing_endpoint();
     // Returns true if timing endpoint is locked
     bool is_endpoint_locked();    
-    
+
+    // Adjust I2C clock phase by (steps) number of units (~15 ps per step)
+    void i2c_phase_adjust(int steps);
+  
     // Reset the FELIX transmitters
     void felix_tx_reset();
     
@@ -147,7 +150,7 @@ protected:
     
     // Voltages to be programmed into frontend power control
     double dc2dc_o1 = 4.0, dc2dc_o2 = 4.0, dc2dc_o3 = 4.0, dc2dc_o4 = 4.0, ldo_a0 = 2.5, ldo_a1 = 2.5;
-    
+  
     // I2C interface to the selectable I2C bus (see i2c_select)
     i2c_t selected_i2c;
     
@@ -156,6 +159,9 @@ protected:
     
     // I2C interface to the I2C bus with FEMB power monitor
     i2c_t femb_pwr_i2c;
+
+    // Number of steps for I2C clock phase adjustment
+    int i2c_phase_steps = 300;
     
     // AXI interface to firmware control and status registers 
     io_reg_t regs;

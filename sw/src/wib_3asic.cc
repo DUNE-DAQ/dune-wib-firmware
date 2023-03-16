@@ -319,7 +319,8 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     if (!is_endpoint_locked()) {
-        glog.log("BNL-modified code to not require timing endpoint\n");
+        glog.log("Timing endpoint in bad state\n");
+	return false;
         #ifndef SIMULATION
         //return false;
         #endif
