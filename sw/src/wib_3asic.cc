@@ -118,6 +118,16 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
     return power_res;
 }
 
+void WIB_3ASIC::enable_stamp_sync(bool on) {
+    uint32_t value = io_reg_read(&this->regs, REG_FAKE_TIME_CTRL);
+    if (on) {
+      value |= (1<<2);
+    } else {
+      value &= ~(1<<2);
+    }
+    io_reg_write(&this->regs, REG_FAKE_TIME_CTRL, value);
+}
+
 bool WIB_3ASIC::set_alignment(uint32_t cmd_stamp_sync) {
     uint32_t prev = io_reg_read(&this->regs, REG_FAKE_TIME_CTRL);
     uint32_t mask = 0xffffffff ^ (0x7fff << 16);
@@ -160,6 +170,37 @@ bool WIB_3ASIC::reset_crc_bits() {
     value &= ~(1<<20);
     io_reg_write(&this->regs, REG_FW_CTRL, value);
     return true;
+}
+
+bool WIB_3ASIC::check_alignment_delay(int fembIdx) {
+  uint32_t value;
+  switch (fembIdx) {
+  case 0:
+    value = io_reg_read(&this->regs, REG_COLDATA_ALIGNMENT_0);
+    break;
+  case 1:
+    value = io_reg_read(&this->regs, REG_COLDATA_ALIGNMENT_1);
+    break;
+  case 2:
+    value = io_reg_read(&this->regs, REG_COLDATA_ALIGNMENT_2);
+    break;
+  case 3:
+    value = io_reg_read(&this->regs, REG_COLDATA_ALIGNMENT_3);
+    break;
+  default:
+    glog.log("FEMB %i does not exist, cannot check alignment delay\n", fembIdx);
+    return false;
+  }
+
+  for (int link = 0; link < 4; link++) {
+    uint32_t mask = 0xFF << (8*link);
+    uint32_t delayValue = (value & mask) >> (8*link);
+    if (delayValue > 0x7F) {
+      glog.log("FEMB %i link %i has bad alignment delay of %02X\n", fembIdx, link, delayValue);
+      return false;
+    }
+  }
+  return true;
 }
 
 bool WIB_3ASIC::femb_rx_mask(uint32_t value, uint32_t mask) {
@@ -307,12 +348,20 @@ bool WIB_3ASIC::power_wib(const wib::PowerWIB &conf) {
     glog.log("Running power-on diagnostics\n");
     bool adc_test_res = check_test_pattern(*this,frontend_power,conf.cold());
     //glog.log("Eric is skipping the test pattern check");
-    //adc_test_res = true; 
-    return pulser_res && power_res && adc_test_res;
+    //adc_test_res = true;
+
+    bool good_alignment = true;
+    for (int i = 0; i < 4; i++) {
+        if (femb_i_on(conf,i)) {
+	  good_alignment &= check_alignment_delay(i);
+	}
+    }
+    
+    return pulser_res && power_res && adc_test_res && good_alignment;
 }
 
 bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
-  
+
     if (conf.fembs_size() != 4) {
         glog.log("Must supply exactly 4 FEMB configurations\n");
         return false;
@@ -338,6 +387,8 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     glog.log("Reconfiguring WIB\n"); 
+
+    enable_stamp_sync(false);
 
     int detector_type = conf.detector_type();
     if (detector_type == 0) {
@@ -506,10 +557,19 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     else {
       glog.log("ColdADC calibration failed\n");
     }   
-    
+
+    enable_stamp_sync(true);
     reset_crc_bits();
+
+    bool good_alignment = true;
+    for (int i = 0; i < 4; i++) {
+      if (conf.fembs(i).enabled()) {
+	good_alignment &= check_alignment_delay(i); 
+      }
+    }
+
     
-    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res;
+    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res && good_alignment;
 }
 
 bool WIB_3ASIC::calibrate() {

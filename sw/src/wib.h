@@ -46,6 +46,10 @@ constexpr size_t REG_DAQ_SPY_STATUS     = 0x0080/4;
 constexpr size_t REG_FW_TIMESTAMP       = 0x0088/4;
 constexpr size_t REG_BACKPLANE_ADDR     = 0x008C/4;
 constexpr size_t REG_ENDPOINT_STATUS    = 0x0090/4;
+constexpr size_t REG_COLDATA_ALIGNMENT_0    = 0x00A8/4;
+constexpr size_t REG_COLDATA_ALIGNMENT_1    = 0x00AC/4;
+constexpr size_t REG_COLDATA_ALIGNMENT_2    = 0x00B0/4;
+constexpr size_t REG_COLDATA_ALIGNMENT_3    = 0x00B4/4;
 
 class WIB {
 

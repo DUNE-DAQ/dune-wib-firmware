@@ -48,6 +48,9 @@ protected:
     // May subclass and override this as ASICs/FEMBs undergo revisions
     virtual bool femb_power_set(int femb_idx, bool on, bool cold = true);
 
+    // Enable/disable sending periodic SYNC FAST commands with timestamp 
+    void enable_stamp_sync(bool on);
+  
     // Set value for COLDATA time stamp alignment
     bool set_alignment(uint32_t cmd_stamp_sync);
 
@@ -59,6 +62,9 @@ protected:
 
     // Reset CRC bits
     bool reset_crc_bits();
+
+    // Check validity alignment delays of all 4 COLDATA links for one FEMB
+    bool check_alignment_delay(int fembIdx);
   
     // Set the coldata serial receiver mask value
     bool femb_rx_mask(uint32_t value, uint32_t mask = 0xFFFF);

@@ -137,7 +137,6 @@ bool WIB::reset_timing_endpoint() {
 bool WIB::is_endpoint_locked() {
     //read firmware timing endpoint status
     uint32_t ept_status = io_reg_read(&this->regs, REG_ENDPOINT_STATUS);
-    //    return (ept_status & 0x10F) == 0x108; // ts_ready && ept_locked
     return (ept_status & 0x2F) == 0x28; // ts_ready && ts_stat 
 }
 
@@ -724,10 +723,10 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2990_4e_voltages();
     for (uint8_t i = 1; i <= 4; i++) {
         double v = 0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i);
-	//        glog.log("LTC2990 0x4E ch%i -> %0.2f V\n",i,v);
+	glog.log("LTC2990 0x4E ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2990_4e_voltages(v);
     }
-    //    glog.log("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
+    glog.log("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
 
     // 1.2 V (before)
     // 1.2 V
@@ -737,10 +736,10 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2990_4c_voltages();
     for (uint8_t i = 1; i <= 4; i++) {
         double v = 0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i);
-	//        glog.log("LTC2990 0x4C ch%i -> %0.2f V\n",i,v);
+	glog.log("LTC2990 0x4C ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2990_4c_voltages(v);
     }
-    //    glog.log("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
+    glog.log("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
 
     // In pairs (before,after)
     // 0.85 V
@@ -751,21 +750,21 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2991_48_voltages();
     for (uint8_t i = 1; i <= 8; i++) {
         double v = 0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i);
-	//        glog.log("LTC2991 0x48 ch%i -> %0.2f V\n",i,v);
+	glog.log("LTC2991 0x48 ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2991_48_voltages(v);
     }
-    //    glog.log("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
+    glog.log("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
 
     // 0x49 0x4D 0x4A are AD7414 temperature sensors
     double t;
     t = read_ad7414_temp(&this->selected_i2c,0x49);
-    //    glog.log("AD7414 0x49 temp %0.1f\n", t);
+    glog.log("AD7414 0x49 temp %0.1f\n", t);
     sensors.set_ad7414_49_temp(t);
     t = read_ad7414_temp(&this->selected_i2c,0x4D);
-    //    glog.log("AD7414 0x4D temp %0.1f\n", t);
+    glog.log("AD7414 0x4D temp %0.1f\n", t);
     sensors.set_ad7414_4d_temp(t);
     t = read_ad7414_temp(&this->selected_i2c,0x4A);
-    //    glog.log("AD7414 0x4A temp %0.1f\n", t);
+    glog.log("AD7414 0x4A temp %0.1f\n", t);
     sensors.set_ad7414_4a_temp(t);
 
     // 0x15 LTC2499 temperature sensor inputs from LTM4644 for FEMB 0 - 3 and WIB 1 - 3
@@ -774,7 +773,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     for (uint8_t i = 0; i < 7; i++) {
         usleep(175000);
         t = read_ltc2499_temp(&this->selected_i2c,i+1);
-	//        glog.log("LTC2499 ch%i -> %0.14f\n",i,t);
+	glog.log("LTC2499 ch%i -> %0.14f\n",i,t);
         sensors.add_ltc2499_15_temps(t);
     }
 
@@ -804,6 +803,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
         } else if (i < 6) {
 	  // glog.log("Reading FEMB LDO %i current\n",i-4);
             addr = femb_ldo_current_addr[i-4];
+	    continue;
         } else if (i < 7) {
 	  //glog.log("Reading FEMB bias current\n");
             addr = femb_bias_current_addr[i-6];
@@ -813,7 +813,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
         enable_ltc2991(femb_power_mon_i2c,addr);
         for (uint8_t j = 1; j <= 8; j++) {
             double v = 0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,j);
-            //glog.log("LTC2991 0x%X ch%i -> %0.2f V\n",addr,j,v);
+            glog.log("LTC2991 0x%X ch%i -> %0.2f V\n",addr,j,v);
             switch (i) {
                 case 0: sensors.add_femb0_dc2dc_ltc2991_voltages(v); break;
                 case 1: sensors.add_femb1_dc2dc_ltc2991_voltages(v); break;
