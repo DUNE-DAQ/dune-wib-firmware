@@ -91,9 +91,9 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
         }
         glog.log("Powering on FEMB %i COLDATA\n",femb_idx);
         femb_power_en_ctrl(femb_idx, 0x6B); //COLDATA ON
-        usleep(100000);
+        usleep(1000000);
         glog.log("Loading %s COLDATA config\n",cold?"COLD":"WARM");
-        power_res &= femb[femb_idx]->configure_coldata(cold,FRAME_14); //default config
+        power_res &= femb[femb_idx]->configure_coldata(cold,FRAME_14,1); //default config
         if (!power_res) {
             glog.log("Failed to configure COLDATA; aborting power on\n");
             femb_power_set(femb_idx,false);
@@ -101,7 +101,7 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
         }
         glog.log("Powering on FEMB %i COLDADC\n",femb_idx);
         femb_power_en_ctrl(femb_idx, 0xFF); //COLDATA+COLDADC ON
-        usleep(100000);
+        usleep(1000000);
         glog.log("Loading %s COLDADC config\n",cold?"COLD":"WARM");
         power_res &= femb[femb_idx]->configure_coldadc(cold); //default config
         if (!power_res) {
@@ -116,6 +116,91 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
         femb_power_en_ctrl(femb_idx, 0x00); //CLDATA+COLDADC OFF
     }
     return power_res;
+}
+
+void WIB_3ASIC::enable_stamp_sync(bool on) {
+    uint32_t value = io_reg_read(&this->regs, REG_FAKE_TIME_CTRL);
+    if (on) {
+      value |= (1<<2);
+    } else {
+      value &= ~(1<<2);
+    }
+    io_reg_write(&this->regs, REG_FAKE_TIME_CTRL, value);
+}
+
+bool WIB_3ASIC::set_alignment(uint32_t cmd_stamp_sync) {
+    uint32_t prev = io_reg_read(&this->regs, REG_FAKE_TIME_CTRL);
+    uint32_t mask = 0xffffffff ^ (0x7fff << 16);
+    uint32_t write = (cmd_stamp_sync & 0x7fff) << 16;
+    io_reg_write(&this->regs, REG_FAKE_TIME_CTRL, (prev & mask) | write);
+    return true;
+}
+
+bool WIB_3ASIC::set_edge_delay(uint8_t edge_delay) {
+    if (edge_delay > 32) {
+        glog.log("Edge delay of %d is too large, aborting setting", edge_delay);
+	return false;
+    }
+    uint32_t prev = io_reg_read(&this->regs, 0x0020/4);
+    uint32_t mask = 0xffffffff ^ (0x3F << 9);
+    uint32_t write = (edge_delay & 0x3F) << 9;
+    io_reg_write(&this->regs, 0x0020/4, (prev & mask) | write);
+    return true;
+}
+
+bool WIB_3ASIC::set_channel_map(int detector_type) {
+  uint32_t value = io_reg_read(&this->regs, REG_FW_CTRL);
+  if (detector_type == 1 || detector_type == 2) {
+    value &= ~(1<<21);
+  } else if (detector_type == 3) {
+    value |= (1<<21);
+  } else {
+    glog.log("Unknown detector type %i, leaving channel map unmodified", detector_type);
+    return false;
+  }
+  io_reg_write(&this->regs, REG_FW_CTRL, value);
+  return true;
+}
+
+bool WIB_3ASIC::reset_crc_bits() {
+    uint32_t value = io_reg_read(&this->regs, REG_FW_CTRL);
+    value |= (1<<20);
+    io_reg_write(&this->regs, REG_FW_CTRL, value);
+    usleep(500000);
+    value &= ~(1<<20);
+    io_reg_write(&this->regs, REG_FW_CTRL, value);
+    return true;
+}
+
+bool WIB_3ASIC::check_alignment_delay(int fembIdx) {
+  uint32_t value;
+  switch (fembIdx) {
+  case 0:
+    value = io_reg_read(&this->regs, REG_COLDATA_ALIGNMENT_0);
+    break;
+  case 1:
+    value = io_reg_read(&this->regs, REG_COLDATA_ALIGNMENT_1);
+    break;
+  case 2:
+    value = io_reg_read(&this->regs, REG_COLDATA_ALIGNMENT_2);
+    break;
+  case 3:
+    value = io_reg_read(&this->regs, REG_COLDATA_ALIGNMENT_3);
+    break;
+  default:
+    glog.log("FEMB %i does not exist, cannot check alignment delay\n", fembIdx);
+    return false;
+  }
+
+  for (int link = 0; link < 4; link++) {
+    uint32_t mask = 0xFF << (8*link);
+    uint32_t delayValue = (value & mask) >> (8*link);
+    if (delayValue > 0x7F) {
+      glog.log("FEMB %i link %i has bad alignment delay of %02X\n", fembIdx, link, delayValue);
+      return false;
+    }
+  }
+  return true;
 }
 
 bool WIB_3ASIC::femb_rx_mask(uint32_t value, uint32_t mask) {
@@ -154,7 +239,7 @@ bool WIB_3ASIC::set_pulser(bool on) {
         }
         FEMB_3ASIC::fast_cmd(FAST_CMD_ACT); // Perform ACT
         pulser_on = on;
-        if (!pulser_res) glog.log("Pulser failed to toggle, pulser state unknown\n");
+        if (!pulser_res) glog.log("ERROR: Pulser failed to toggle, pulser state unknown\n");
         return pulser_res;
     } else {
         glog.log(on ? "Pulser already started\n" : "Pulser already stopped\n");
@@ -263,8 +348,16 @@ bool WIB_3ASIC::power_wib(const wib::PowerWIB &conf) {
     glog.log("Running power-on diagnostics\n");
     bool adc_test_res = check_test_pattern(*this,frontend_power,conf.cold());
     //glog.log("Eric is skipping the test pattern check");
-    //adc_test_res = true; 
-    return pulser_res && power_res && adc_test_res;
+    //adc_test_res = true;
+
+    bool good_alignment = true;
+    for (int i = 0; i < 4; i++) {
+        if (femb_i_on(conf,i)) {
+	  good_alignment &= check_alignment_delay(i);
+	}
+    }
+    
+    return pulser_res && power_res && adc_test_res && good_alignment;
 }
 
 bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
@@ -275,7 +368,8 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     if (!is_endpoint_locked()) {
-        glog.log("BNL-modified code to not require timing endpoint\n");
+        glog.log("Timing endpoint in bad state\n");
+	return false;
         #ifndef SIMULATION
         //return false;
         #endif
@@ -293,10 +387,36 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     glog.log("Reconfiguring WIB\n"); 
+
+    enable_stamp_sync(false);
+
+    int detector_type = conf.detector_type();
+    if (detector_type == 0) {
+      detector_type = getDetectorType();
+      glog.log("Obtained detector type %i from crate ID\n", detector_type);
+    }
+
+    // Write cable delay value for timestamp synchronization
+    if (detector_type == 1) {
+      set_alignment(0x7fea);
+      set_edge_delay(6);
+    } else if (detector_type == 2) {
+      set_alignment(0x7fe6);
+      set_edge_delay(2);
+    } else if (detector_type == 3) {
+      set_alignment(0x7fe4);
+      set_edge_delay(0);
+    }
+
+    // Set appropriate channel map
+    set_channel_map(detector_type);
+    if (conf.adc_test_pattern()) {
+      set_channel_map(1);
+    }
     
     bool coldata_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDATA
-        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),conf.frame_dd()?FRAME_DD:FRAME_14);
+        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),conf.frame_dd()?FRAME_DD:FRAME_14,detector_type);
     }
     if (coldata_res) {
         glog.log("COLDATA configured\n");
@@ -321,7 +441,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     
     bool coldadc_res = true;
     for (int i = 0; i < 4; i++) { // Configure COLDADCs
-         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern(),adc_conf);
+         if (conf.fembs(i).enabled()) coldadc_res &= femb[i]->configure_coldadc(conf.cold(),conf.adc_test_pattern(),adc_conf,conf.fembs(i).buffer() != 2);
     }
     if (coldadc_res) {
         glog.log("COLDADC configured\n");
@@ -333,12 +453,15 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
         delete adc_conf;
         adc_conf = NULL;
     }
-    
+
     // Pulser _must_ be off to program LArASIC
-    set_pulser(false);
+    bool pulser_res = set_pulser(false);
     
     bool larasic_res = true;
     uint32_t rx_mask = 0x0000;
+
+    // FEMB number assignments for crpFEMBs[wibSlot][fembIdx]
+    int crpFEMBs[6][4] = {{6,5,2,1}, {8,7,4,3}, {14,13,10,9}, {16,15,12,11}, {22,21,18,17}, {24,23,20,19}};
     for (int i = 0; i < 4; i++) {
         if (conf.fembs(i).enabled()) {
             larasic_conf c;
@@ -350,12 +473,12 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             c.sdc = femb_conf.ac_couple() == true;
             c.slkh = femb_conf.leak_10x() == true;
             c.slk = femb_conf.leak() == 1;
-	    c.sgp = femb_conf.gain_match() == true;
+	    c.sgp = femb_conf.gain_match() == false;
             c.sdac = femb_conf.pulse_dac() & 0x3F;
             c.sdacsw2 = conf.pulser(); //connect pulser to channels
             
             c.sts = femb_conf.test_cap() == true;
-            c.snc = femb_conf.baseline() == 1;
+            c.snc = femb_conf.baseline(); // New method - 0 = 900 mV, 1 = 200 mV, 2 = use APA mapping
             c.gain = femb_conf.gain() & 0x3;
             c.peak_time = femb_conf.peak_time() & 0x3;
             c.sdf = femb_conf.buffer() == 1;    
@@ -363,8 +486,13 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             c.cal_skip = femb_conf.strobe_skip();
             c.cal_delay = femb_conf.strobe_delay();
             c.cal_length = femb_conf.strobe_length();    
-            
-            larasic_res &= femb[i]->configure_larasic(c); // Sets ACT to ACT_PROGRAM_LARASIC
+
+	    // FEMBs 13-24 are identical to 1-12 for CRP baseline mappings	    
+            int fembNum = crpFEMBs[backplane_slot_num() & 0x7][i];
+	    if (fembNum > 12) fembNum -= 12;
+	    if (detector_type != 3) fembNum = 0; // FEMB number is currently irrelevant for non-CRP configurations
+	    
+            larasic_res &= femb[i]->configure_larasic(c, detector_type, fembNum); // Sets ACT to ACT_PROGRAM_LARASIC
         } else {
             rx_mask |= (0xF << (i*4));
         }
@@ -417,88 +545,41 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
         glog.log("LArASIC SPI verification failed!\n");
     }
     
-    bool pulser_res = set_pulser(conf.pulser());
+    pulser_res &= set_pulser(conf.pulser());
         
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
-//    glog.log("configure_wib result is\n \
-//		    coldata_res: %d\n \
-//		    coldadc_res: %d\n \
-//		    larasic_res: %d\n \
-//		    spi_verified:%d\n \
-//		    pulser_res: %d\n \
-//		    total: %d\n", coldata_res, coldadc_res, larasic_res, spi_verified, pulser_res,
-//		    coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res);
-    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res;
+
+    if (calibrate()) {
+      glog.log("ColdADCs calibrated\n");
+    }
+    else {
+      glog.log("ColdADC calibration failed\n");
+    }   
+
+    enable_stamp_sync(true);
+    reset_crc_bits();
+
+    bool good_alignment = true;
+    for (int i = 0; i < 4; i++) {
+      if (conf.fembs(i).enabled()) {
+	good_alignment &= check_alignment_delay(i); 
+      }
+    }
+
+    
+    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res && good_alignment;
 }
 
 bool WIB_3ASIC::calibrate() {
-    channel_data link0, link1;
-    glog.log("Calibrating COLDADCs\n");
-    for (int stage = 6; stage >= 0; stage--) {
-        glog.log("Obtaining stage %i level constants\n",stage);
-        uint16_t sn_vals[4][8][2][4]; //4 FEMBs with 8 COLDADCs containing 2 pipelines with 4 sn values each
-        for (uint8_t sn = 0; sn < 5; sn++) { //sn=4 resets forcing
-            //put the COLDADCs in forcing mode for calibration
-            for (int i = 0; i < 4; i++) {
-                if (!frontend_power[i]) continue; // skip FEMBs that are off
-                if (!femb[i]->setup_calib(sn,stage)) {
-                    glog.log("Failed to setup stage %i S%i measurement for FEMB %i\n",stage,sn,i);
-                    return false;
-                }
-            }
-            if (sn == 4) break; //sn=4 resets forcing
-            // each acquisition is roughly 2100 time samples, with 8 channels per pipeline
-            // so roughly 16k samples per pipeline; repeat this 5 times and average outputs
-            uint16_t avg_vals[4][8][2] = {0}; //4 FEMBs with 8 COLDADCs containing 2 pipelines
-            constexpr int NACQ = 5;
-            for (int acq = 0; acq < NACQ; acq++) { 
-                acquire_data(*this,frontend_power,link0,link1);
-                for (int i = 0; i < 4; i++) { //femb
-                    channel_data &link = i < 2 ? link0 : link1;
-                    if (!frontend_power[i]) continue; // skip FEMBs that are off
-                    for (int j = 0; j < 8; j++) { //coldadc
-                        for (int k = 0; k < 2; k++) { //pipeline
-                            double accum = 0;
-                            for (int ch = 0; ch < 8; ch++) {
-                                accum += mean(link.channels[i%2][j*16+k*8+ch]);
-                            }
-                            accum /= 2.0; //added 8 14bit means (/8 to get avg) and want a 16bit number (*4 to shift 2 bits) → (/2)
-                            avg_vals[i][j][k] += accum/NACQ;
-                        }
-                    }
-                }
-            }
-            // store average outputs in sn_vals arrray
-            for (int i = 0; i < 4; i++) { //femb
-                if (!frontend_power[i]) continue; // skip FEMBs that are off
-                for (int j = 0; j < 8; j++) { //coldadc
-                    for (int k = 0; k < 2; k++) { //pipeline
-                        sn_vals[i][j][k][sn] = ((uint16_t)avg_vals[i][j][k]) ^ 0x8000; //convert offset binary to twos compliment 
-                        glog.log("S%i FEMB:%i COLDADC:%i PIPE:%i STAGE:%i :: 0x%04X\n",sn,i,j,k,stage,sn_vals[i][j][k][sn]);
-                    }
-                }
-            }
+    for (int i = 0; i < 4; i++) { //femb
+        if (!frontend_power[i]) continue; // skip FEMBs that are off
+        if (!femb[i]->setup_calib_auto()) {
+            glog.log("Failed to calibrate FEMB %i\n",i);
+            return false;
         }
-        glog.log("Programming stage %i weight constants\n",stage);
-        for (int i = 0; i < 4; i++) { //femb
-            if (!frontend_power[i]) continue; // skip FEMBs that are off
-            uint16_t w0_vals[8][2], w2_vals[8][2]; //8 COLDADCs containing 2 pipelines
-            for (int j = 0; j < 8; j++) { //coldadc
-                for (int k = 0; k < 2; k++) { //pipeline
-                    w0_vals[j][k] = (uint16_t)(sn_vals[i][j][k][1] - sn_vals[i][j][k][0]);
-                    w2_vals[j][k] = (uint16_t)(sn_vals[i][j][k][2] - sn_vals[i][j][k][3]);
-                    glog.log("W0 FEMB:%i COLDADC:%i PIPE:%i STAGE:%i :: 0x%04X\n",i,j,k,stage,w0_vals[j][k]);
-                    glog.log("W2 FEMB:%i COLDADC:%i PIPE:%i STAGE:%i :: 0x%04X\n",i,j,k,stage,w2_vals[j][k]);
-                }
-            }
-            if (!femb[i]->store_calib(w0_vals,w2_vals,stage)) {
-                glog.log("Failed to store stage %i weights for FEMB %i\n",stage,i);
-                return false;
-            }
-        }
+	// femb[i]->dump_calib_constants();
     }
-    glog.log("Calibration completed\n");
     return true;
 }

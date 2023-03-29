@@ -46,6 +46,10 @@ constexpr size_t REG_DAQ_SPY_STATUS     = 0x0080/4;
 constexpr size_t REG_FW_TIMESTAMP       = 0x0088/4;
 constexpr size_t REG_BACKPLANE_ADDR     = 0x008C/4;
 constexpr size_t REG_ENDPOINT_STATUS    = 0x0090/4;
+constexpr size_t REG_COLDATA_ALIGNMENT_0    = 0x00A8/4;
+constexpr size_t REG_COLDATA_ALIGNMENT_1    = 0x00AC/4;
+constexpr size_t REG_COLDATA_ALIGNMENT_2    = 0x00B0/4;
+constexpr size_t REG_COLDATA_ALIGNMENT_3    = 0x00B4/4;
 
 class WIB {
 
@@ -69,7 +73,7 @@ public:
     // Returns IP for the default gateway, else returns default 192.168.121.52
     virtual std::string gateway_ip();
     // Returns the timing endpoint address for the timing system
-    virtual uint8_t timing_addr();
+    virtual uint16_t timing_addr();
     
     // Reads the backplane crate and slot numbers
     uint8_t backplane_crate_num();
@@ -79,7 +83,10 @@ public:
     bool reset_timing_endpoint();
     // Returns true if timing endpoint is locked
     bool is_endpoint_locked();    
-    
+
+    // Adjust I2C clock phase by (steps) number of units (~15 ps per step)
+    void i2c_phase_adjust(int steps);
+  
     // Reset the FELIX transmitters
     void felix_tx_reset();
     
@@ -121,6 +128,10 @@ public:
     // Calibrate the ADCs
     virtual bool calibrate();
 
+    // Guess the detector type based on crate ID
+    // Returns 1 for upper APA, 2 for lower APA, 3 for CRP
+    virtual int getDetectorType();
+
     // Read the onboard I2C sensors and fill the sensor structure
     bool read_sensors(wib::GetSensors::Sensors &sensors);
     
@@ -143,7 +154,7 @@ protected:
     
     // Voltages to be programmed into frontend power control
     double dc2dc_o1 = 4.0, dc2dc_o2 = 4.0, dc2dc_o3 = 4.0, dc2dc_o4 = 4.0, ldo_a0 = 2.5, ldo_a1 = 2.5;
-    
+  
     // I2C interface to the selectable I2C bus (see i2c_select)
     i2c_t selected_i2c;
     
@@ -152,6 +163,9 @@ protected:
     
     // I2C interface to the I2C bus with FEMB power monitor
     i2c_t femb_pwr_i2c;
+
+    // Number of steps for I2C clock phase adjustment
+    int i2c_phase_steps = 300;
     
     // AXI interface to firmware control and status registers 
     io_reg_t regs;

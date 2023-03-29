@@ -1,4 +1,5 @@
 #include "wib.h"
+
 #include "unpack.h"
 #include "sensors.h"
 
@@ -94,10 +95,13 @@ bool WIB::initialize() {
 
 bool WIB::reset_timing_endpoint() {
     bool success = true;
+    bool endpoint_lock = is_endpoint_locked();
+    uint32_t ept_status = io_reg_read(&this->regs, REG_ENDPOINT_STATUS);
+    glog.log("EPT status %d before timing reset", ept_status);
     if (!pll_initialized) {
         glog.log("Configuring PLL\n");
-        success &= script("conf_pll_timing");
-        if (success) {
+        int ret = system("/etc/wib/si5345_config");
+        if (WEXITSTATUS(ret) == 0) {
             pll_initialized = true;
         } else {
             glog.log("Failed to configure PLL\n");
@@ -111,7 +115,7 @@ bool WIB::reset_timing_endpoint() {
         glog.log("Using timing signal from SFP");
         io_reg_write(&this->regs,REG_FW_CTRL,(1<<5),(1<<5));
     } else {
-        glog.log("Using timing signal from backplane");
+        glog.log("Using timing signal from backplane\n");
         io_reg_write(&this->regs,REG_FW_CTRL,(0<<5),(1<<5));
     }
     glog.log("Resetting timing endpoint\n");
@@ -119,14 +123,30 @@ bool WIB::reset_timing_endpoint() {
     uint32_t value = timing_addr(); //low 8 bits are addr 
     io_reg_write(&this->regs,REG_TIMING,(1<<28)|value); // bit 28 is reset bit
     usleep(2000000);
-    io_reg_write(&this->regs,REG_TIMING,value); 
+    io_reg_write(&this->regs,REG_TIMING,value);
+    usleep(2000000);
+
+    //  If timing status was previously bad, need to readjust I2C phase
+    if (!endpoint_lock) {
+      glog.log("Timing status recovered fro a bad state, readjusting I2C clock phase by %d steps\n", i2c_phase_steps);
+      i2c_phase_adjust(i2c_phase_steps);
+    }
     return success;
 }
 
 bool WIB::is_endpoint_locked() {
     //read firmware timing endpoint status
     uint32_t ept_status = io_reg_read(&this->regs, REG_ENDPOINT_STATUS);
-    return (ept_status & 0x10F) == 0x108; // ts_ready && ept_locked
+    return (ept_status & 0x2F) == 0x28; // ts_ready && ts_stat 
+}
+
+void WIB::i2c_phase_adjust(int steps) {
+    uint32_t prev = io_reg_read(&this->regs, 0x0004/4);
+    uint32_t adjust_write = prev | (1 << 18);
+    for (int i = 0; i < steps; i++) {
+        io_reg_write(&this->regs, 0x0004/4, adjust_write);
+        io_reg_write(&this->regs, 0x0004/4, prev);
+    }
 }
 
 void WIB::felix_tx_reset() {
@@ -182,7 +202,7 @@ string WIB::gateway_ip() {
     return "";
 }
 
-uint8_t WIB::timing_addr() {
+uint16_t WIB::timing_addr() {
     //FIXME 8 bits is _not enough bits_ for unique WIB addresses in DUNE
     //but this is the address size for the timing endpoint code in firmware
     return ((backplane_crate_num() << 3) | (backplane_slot_num() & 0x7)) & 0xFF;
@@ -286,13 +306,18 @@ bool WIB::femb_power_config() {
     }
     
     // configure all pins as outputs for regulator enablers
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
-    i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
+//    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xC, 0);
+//    i2c_reg_write(&this->femb_en_i2c, 0x23, 0xD, 0);
+ //   i2c_reg_write(&this->femb_en_i2c, 0x23, 0xE, 0);
+//i2c_reg_write(&this->femb_en_i2c, 0x22, 0xC, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x22, 0xD, 0);
     i2c_reg_write(&this->femb_en_i2c, 0x22, 0xE, 0);
-    
+   
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x0C, 0x08);
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x0D, 0x08);
+    i2c_reg_write(&this->femb_en_i2c, 0x23, 0x0E, 0x08);
+    i2c_reg_write(&this->femb_en_i2c, 0x22, 0x0C, 0x08);
+
     return true;
 }
 
@@ -622,13 +647,19 @@ uint32_t WIB::peek(size_t addr) {
     size_t page_addr = (addr & ~(sysconf(_SC_PAGESIZE)-1));
     size_t page_offset = addr-page_addr;
 
-    int fd = open("/dev/mem",O_RDWR);
+    int fd = open("/dev/mem",O_RDWR|O_SYNC);
     void *ptr = mmap(NULL,sysconf(_SC_PAGESIZE),PROT_READ|PROT_WRITE,MAP_SHARED,fd,(addr & ~(sysconf(_SC_PAGESIZE)-1)));
-
-    return *((uint32_t*)((char*)ptr+page_offset));
+    if (ptr == MAP_FAILED) {
+    	glog.log("Error: %s\n", strerror(errno));
+    	return -1;
+    }
+    //return *((uint32_t*)((char*)ptr+page_offset));
+    uint32_t val = *((uint32_t*)((char*)ptr+page_offset));
     
     munmap(ptr,sysconf(_SC_PAGESIZE));
     close(fd);
+
+    return val;
     #else
     return 0x0;
     #endif
@@ -642,6 +673,11 @@ void WIB::poke(size_t addr, uint32_t val) {
     int fd = open("/dev/mem",O_RDWR);
     void *ptr = mmap(NULL,sysconf(_SC_PAGESIZE),PROT_READ|PROT_WRITE,MAP_SHARED,fd,(addr & ~(sysconf(_SC_PAGESIZE)-1)));
 
+    if (ptr == MAP_FAILED) {
+		glog.log("Error: %s\n", strerror(errno));
+		return;
+	}
+    
     *((uint32_t*)((char*)ptr+page_offset)) = val;
     
     munmap(ptr,sysconf(_SC_PAGESIZE));
@@ -687,7 +723,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2990_4e_voltages();
     for (uint8_t i = 1; i <= 4; i++) {
         double v = 0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,i);
-        glog.log("LTC2990 0x4E ch%i -> %0.2f V\n",i,v);
+	glog.log("LTC2990 0x4E ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2990_4e_voltages(v);
     }
     glog.log("LTC2990 0x4E Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4E,6)+2.5);
@@ -700,7 +736,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2990_4c_voltages();
     for (uint8_t i = 1; i <= 4; i++) {
         double v = 0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,i);
-        glog.log("LTC2990 0x4C ch%i -> %0.2f V\n",i,v);
+	glog.log("LTC2990 0x4C ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2990_4c_voltages(v);
     }
     glog.log("LTC2990 0x4C Vcc -> %0.2f V\n",0.00030518*read_ltc2990_value(&this->selected_i2c,0x4C,6)+2.5);
@@ -714,7 +750,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     sensors.clear_ltc2991_48_voltages();
     for (uint8_t i = 1; i <= 8; i++) {
         double v = 0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,i);
-        glog.log("LTC2991 0x48 ch%i -> %0.2f V\n",i,v);
+	glog.log("LTC2991 0x48 ch%i -> %0.2f V\n",i,v);
         sensors.add_ltc2991_48_voltages(v);
     }
     glog.log("LTC2991 0x48 Vcc -> %0.2f V\n",0.00030518*read_ltc2991_value(&this->selected_i2c,0x48,10)+2.5);
@@ -737,7 +773,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     for (uint8_t i = 0; i < 7; i++) {
         usleep(175000);
         t = read_ltc2499_temp(&this->selected_i2c,i+1);
-        glog.log("LTC2499 ch%i -> %0.14f\n",i,t);
+	glog.log("LTC2499 ch%i -> %0.14f\n",i,t);
         sensors.add_ltc2499_15_temps(t);
     }
 
@@ -762,13 +798,14 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
     for (uint8_t i = 0; ; i++) {
         uint8_t addr;
         if (i < 4) {
-            glog.log("Reading FEMB%i DC2DC current sensor\n",i);
+	  //glog.log("Reading FEMB%i DC2DC current sensor\n",i);
             addr = femb_dc2dc_current_addr[i];
         } else if (i < 6) {
-            glog.log("Reading FEMB LDO %i current\n",i-4);
+	  // glog.log("Reading FEMB LDO %i current\n",i-4);
             addr = femb_ldo_current_addr[i-4];
+	    continue;
         } else if (i < 7) {
-            glog.log("Reading FEMB bias current\n");
+	  //glog.log("Reading FEMB bias current\n");
             addr = femb_bias_current_addr[i-6];
         } else {
             break;
@@ -787,7 +824,7 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
                 case 6: sensors.add_femb_bias_ltc2991_voltages(v); break;
             }   
         }
-        glog.log("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,10)+2.5);
+	//        glog.log("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,10)+2.5);
     }
 
     return true;
@@ -828,4 +865,18 @@ uint32_t WIB::read_fw_timestamp() {
 bool WIB::calibrate() {
     glog.log("Calibrate not implemented\n");
     return false;
+}
+
+int WIB::getDetectorType() {
+    uint8_t crate_num = ~(backplane_crate_num()) & 0xF;
+    // For EHN1 running
+    int knownTypes[] = {0, 1, 1, 2, 2, 3, 3, 3};
+    if (crate_num > 7) {
+      glog.log("Detector type unknown for crate number %i, guessing upper APA as default\n", crate_num);
+      return 1;
+    } else if (knownTypes[crate_num] == 0) {
+      glog.log("Detector type unknown for crate number %i, guessing upper APA as default\n", crate_num);
+      return 1;
+    }
+    return knownTypes[crate_num];
 }
