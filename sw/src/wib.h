@@ -98,6 +98,9 @@ public:
     
     // Calls the `reboot` system command
     bool reboot();
+    // Calls the recompile.sh script to recompile the software
+    bool recompile();
+
     // Calls the wib_update.sh script after unpacking the two tar archives
     bool update(const std::string &root_archive, const std::string &boot_archive);
     

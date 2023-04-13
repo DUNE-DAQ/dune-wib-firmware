@@ -690,6 +690,12 @@ bool WIB::reboot() {
     return WEXITSTATUS(ret) == 0;
 }
 
+bool WIB::recompile() {
+    int ret = system("/etc/wib/recompile.sh");
+    glog.log("Reompiled software with exit code %d\n", WEXITSTATUS(ret));
+    return WEXITSTATUS(ret) == 0;
+}
+
 bool WIB::update(const string &root_archive, const string &boot_archive) {
     ofstream out_boot("/home/root/boot_archive.tar.gz", ofstream::binary);
     out_boot.write(boot_archive.data(),boot_archive.size());

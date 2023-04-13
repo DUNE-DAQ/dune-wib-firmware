@@ -355,7 +355,12 @@ int main(int argc, char **argv) {
             command.cmd().UnpackTo(&update);
             wib::Empty empty;
             empty.SerializeToString(&reply_str);
-            w->update(update.root_archive().c_str(),update.boot_archive().c_str());
+	    // If update message is empty, just recompile the software on the WIB
+	    if (update.ByteSize() == 0) {
+	      w->recompile();
+	    } else {
+	      w->update(update.root_archive().c_str(),update.boot_archive().c_str());
+	    }
         } else {
 	        glog.log("Received an unknown message!\n");
 	    }
