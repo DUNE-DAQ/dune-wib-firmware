@@ -18,6 +18,7 @@ Central repository for development of DUNE WIB firmware and software.
   * [Test drive the linux system with QEMU](#test-drive-the-linux-system-with-qemu)
     + [Initial setup](#initial-setup)
     + [Booting with QEMU](#booting-with-qemu)
+ * [Setting up the Bristol timing system](#setting-up-the-bristol-timing-system)
 
 ## Read First
 
@@ -196,7 +197,7 @@ pulled was the 11 Aug 2022 release. Use `dbt-create -l -n` to list all nightly b
 * `dbt-workarea-env`
 * `dbt-build`
 3. Load [this bitfile](https://pdts-fw.web.cern.ch/pdts-fw/index.php?p=tags%2Fnocdr_integration%2Fb0%2Fpipeline4286375&view=master_pc053d_nocdr-integration-b0_sha-01d4e48e_runner-6bb6b053-project-19909-concurrent-2_220727_1122.tgz
-) on the timing master board.
+) on the timing master board. Make sure it is a rev "D" board, not rev "A".
 4. Connect to the timing board UART via micro-USB at 19200 baud, no HW flow control, 8 data bits, 1 stop bit, no partiy bits. Issue the following commands:
 * `write`
 * `c0a8c810` This sets the IP address to 192.168.200.16
@@ -213,7 +214,10 @@ pulled was the 11 Aug 2022 release. Use `dbt-create -l -n` to list all nightly b
 8. Then issue the following commands:
 * `dtsbutler -c local.xml io MST_FMC reset`
 * `dtsbutler -c local.xml mst MST_FMC synctime`
-* `dtsbutler -c local.xml io EPT_0 reset`
-* `dtsbutler -c local.xml mst MST_FMC control-timestamp-broadcast`
 9. On the WIB, issue the command `./startup-timing-DCSK-WIB2.sh`
 10. If everything is set up correctly, the serial port should print out status messages indicating EPT STATE: 0x8. This confirms the timing endpoint state machine is locked onto the data stream.
+11. To test timing transmission from WIB<->PTC, issue the command on the WIB `./startup-timing-DCSK-WIB2.sh`. The same EPT STATE: 0x8 message should appear if the timing stream is correclty transmitted from PTC->WIB
+12. Then issue these commands on the timing master to test the transmission path back from WIB->PTC:
+* `dtsbutler -c local.xml mst MST_FMC align toggle-tx <ept_adr> --on`, where <ept_adr> is the 16-bit endpoint address (currently default 16'h0000 on WIB).
+* `dtsbutler -c local.xml mst MST_FMC align measure-delay 0`
+13. If everything is set up correctly, the timing master console will report a round trip time (RTT) in ticks of the 62.5MHz clock.
