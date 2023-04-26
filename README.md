@@ -216,7 +216,7 @@ pulled was the 11 Aug 2022 release. Use `dbt-create -l -n` to list all nightly b
 * `dtsbutler -c local.xml mst MST_FMC synctime`
 9. On the WIB, issue the command `./startup-timing-DCSK-WIB2.sh`
 10. If everything is set up correctly, the serial port should print out status messages indicating EPT STATE: 0x8. This confirms the timing endpoint state machine is locked onto the data stream.
-11. To test timing transmission from WIB<->PTC, issue the command on the WIB `./startup-timing-DCSK-WIB2.sh`. The same EPT STATE: 0x8 message should appear if the timing stream is correclty transmitted from PTC->WIB
+11. To test timing transmission from WIB<->PTC, issue the command on the WIB `./startup-timing-DCSK-PTC.sh`. The same EPT STATE: 0x8 message should appear if the timing stream is correclty transmitted from PTC->WIB
 12. Then issue these commands on the timing master to test the transmission path back from WIB->PTC:
 * `dtsbutler -c local.xml mst MST_FMC align toggle-tx <ept_adr> --on`, where <ept_adr> is the 16-bit endpoint address (currently default 16'h0000 on WIB).
 * `dtsbutler -c local.xml mst MST_FMC align measure-delay 0`
