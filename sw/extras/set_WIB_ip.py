@@ -41,6 +41,10 @@ def get_info(crate_addr, slot_addr):
             ip = "10.73.137.49"
             mac = "AA:BB:CC:DD:05:05"
             name = "np04-wib-505"
+        elif (slot_addr == 0x6):
+            ip = "10.73.137.122"
+            mac = "AA:BB:CC:DD:05:06"
+            name = "np04-wib-506"
         else:
             ip = f"10.73.137.{(crate_addr*5)+20+slot_addr}"
             mac = f"AA:BB:CC:DD:0{crate_addr}:0{slot_addr}"
@@ -52,6 +56,19 @@ def get_info(crate_addr, slot_addr):
         ip = f"10.73.138.{39+slot_addr}"
         mac = f"AA:BB:CC:DD:09:0{slot_addr}"
         name = f"np04-wib-{crate_addr}0{slot_addr}"
+    elif (crate_addr == 0xA):
+        mac = f"AA:BB:CC:DD:10:0{slot_addr}"
+        name = f"np02-wib-100{slot_addr}"
+        if (slot_addr == 0x4):
+            ip = "10.73.137.137"
+        elif (slot_addr < 0x4):
+            ip = f"10.73.137.{125+slot_addr}"
+        else:
+            ip = f"10.73.137.{124+slot_addr}"
+    elif (crate_addr == 0xB):
+        ip = f"10.73.137.{130+slot_addr}"
+        mac = f"AA:BB:CC:DD:11:0{slot_addr}"
+        name = f"np02-wib-110{slot_addr}"
     elif (crate_addr == 0x0F):
         if (slot_addr > 1):
             ip = f"192.168.200.{slot_addr-1}"

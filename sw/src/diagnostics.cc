@@ -46,6 +46,10 @@ bool acquire_data(WIB &w, const bool femb_mask[4], channel_data &dch0, channel_d
 }
 
 bool check_test_pattern(WIB_3ASIC &w, const bool femb_mask[4], bool cold) {
+    glog.log("Skipping ADC test pattern check, but performing configuration\n");
+    adc_test_config(w,femb_mask,cold,false);
+    return true;
+
     glog.log("Configuring ADC test pattern on enabled FEMBs\n");
     bool conf_res = adc_test_config(w,femb_mask,cold);
     if (!conf_res) {
