@@ -875,7 +875,7 @@ bool WIB::calibrate() {
 int WIB::getDetectorType() {
     uint8_t crate_num = ~(backplane_crate_num()) & 0xF;
     // For EHN1 running
-    int knownTypes[] = {0, 1, 1, 2, 2, 3, 3, 3, 0, 0, 3, 3};
+    int knownTypes[] = {0, 1, 1, 2, 2, 3, 3, 3, 4, 0, 3, 3};
     if (crate_num > 11) {
       glog.log("Detector type unknown for crate number %i, guessing upper APA as default\n", crate_num);
       return 1;

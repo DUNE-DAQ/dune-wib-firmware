@@ -132,7 +132,7 @@ public:
     virtual bool calibrate();
 
     // Guess the detector type based on crate ID
-    // Returns 1 for upper APA, 2 for lower APA, 3 for CRP
+    // Returns 1 for upper APA, 2 for lower APA, 3 for CRP, 4 for ICEBERG
     virtual int getDetectorType();
 
     // Read the onboard I2C sensors and fill the sensor structure
