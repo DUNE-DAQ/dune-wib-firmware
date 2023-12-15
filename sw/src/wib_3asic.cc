@@ -551,10 +551,12 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
 
+    bool good_calibrate = true;
     if (calibrate()) {
       glog.log("ColdADCs calibrated\n");
     }
     else {
+      good_calibrate = false;
       glog.log("ColdADC calibration failed\n");
     }   
 
@@ -569,7 +571,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
 
     
-    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res && good_alignment;
+    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res && good_calibrate && good_alignment;
 }
 
 bool WIB_3ASIC::calibrate() {
