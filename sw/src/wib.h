@@ -98,6 +98,9 @@ public:
     
     // Calls the `reboot` system command
     bool reboot();
+    // Calls the recompile.sh script to recompile the software
+    bool recompile();
+
     // Calls the wib_update.sh script after unpacking the two tar archives
     bool update(const std::string &root_archive, const std::string &boot_archive);
     
@@ -129,7 +132,7 @@ public:
     virtual bool calibrate();
 
     // Guess the detector type based on crate ID
-    // Returns 1 for upper APA, 2 for lower APA, 3 for CRP
+    // Returns 1 for upper APA, 2 for lower APA, 3 for CRP, 4 for ICEBERG
     virtual int getDetectorType();
 
     // Read the onboard I2C sensors and fill the sensor structure

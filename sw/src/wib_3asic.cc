@@ -150,7 +150,7 @@ bool WIB_3ASIC::set_edge_delay(uint8_t edge_delay) {
 
 bool WIB_3ASIC::set_channel_map(int detector_type) {
   uint32_t value = io_reg_read(&this->regs, REG_FW_CTRL);
-  if (detector_type == 1 || detector_type == 2) {
+  if (detector_type == 1 || detector_type == 2 || detector_type == 4) {
     value &= ~(1<<21);
   } else if (detector_type == 3) {
     value |= (1<<21);
@@ -406,6 +406,9 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     } else if (detector_type == 3) {
       set_alignment(0x7fe4);
       set_edge_delay(0);
+    } else if (detector_type == 4) {
+      set_alignment(0x7fec);
+      set_edge_delay(0);
     }
 
     // Set appropriate channel map
@@ -551,10 +554,12 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
 
+    bool good_calibrate = true;
     if (calibrate()) {
       glog.log("ColdADCs calibrated\n");
     }
     else {
+      good_calibrate = false;
       glog.log("ColdADC calibration failed\n");
     }   
 
@@ -569,7 +574,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
 
     
-    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res && good_alignment;
+    return coldata_res && coldadc_res && larasic_res && spi_verified && pulser_res && good_calibrate && good_alignment;
 }
 
 bool WIB_3ASIC::calibrate() {

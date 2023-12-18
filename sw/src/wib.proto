@@ -156,6 +156,13 @@ message Calibrate {
     //replies Status
 }
 
+// Recompile the software currently loaded on the WIB
+message Recompile {
+    
+    //replies Status
+}
+
+
 /** System control commands **/
 
 // Deploy new root and boot archives to the WIB (send reboot after!)

@@ -43,7 +43,7 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
         //res &= i2c_write_verify(0, i, 5, 0x46, 0x1);    //CONFIG_SER_MODE
         //res &= i2c_write_verify(0, i, 5, 0x47, 0x0);    //CONFIG_SER_INV_SER_CLK
 
-	if (detectorType == 1) {
+	if (detectorType == 1 || detectorType == 4) {
 	  // Upper APA line driver configuration
 	  res &= i2c_write_verify(0, i, 5, 0x48, 0x0);    //CONFIG_DRV_VMBOOST
 	  res &= i2c_write_verify(0, i, 5, 0x49, 0x0);    //CONFIG_DRV_VMDRIVER
@@ -277,7 +277,7 @@ bool FEMB_3ASIC::configure_larasic(const larasic_conf &c, int detectorType, int 
     for (uint8_t i = 2; i < 4; i++) { // For each COLDATA on FEMB
         for (uint8_t page = 1; page <= 4; page++) { // For each LArASIC page in COLDATA
             for (uint8_t addr = 0x82; addr < 0x92; addr++) { // set channel registers
-	      if (c.snc == 2 && (detectorType == 1 || detectorType == 2)) { // Set baseline according to APA mapping
+	      if (c.snc == 2 && (detectorType == 1 || detectorType == 2 || detectorType == 4)) { // Set baseline according to APA mapping
 		int chip = (i==2)*4 + page - 1;
 		channel_reg = ((c.sts ? 1 : 0) << 7) // 1 = test capacitor enabled
 		  | ((APABaselineMapping[chip][addr-0x82]) << 6) // 0 = 900 mV baseline;1 = 200 mV baseline

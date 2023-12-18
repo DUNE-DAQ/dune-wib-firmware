@@ -690,6 +690,12 @@ bool WIB::reboot() {
     return WEXITSTATUS(ret) == 0;
 }
 
+bool WIB::recompile() {
+    int ret = system("/etc/wib/recompile.sh");
+    glog.log("Recompiled software with exit code %d\n", WEXITSTATUS(ret));
+    return WEXITSTATUS(ret) == 0;
+}
+
 bool WIB::update(const string &root_archive, const string &boot_archive) {
     ofstream out_boot("/home/root/boot_archive.tar.gz", ofstream::binary);
     out_boot.write(boot_archive.data(),boot_archive.size());
@@ -803,7 +809,6 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors) {
         } else if (i < 6) {
 	  // glog.log("Reading FEMB LDO %i current\n",i-4);
             addr = femb_ldo_current_addr[i-4];
-	    continue;
         } else if (i < 7) {
 	  //glog.log("Reading FEMB bias current\n");
             addr = femb_bias_current_addr[i-6];
@@ -870,8 +875,8 @@ bool WIB::calibrate() {
 int WIB::getDetectorType() {
     uint8_t crate_num = ~(backplane_crate_num()) & 0xF;
     // For EHN1 running
-    int knownTypes[] = {0, 1, 1, 2, 2, 3, 3, 3};
-    if (crate_num > 7) {
+    int knownTypes[] = {0, 1, 1, 2, 2, 3, 3, 3, 4, 0, 3, 3};
+    if (crate_num > 11) {
       glog.log("Detector type unknown for crate number %i, guessing upper APA as default\n", crate_num);
       return 1;
     } else if (knownTypes[crate_num] == 0) {
