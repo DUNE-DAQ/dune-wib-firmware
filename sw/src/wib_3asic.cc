@@ -148,6 +148,15 @@ bool WIB_3ASIC::set_edge_delay(uint8_t edge_delay) {
     return true;
 }
 
+bool WIB_3ASIC::set_context_field(uint8_t context) {
+    uint32_t prev = io_reg_read(&this->regs, 0x0020/4);
+    uint32_t mask = 0xffffffff ^ (0x3F << 1);
+    uint32_t write = (context & 0x3F) << 1;
+    io_reg_write(&this->regs, 0x0020/4, (prev & mask) | write);
+    return true;
+}
+
+
 bool WIB_3ASIC::set_channel_map(int detector_type) {
   uint32_t value = io_reg_read(&this->regs, REG_FW_CTRL);
   if (detector_type == 1 || detector_type == 2 || detector_type == 4) {
@@ -465,6 +474,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
 
     // FEMB number assignments for crpFEMBs[wibSlot][fembIdx]
     int crpFEMBs[6][4] = {{6,5,2,1}, {8,7,4,3}, {14,13,10,9}, {16,15,12,11}, {22,21,18,17}, {24,23,20,19}};
+    int pulse_dac = -1;
     for (int i = 0; i < 4; i++) {
         if (conf.fembs(i).enabled()) {
             larasic_conf c;
@@ -478,6 +488,8 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             c.slk = femb_conf.leak() == 1;
 	    c.sgp = femb_conf.gain_match() == false;
             c.sdac = femb_conf.pulse_dac() & 0x3F;
+	    if (pulse_dac == -1) pulse_dac = c.sdac;
+	    if (pulse_dac != c.sdac) pulse_dac = -2;
             c.sdacsw2 = conf.pulser(); //connect pulser to channels
             
             c.sts = femb_conf.test_cap() == true;
@@ -549,7 +561,13 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     pulser_res &= set_pulser(conf.pulser());
-        
+    // If pulser is enabled, set DAQ context ID field to be the pulser DAC setting
+    // pulse_dac == -2 means the FEMBs were configured with different DAC values
+    // Currently no way to independently set context field for different links, so don't set this field in that case
+    if (pulser_res && conf.pulser() && pulse_dac != -2) {
+      set_context_field(pulse_dac);
+    }
+    
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
     glog.log("Serial receivers reset\n");
