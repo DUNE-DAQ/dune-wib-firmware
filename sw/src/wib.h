@@ -136,7 +136,7 @@ public:
     virtual int getDetectorType();
 
     // Read the onboard I2C sensors and fill the sensor structure
-    bool read_sensors(wib::GetSensors::Sensors &sensors);
+    bool read_sensors(wib::GetSensors::Sensors &sensors, bool verbose=false);
     
     // Read the status of the timing endpoint 
     bool read_timing_status(wib::GetTimingStatus::TimingStatus &status);

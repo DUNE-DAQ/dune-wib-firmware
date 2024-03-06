@@ -204,7 +204,7 @@ bool WIB_3ASIC::check_alignment_delay(int fembIdx) {
   for (int link = 0; link < 4; link++) {
     uint32_t mask = 0xFF << (8*link);
     uint32_t delayValue = (value & mask) >> (8*link);
-    if (delayValue > 0x7F) {
+    if (delayValue > 0x7F || delayValue == 0) {
       glog.log("FEMB %i link %i has bad alignment delay of %02X\n", fembIdx, link, delayValue);
       return false;
     }
@@ -566,6 +566,8 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     // Currently no way to independently set context field for different links, so don't set this field in that case
     if (pulser_res && conf.pulser() && pulse_dac != -2) {
       set_context_field(pulse_dac);
+    } else {
+      set_context_field(0);
     }
     
     femb_rx_mask(rx_mask); 
