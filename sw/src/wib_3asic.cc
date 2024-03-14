@@ -466,6 +466,14 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
         adc_conf = NULL;
     }
 
+    bool wib_pulser = false;
+    if (conf.has_wib_pulser()) {
+      const wib::ConfigureWIB::ConfigureWIBPulser &wib_pulser_msg = conf.wib_pulser();
+      for (int i = 0; i < 4; i++) {
+	wib_pulser |= wib_pulser_msg.femb_en(i);
+      }
+    }
+
     // Pulser _must_ be off to program LArASIC
     bool pulser_res = set_pulser(false);
     
@@ -506,7 +514,13 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             int fembNum = crpFEMBs[backplane_slot_num() & 0x7][i];
 	    if (fembNum > 12) fembNum -= 12;
 	    if (detector_type != 3) fembNum = 0; // FEMB number is currently irrelevant for non-CRP configurations
-	    
+
+	    // Override LArASIC pulser input settings if WIB pulser is enabled
+	    if (wib_pulser) {
+	      c.sts = 1;
+	      c.sdacsw1 = 1;
+	      c.sdacsw2 = 0;
+	    }
             larasic_res &= femb[i]->configure_larasic(c, detector_type, fembNum); // Sets ACT to ACT_PROGRAM_LARASIC
         } else {
             rx_mask |= (0xF << (i*4));
@@ -572,7 +586,7 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
-    glog.log("Serial receivers reset\n");
+    //    glog.log("Serial receivers reset\n");
 
     bool good_calibrate = true;
     if (calibrate()) {
@@ -582,6 +596,15 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
       good_calibrate = false;
       glog.log("ColdADC calibration failed\n");
     }   
+
+    if (wib_pulser) {
+      glog.log("Configuring and enabling WIB pulser");
+      const wib::ConfigureWIB::ConfigureWIBPulser &wib_pulser_msg = conf.wib_pulser();      
+      pulser_res &= configure_wib_pulser(wib_pulser_msg.pulse_dac(), wib_pulser_msg.pulse_period(), wib_pulser_msg.pulse_phase(), wib_pulser_msg.pulse_duration());
+      pulser_res &= enable_wib_pulser(wib_pulser_msg.femb_en(0), wib_pulser_msg.femb_en(1), wib_pulser_msg.femb_en(2), wib_pulser_msg.femb_en(3));
+    } else {
+      pulser_res &= enable_wib_pulser(false, false, false, false);
+    }
 
     enable_stamp_sync(true);
     reset_crc_bits();
@@ -607,4 +630,77 @@ bool WIB_3ASIC::calibrate() {
 	// femb[i]->dump_calib_constants();
     }
     return true;
+}
+
+bool WIB_3ASIC::configure_wib_pulser(uint16_t pulse_dac, uint32_t pulse_period, uint8_t pulse_phase, uint32_t pulse_duration) {
+  
+    // Set DAC value
+    uint32_t prev = io_reg_read(&this->regs, 0x003C/4);
+    uint32_t mask = 0xffffffff ^ (0xFFFF << 16);
+    uint32_t write = (pulse_dac & 0xFFFF) << 16;
+    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+
+    // Wait for up to 5 s for DAC programming to finish
+    for (int i = 0; i < 10; i++) {
+        usleep(500000);
+	bool busy = io_reg_read(&this->regs, 0x0090/4) & (1 << 20);
+	if (!busy) break;
+	if (i == 9) {
+	  glog.log("Timed out waiting for WIB calibration DAC programming to finish\n");
+	  return false;
+	}
+    }
+    // Complete DAC programming
+    prev = io_reg_read(&this->regs, 0x0004/4);
+    mask = 0xffffffff ^ (1 << 22);
+    write = 1 << 22;
+    io_reg_write(&this->regs, 0x0004/4, (prev & mask) | write);
+    io_reg_write(&this->regs, 0x0004/4, (prev & mask));
+
+    
+    // Program remaining settings
+    prev = io_reg_read(&this->regs, 0x003C/4);
+    mask = 0xffffffff ^ (0b11111 << 6);
+    write = (pulse_phase & 0xb11111) << 6;
+    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+
+    prev = io_reg_read(&this->regs, 0x0040/4);
+    mask = 0xffffffff ^ (0x1FFFFF);
+    write = pulse_period & 0x1FFFFF;
+    io_reg_write(&this->regs, 0x0040/4, (prev & mask) | write);
+
+    prev = io_reg_read(&this->regs, 0x0044/4);
+    mask = 0xffffffff ^ (0x7FFFFFF);
+    write = pulse_duration & 0x7FFFFFF;
+    io_reg_write(&this->regs, 0x0044/4, (prev & mask) | write);
+
+    return true;
+    
+}
+
+bool WIB_3ASIC::enable_wib_pulser(bool femb0, bool femb1, bool femb2, bool femb3) {
+    uint32_t prev = io_reg_read(&this->regs, 0x003C/4);
+    uint32_t mask = 0xffffffff ^ (0b1111 << 11);
+    uint32_t write = (femb0 << 14) | (femb1 << 13) | (femb2 << 12) | (femb3 << 11);
+    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+
+    // Start pulses
+    prev = io_reg_read(&this->regs, 0x003C/4);
+    mask = 0xffffffff ^ 0b111111;
+    write = ((femb3 | femb2 | femb1 | femb0) << 5) | (1 << 4) | (femb3 << 3) | (femb2 << 2) | (femb1 << 1) | (femb0);
+    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+
+    bool enableFEMBs[] = {femb0, femb1, femb2, femb3};
+    bool conf_res = true;
+    for (int i = 0; i < 4; i++) {
+      if (enableFEMBs[i]) {
+	conf_res &= femb[i]->i2c_write_verify(0, 3, 0, 0x27, 0x1F);
+	conf_res &= femb[i]->i2c_write_verify(0, 3, 0, 0x26, 0x01);
+	conf_res &= femb[i]->i2c_write_verify(0, 2, 0, 0x27, 0x1F);
+	conf_res &= femb[i]->i2c_write_verify(0, 2, 0, 0x26, 0x0);
+      }
+    }
+
+
+    return conf_res;
 }

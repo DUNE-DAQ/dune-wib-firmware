@@ -133,6 +133,15 @@ message ConfigureWIB {
         uint32 reg_30 = 8;
     }
 
+    // Message for configuring WIB internal pulser and enabling connection to FEMBs
+    message ConfigureWIBPulser {
+    	repeated bool femb_en = 1; // must supply 4
+    	uint32 pulse_dac = 2;
+	uint32 pulse_period = 3;
+	uint32 pulse_phase = 4;
+	uint32 pulse_duration = 5;
+    }
+
     repeated ConfigureFEMB fembs = 1; //must supply 4
     
     bool cold = 2; // True if front end is COLD (77k)
@@ -146,6 +155,8 @@ message ConfigureWIB {
     bool frame_dd = 6; // enable Frame-DD from COLDATA instead of Frame-14 data
 
     uint32 detector_type = 7; // 0 for WIB default, 1 for upper APA, 2 for lower APA, 3 for CRP
+
+    ConfigureWIBPulser wib_pulser = 8; // Configuration message if using WIB internal pulser
     //replies Status
 }
 

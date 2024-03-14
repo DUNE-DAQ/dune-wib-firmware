@@ -29,6 +29,12 @@ public:
     
     // Calibrate the COLDADCs manually
     virtual bool calibrate();
+
+    // Configures WIB DAC settings
+    virtual bool configure_wib_pulser(uint16_t pulse_dac, uint32_t pulse_period, uint8_t pulse_phase, uint32_t pulse_duration);
+
+    // Enable WIB pulser
+    virtual bool enable_wib_pulser(bool femb0 = true, bool femb1 = true, bool femb2 = true, bool femb3 = true);
     
 protected:
 
@@ -74,7 +80,7 @@ protected:
     
     // Resets the coldata serial receivers
     bool femb_rx_reset();
-    
+
     // Reset front end to a powered off state
     virtual bool reset_frontend();
 };
