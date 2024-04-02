@@ -775,11 +775,12 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors, bool verbose) {
     sensors.set_ad7414_4a_temp(t);
 
     // 0x15 LTC2499 temperature sensor inputs from LTM4644 for FEMB 0 - 3 and WIB 1 - 3
-    //    start_ltc2499_temp(&this->femb_pwr_i2c,0);
     sensors.clear_ltc2499_15_temps();
     for (uint8_t i = 0; i < 7; i++) {
         usleep(175000);
-        t = read_ltc2499_temp(&this->femb_pwr_i2c,i+1);
+	start_ltc2499_temp(&this->femb_pwr_i2c,i);
+	usleep(175000);
+        t = read_ltc2499_temp(&this->femb_pwr_i2c,i);
 	if (verbose) glog.log("LTC2499 ch%i -> %0.14f\n",i,t);
         sensors.add_ltc2499_15_temps(t);
     }
@@ -832,8 +833,10 @@ bool WIB::read_sensors(wib::GetSensors::Sensors &sensors, bool verbose) {
         }
 	//        glog.log("LTC2991 0x%X Vcc -> %0.2f V\n",addr,0.00030518*read_ltc2991_value(femb_power_mon_i2c,addr,10)+2.5);
     }
-    sensors.add_femb_ldo_a0_ltc2991_voltages(0);
-    sensors.add_femb_ldo_a1_ltc2991_voltages(0);
+    for (int i = 0 ; i < 8; i++) {
+      sensors.add_femb_ldo_a0_ltc2991_voltages(0);
+      sensors.add_femb_ldo_a1_ltc2991_voltages(0);
+    }
 
 
     return true;
