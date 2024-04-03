@@ -93,7 +93,7 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
         femb_power_en_ctrl(femb_idx, 0x6B); //COLDATA ON
         usleep(1000000);
         glog.log("Loading %s COLDATA config\n",cold?"COLD":"WARM");
-        power_res &= femb[femb_idx]->configure_coldata(cold,FRAME_14,1); //default config
+        power_res &= femb[femb_idx]->configure_coldata(FRAME_14,1,1); //default config
         if (!power_res) {
             glog.log("Failed to configure COLDATA; aborting power on\n");
             femb_power_set(femb_idx,false);
@@ -400,6 +400,10 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     enable_stamp_sync(false);
 
     int detector_type = conf.detector_type();
+    if (detector_type > 4) {
+      glog.log("Requested detector type %i not recognized\n", detector_type);
+      return false;
+    }
     if (detector_type == 0) {
       detector_type = getDetectorType();
       glog.log("Obtained detector type %i from crate ID\n", detector_type);
@@ -427,8 +431,24 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     bool coldata_res = true;
+    // Read line driver settings for 8 COLDATA
+    int line_driver[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+    int line_driver_idx = 0;
+    while (line_driver_idx < conf.line_driver_size()) {
+      if (conf.line_driver(line_driver_idx) == 0) {
+	line_driver[line_driver_idx] = line_driver_map[detector_type];
+      } else {
+	line_driver[line_driver_idx] = conf.line_driver(line_driver_idx);
+      }
+      line_driver_idx++;
+    }
+    for (; line_driver_idx < 8; line_driver_idx++) {
+      line_driver[line_driver_idx] = line_driver_map[detector_type];
+    }
     for (int i = 0; i < 4; i++) { // Configure COLDATA
-        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),conf.frame_dd()?FRAME_DD:FRAME_14,detector_type);
+      if (conf.fembs(i).enabled()) {
+	coldata_res &= femb[i]->configure_coldata(conf.frame_dd()?FRAME_DD:FRAME_14,line_driver[i*2],line_driver[i*2+1]);
+      }
     }
     if (coldata_res) {
         glog.log("COLDATA configured\n");

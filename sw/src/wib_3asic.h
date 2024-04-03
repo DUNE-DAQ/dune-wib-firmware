@@ -37,7 +37,11 @@ public:
     virtual bool enable_wib_pulser(bool femb0 = true, bool femb1 = true, bool femb2 = true, bool femb3 = true);
     
 protected:
-
+    // Default line driver settings for each detector_type
+    // Note: detector_type 0 is undefined
+    // See getDetectorType() for detector type definitions
+    int line_driver_map[5] = {1, 1, 4, 5, 1};
+  
     // Interface to each of the 4 FEMBs 
     FEMB_3ASIC* femb[4];
     

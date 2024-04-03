@@ -157,6 +157,12 @@ message ConfigureWIB {
     uint32 detector_type = 7; // 0 for WIB default, 1 for upper APA, 2 for lower APA, 3 for CRP
 
     ConfigureWIBPulser wib_pulser = 8; // Configuration message if using WIB internal pulser
+
+    // Preset line driver configuration options
+    // 0 for detector default, 1 for current-mode (short cable)
+    // 2 for warm 25m cable, 3 for warm 35m, 4 for cold 25m, 5 for cold 25m
+    repeated uint32 line_driver = 9;
+    
     //replies Status
 }
 
