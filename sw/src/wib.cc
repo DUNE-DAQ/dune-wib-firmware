@@ -97,7 +97,7 @@ bool WIB::reset_timing_endpoint() {
     bool success = true;
     bool endpoint_lock = is_endpoint_locked();
     uint32_t ept_status = io_reg_read(&this->regs, REG_ENDPOINT_STATUS);
-    glog.log("EPT status %d before timing reset", ept_status);
+    glog.log("EPT status %d before timing reset\n", ept_status);
     if (!pll_initialized) {
         glog.log("Configuring PLL\n");
         int ret = system("/etc/wib/si5345_config");
@@ -112,7 +112,7 @@ bool WIB::reset_timing_endpoint() {
     }
     if (backplane_slot_num() == 0xF) {
         glog.log("Slot number is 0xF; assuming there is no backplane.\n");
-        glog.log("Using timing signal from SFP");
+        glog.log("Using timing signal from SFP\n");
         io_reg_write(&this->regs,REG_FW_CTRL,(1<<5),(1<<5));
     } else {
         glog.log("Using timing signal from backplane\n");
@@ -128,7 +128,8 @@ bool WIB::reset_timing_endpoint() {
 
     //  If timing status was previously bad, need to readjust I2C phase
     if (!endpoint_lock) {
-      glog.log("Timing status recovered fro a bad state, readjusting I2C clock phase by %d steps\n", i2c_phase_steps);
+      int i2c_phase_steps = get_i2c_phase_steps();
+      glog.log("Timing status recovered from a bad state, readjusting I2C clock phase by %d steps\n", i2c_phase_steps);
       i2c_phase_adjust(i2c_phase_steps);
     }
     return success;
@@ -147,6 +148,21 @@ void WIB::i2c_phase_adjust(int steps) {
         io_reg_write(&this->regs, 0x0004/4, adjust_write);
         io_reg_write(&this->regs, 0x0004/4, prev);
     }
+}
+
+// Reads text file for correct number of steps. Defaults to 300 when no configuration file exists.
+int WIB::get_i2c_phase_steps() {
+    std::ifstream stepsFile("/etc/wib/i2c_phase");
+    if (stepsFile.good()) {
+      int i2c_steps;
+      try {
+	stepsFile >> i2c_steps;
+	return i2c_steps;
+      } catch (...) {
+      }
+    }
+    glog.log("Failed to read I2C phase value from /etc/wib/i2c_phase, using default\n");
+    return 300;
 }
 
 void WIB::felix_tx_reset() {

@@ -86,7 +86,10 @@ public:
 
     // Adjust I2C clock phase by (steps) number of units (~15 ps per step)
     void i2c_phase_adjust(int steps);
-  
+
+    // Returns number of steps for I2C clock phase adjustment
+    int get_i2c_phase_steps();
+
     // Reset the FELIX transmitters
     void felix_tx_reset();
     
@@ -166,9 +169,6 @@ protected:
     
     // I2C interface to the I2C bus with FEMB power monitor
     i2c_t femb_pwr_i2c;
-
-    // Number of steps for I2C clock phase adjustment
-    int i2c_phase_steps = 300;
     
     // AXI interface to firmware control and status registers 
     io_reg_t regs;
@@ -197,7 +197,7 @@ protected:
     // Reset front end to a powered off state (ready to be turned on)
     // At a minimum this should disable regulators femb_power_en_ctrl and configure them femb_power_config
     virtual bool reset_frontend() = 0;
-    
+
 };
 
 #endif

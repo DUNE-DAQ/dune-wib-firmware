@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
             rep.set_success(success);
             rep.SerializeToString(&reply_str);
         }else if (command.cmd().Is<wib::LogControl>()) {
-            glog.log("log_control\n");
+	  //            glog.log("log_control\n");
             wib::LogControl req;    
             command.cmd().UnpackTo(&req);
             wib::LogControl::Log rep;    
@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
                 }
                 *rep.mutable_contents() = buf.str();
             } else if (req.return_log()) {
-                glog.log("log stored\n");
+	        glog.log("log stored\n");
                 glog.store(rep.mutable_contents());
             }
             if (req.clear_log()) {

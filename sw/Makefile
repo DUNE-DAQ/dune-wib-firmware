@@ -50,6 +50,7 @@ install:
 	install -m 0755 extras/devreg.sh "$(DESTDIR)/etc/rc5.d/devreg.sh"
 	install -d "$(DESTDIR)/etc/wib/"
 	install -m 0755 scripts/* "$(DESTDIR)/etc/wib/"
+	install -m 0755 extras/i2c_phase "$(DESTDIR)/etc/wib/i2c_phase"
 
 
 clean:

@@ -431,23 +431,21 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     bool coldata_res = true;
-    // Read line driver settings for 8 COLDATA
-    int line_driver[8] = {1, 1, 1, 1, 1, 1, 1, 1};
-    int line_driver_idx = 0;
-    while (line_driver_idx < conf.line_driver_size()) {
-      if (conf.line_driver(line_driver_idx) == 0) {
-	line_driver[line_driver_idx] = line_driver_map[detector_type];
-      } else {
-	line_driver[line_driver_idx] = conf.line_driver(line_driver_idx);
-      }
-      line_driver_idx++;
-    }
-    for (; line_driver_idx < 8; line_driver_idx++) {
-      line_driver[line_driver_idx] = line_driver_map[detector_type];
-    }
+
     for (int i = 0; i < 4; i++) { // Configure COLDATA
       if (conf.fembs(i).enabled()) {
-	coldata_res &= femb[i]->configure_coldata(conf.frame_dd()?FRAME_DD:FRAME_14,line_driver[i*2],line_driver[i*2+1]);
+	// Read line driver settings for COLDATA
+	int lineDriver1 = line_driver_map[detector_type];
+	int lineDriver2 = line_driver_map[detector_type];
+	if (conf.fembs(i).line_driver_size() == 1 && conf.fembs(i).line_driver(0) != 0) {
+	  lineDriver1 = conf.fembs(i).line_driver(0);
+	  lineDriver2 = conf.fembs(i).line_driver(0);
+	} else if (conf.fembs(i).line_driver_size() == 2) {
+	  if (conf.fembs(i).line_driver(0) != 0) lineDriver1 = conf.fembs(i).line_driver(0);
+	  if (conf.fembs(i).line_driver(1) != 0) lineDriver2 = conf.fembs(i).line_driver(1);
+	}
+	
+	coldata_res &= femb[i]->configure_coldata(conf.frame_dd()?FRAME_DD:FRAME_14,lineDriver1,lineDriver2);
       }
     }
     if (coldata_res) {
