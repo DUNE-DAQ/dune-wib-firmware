@@ -435,8 +435,8 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     for (int i = 0; i < 4; i++) { // Configure COLDATA
       if (conf.fembs(i).enabled()) {
 	// Read line driver settings for COLDATA
-	int lineDriver1 = line_driver_map[detector_type];
-	int lineDriver2 = line_driver_map[detector_type];
+	int lineDriver1 = get_line_driver_default();
+	int lineDriver2 = lineDriver1;
 	if (conf.fembs(i).line_driver_size() == 1 && conf.fembs(i).line_driver(0) != 0) {
 	  lineDriver1 = conf.fembs(i).line_driver(0);
 	  lineDriver2 = conf.fembs(i).line_driver(0);
@@ -699,13 +699,13 @@ bool WIB_3ASIC::configure_wib_pulser(uint16_t pulse_dac, uint32_t pulse_period, 
 bool WIB_3ASIC::enable_wib_pulser(bool femb0, bool femb1, bool femb2, bool femb3) {
     uint32_t prev = io_reg_read(&this->regs, 0x003C/4);
     uint32_t mask = 0xffffffff ^ (0b1111 << 11);
-    uint32_t write = (femb0 << 14) | (femb1 << 13) | (femb2 << 12) | (femb3 << 11);
+    uint32_t write = (femb3 << 14) | (femb2 << 13) | (femb1 << 12) | (femb0 << 11);
     io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
 
     // Start pulses
     prev = io_reg_read(&this->regs, 0x003C/4);
     mask = 0xffffffff ^ 0b111111;
-    write = ((femb3 | femb2 | femb1 | femb0) << 5) | (1 << 4) | (femb3 << 3) | (femb2 << 2) | (femb1 << 1) | (femb0);
+    write = ((femb3 | femb2 | femb1 | femb0) << 5) | (1 << 4) | (femb0 << 3) | (femb1 << 2) | (femb2 << 1) | (femb3);
     io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
 
     bool enableFEMBs[] = {femb0, femb1, femb2, femb3};
@@ -721,4 +721,21 @@ bool WIB_3ASIC::enable_wib_pulser(bool femb0, bool femb1, bool femb2, bool femb3
 
 
     return conf_res;
+}
+
+int WIB_3ASIC::get_line_driver_default() {
+  uint8_t crate_num = ~(backplane_crate_num()) & 0xF;
+  uint8_t slot_num = backplane_slot_num() & 0x7;
+  if (crate_num == 3 && (slot_num == 1 || slot_num == 2 || slot_num == 4)) {
+    return 1;
+  } else {
+    int detector_type = getDetectorType();
+    if (detector_type > 4) {
+      glog.log("Unknown detector type %d, using short line driver settings\n", detector_type);
+      return 1;
+    }
+    return line_driver_map[detector_type];
+  }
+
+       
 }

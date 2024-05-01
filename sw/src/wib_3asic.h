@@ -41,6 +41,9 @@ protected:
     // Note: detector_type 0 is undefined
     // See getDetectorType() for detector type definitions
     int line_driver_map[5] = {1, 1, 4, 5, 1};
+
+    // Returns default line driver settings for the slot + crate numbers read from the backplane
+    int get_line_driver_default();
   
     // Interface to each of the 4 FEMBs 
     FEMB_3ASIC* femb[4];

@@ -5,9 +5,9 @@ python3 /etc/rc5.d/set_WIB_ip.py $(peek 0xA00C008C)
 /etc/rc5.d/devreg.sh i2c_select 0
 steps=300
 stepsFile="/etc/wib/i2c_phase"
-if [-f $stepsFile]; then
+if [ -f $stepsFile ]; then
     steps=$(< $stepsFile)
-    if ! [[$steps =~ '^[0-9]+$']]; then
+    if ! [[ $steps -eq $steps ]]; then
 	steps=300
     fi
 fi
