@@ -29,9 +29,22 @@ public:
     
     // Calibrate the COLDADCs manually
     virtual bool calibrate();
+
+    // Configures WIB DAC settings
+    virtual bool configure_wib_pulser(uint16_t pulse_dac, uint32_t pulse_period, uint8_t pulse_phase, uint32_t pulse_duration);
+
+    // Enable WIB pulser
+    virtual bool enable_wib_pulser(bool femb0 = true, bool femb1 = true, bool femb2 = true, bool femb3 = true);
     
 protected:
+    // Default line driver settings for each detector_type
+    // Note: detector_type 0 is undefined
+    // See getDetectorType() for detector type definitions
+    int line_driver_map[5] = {1, 1, 4, 5, 1};
 
+    // Returns default line driver settings for the slot + crate numbers read from the backplane
+    int get_line_driver_default();
+  
     // Interface to each of the 4 FEMBs 
     FEMB_3ASIC* femb[4];
     
@@ -74,7 +87,7 @@ protected:
     
     // Resets the coldata serial receivers
     bool femb_rx_reset();
-    
+
     // Reset front end to a powered off state
     virtual bool reset_frontend();
 };

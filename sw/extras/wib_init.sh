@@ -1,9 +1,18 @@
 #!/bin/sh
-echo "Register 0xA00C008C reads $(peek 0xA00C008C)"
+echo "Register 0xA00C008C reads $(peek 0xA00C008C)" > /var/log/wib_startup.log
 python3 /etc/rc5.d/set_WIB_ip.py $(peek 0xA00C008C)
 
 /etc/rc5.d/devreg.sh i2c_select 0
-for ((c=1; c<=300;c++ ))
+steps=300
+stepsFile="/etc/wib/i2c_phase"
+if [ -f $stepsFile ]; then
+    steps=$(< $stepsFile)
+    if ! [[ $steps -eq $steps ]]; then
+	steps=300
+    fi
+fi
+echo "Adjusting I2C phase by ${steps} steps" >> /var/log/wib_startup.log
+for ((c=1; c<=$steps;c++ ))
 do
         /etc/rc5.d/devreg.sh ps_en_in 1
         /etc/rc5.d/devreg.sh ps_en_in 0
@@ -14,7 +23,7 @@ done
 /etc/rc5.d/devreg.sh rx_timing_sel 0
 
 
-echo "Starting wib_server"
+echo "Starting wib_server" >> /var/log/wib_startup.log
 /bin/wib_server 2>/var/log/wib_server.err >/var/log/wib_server.log &
 sleep 5
 

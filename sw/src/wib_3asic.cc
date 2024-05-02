@@ -93,7 +93,7 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
         femb_power_en_ctrl(femb_idx, 0x6B); //COLDATA ON
         usleep(1000000);
         glog.log("Loading %s COLDATA config\n",cold?"COLD":"WARM");
-        power_res &= femb[femb_idx]->configure_coldata(cold,FRAME_14,1); //default config
+        power_res &= femb[femb_idx]->configure_coldata(FRAME_14,1,1); //default config
         if (!power_res) {
             glog.log("Failed to configure COLDATA; aborting power on\n");
             femb_power_set(femb_idx,false);
@@ -204,7 +204,7 @@ bool WIB_3ASIC::check_alignment_delay(int fembIdx) {
   for (int link = 0; link < 4; link++) {
     uint32_t mask = 0xFF << (8*link);
     uint32_t delayValue = (value & mask) >> (8*link);
-    if (delayValue > 0x7F) {
+    if (delayValue > 0x7F || delayValue == 0) {
       glog.log("FEMB %i link %i has bad alignment delay of %02X\n", fembIdx, link, delayValue);
       return false;
     }
@@ -400,6 +400,10 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     enable_stamp_sync(false);
 
     int detector_type = conf.detector_type();
+    if (detector_type > 4) {
+      glog.log("Requested detector type %i not recognized\n", detector_type);
+      return false;
+    }
     if (detector_type == 0) {
       detector_type = getDetectorType();
       glog.log("Obtained detector type %i from crate ID\n", detector_type);
@@ -427,8 +431,22 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     }
     
     bool coldata_res = true;
+
     for (int i = 0; i < 4; i++) { // Configure COLDATA
-        if (conf.fembs(i).enabled()) coldata_res &= femb[i]->configure_coldata(conf.cold(),conf.frame_dd()?FRAME_DD:FRAME_14,detector_type);
+      if (conf.fembs(i).enabled()) {
+	// Read line driver settings for COLDATA
+	int lineDriver1 = get_line_driver_default();
+	int lineDriver2 = lineDriver1;
+	if (conf.fembs(i).line_driver_size() == 1 && conf.fembs(i).line_driver(0) != 0) {
+	  lineDriver1 = conf.fembs(i).line_driver(0);
+	  lineDriver2 = conf.fembs(i).line_driver(0);
+	} else if (conf.fembs(i).line_driver_size() == 2) {
+	  if (conf.fembs(i).line_driver(0) != 0) lineDriver1 = conf.fembs(i).line_driver(0);
+	  if (conf.fembs(i).line_driver(1) != 0) lineDriver2 = conf.fembs(i).line_driver(1);
+	}
+	
+	coldata_res &= femb[i]->configure_coldata(conf.frame_dd()?FRAME_DD:FRAME_14,lineDriver1,lineDriver2);
+      }
     }
     if (coldata_res) {
         glog.log("COLDATA configured\n");
@@ -464,6 +482,14 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     if (adc_conf) {
         delete adc_conf;
         adc_conf = NULL;
+    }
+
+    bool wib_pulser = false;
+    if (conf.has_wib_pulser()) {
+      const wib::ConfigureWIB::ConfigureWIBPulser &wib_pulser_msg = conf.wib_pulser();
+      for (int i = 0; i < 4; i++) {
+	wib_pulser |= wib_pulser_msg.femb_en(i);
+      }
     }
 
     // Pulser _must_ be off to program LArASIC
@@ -506,7 +532,13 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
             int fembNum = crpFEMBs[backplane_slot_num() & 0x7][i];
 	    if (fembNum > 12) fembNum -= 12;
 	    if (detector_type != 3) fembNum = 0; // FEMB number is currently irrelevant for non-CRP configurations
-	    
+
+	    // Override LArASIC pulser input settings if WIB pulser is enabled
+	    if (wib_pulser) {
+	      c.sts = 1;
+	      c.sdacsw1 = 1;
+	      c.sdacsw2 = 0;
+	    }
             larasic_res &= femb[i]->configure_larasic(c, detector_type, fembNum); // Sets ACT to ACT_PROGRAM_LARASIC
         } else {
             rx_mask |= (0xF << (i*4));
@@ -566,11 +598,13 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
     // Currently no way to independently set context field for different links, so don't set this field in that case
     if (pulser_res && conf.pulser() && pulse_dac != -2) {
       set_context_field(pulse_dac);
+    } else {
+      set_context_field(0);
     }
     
     femb_rx_mask(rx_mask); 
     femb_rx_reset();
-    glog.log("Serial receivers reset\n");
+    //    glog.log("Serial receivers reset\n");
 
     bool good_calibrate = true;
     if (calibrate()) {
@@ -580,6 +614,15 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
       good_calibrate = false;
       glog.log("ColdADC calibration failed\n");
     }   
+
+    if (wib_pulser) {
+      glog.log("Configuring and enabling WIB pulser");
+      const wib::ConfigureWIB::ConfigureWIBPulser &wib_pulser_msg = conf.wib_pulser();      
+      pulser_res &= configure_wib_pulser(wib_pulser_msg.pulse_dac(), wib_pulser_msg.pulse_period(), wib_pulser_msg.pulse_phase(), wib_pulser_msg.pulse_duration());
+      pulser_res &= enable_wib_pulser(wib_pulser_msg.femb_en(0), wib_pulser_msg.femb_en(1), wib_pulser_msg.femb_en(2), wib_pulser_msg.femb_en(3));
+    } else {
+      pulser_res &= enable_wib_pulser(false, false, false, false);
+    }
 
     enable_stamp_sync(true);
     reset_crc_bits();
@@ -605,4 +648,94 @@ bool WIB_3ASIC::calibrate() {
 	// femb[i]->dump_calib_constants();
     }
     return true;
+}
+
+bool WIB_3ASIC::configure_wib_pulser(uint16_t pulse_dac, uint32_t pulse_period, uint8_t pulse_phase, uint32_t pulse_duration) {
+  
+    // Set DAC value
+    uint32_t prev = io_reg_read(&this->regs, 0x003C/4);
+    uint32_t mask = 0xffffffff ^ (0xFFFF << 16);
+    uint32_t write = (pulse_dac & 0xFFFF) << 16;
+    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+
+    // Wait for up to 5 s for DAC programming to finish
+    for (int i = 0; i < 10; i++) {
+        usleep(500000);
+	bool busy = io_reg_read(&this->regs, 0x0090/4) & (1 << 20);
+	if (!busy) break;
+	if (i == 9) {
+	  glog.log("Timed out waiting for WIB calibration DAC programming to finish\n");
+	  return false;
+	}
+    }
+    // Complete DAC programming
+    prev = io_reg_read(&this->regs, 0x0004/4);
+    mask = 0xffffffff ^ (1 << 22);
+    write = 1 << 22;
+    io_reg_write(&this->regs, 0x0004/4, (prev & mask) | write);
+    io_reg_write(&this->regs, 0x0004/4, (prev & mask));
+
+    
+    // Program remaining settings
+    prev = io_reg_read(&this->regs, 0x003C/4);
+    mask = 0xffffffff ^ (0b11111 << 6);
+    write = (pulse_phase & 0xb11111) << 6;
+    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+
+    prev = io_reg_read(&this->regs, 0x0040/4);
+    mask = 0xffffffff ^ (0x1FFFFF);
+    write = pulse_period & 0x1FFFFF;
+    io_reg_write(&this->regs, 0x0040/4, (prev & mask) | write);
+
+    prev = io_reg_read(&this->regs, 0x0044/4);
+    mask = 0xffffffff ^ (0x7FFFFFF);
+    write = pulse_duration & 0x7FFFFFF;
+    io_reg_write(&this->regs, 0x0044/4, (prev & mask) | write);
+
+    return true;
+    
+}
+
+bool WIB_3ASIC::enable_wib_pulser(bool femb0, bool femb1, bool femb2, bool femb3) {
+    uint32_t prev = io_reg_read(&this->regs, 0x003C/4);
+    uint32_t mask = 0xffffffff ^ (0b1111 << 11);
+    uint32_t write = (femb3 << 14) | (femb2 << 13) | (femb1 << 12) | (femb0 << 11);
+    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+
+    // Start pulses
+    prev = io_reg_read(&this->regs, 0x003C/4);
+    mask = 0xffffffff ^ 0b111111;
+    write = ((femb3 | femb2 | femb1 | femb0) << 5) | (1 << 4) | (femb0 << 3) | (femb1 << 2) | (femb2 << 1) | (femb3);
+    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+
+    bool enableFEMBs[] = {femb0, femb1, femb2, femb3};
+    bool conf_res = true;
+    for (int i = 0; i < 4; i++) {
+      if (enableFEMBs[i]) {
+	conf_res &= femb[i]->i2c_write_verify(0, 3, 0, 0x27, 0x1F);
+	conf_res &= femb[i]->i2c_write_verify(0, 3, 0, 0x26, 0x01);
+	conf_res &= femb[i]->i2c_write_verify(0, 2, 0, 0x27, 0x1F);
+	conf_res &= femb[i]->i2c_write_verify(0, 2, 0, 0x26, 0x0);
+      }
+    }
+
+
+    return conf_res;
+}
+
+int WIB_3ASIC::get_line_driver_default() {
+  uint8_t crate_num = ~(backplane_crate_num()) & 0xF;
+  uint8_t slot_num = backplane_slot_num() & 0x7;
+  if (crate_num == 3 && (slot_num == 1 || slot_num == 2 || slot_num == 4)) {
+    return 1;
+  } else {
+    int detector_type = getDetectorType();
+    if (detector_type > 4) {
+      glog.log("Unknown detector type %d, using short line driver settings\n", detector_type);
+      return 1;
+    }
+    return line_driver_map[detector_type];
+  }
+
+       
 }

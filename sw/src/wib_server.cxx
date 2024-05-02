@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
             if (buf0) delete [] buf0;
             if (buf1) delete [] buf1;
         }  else if (command.cmd().Is<wib::GetSensors>()) {
-            glog.log("get_sensors\n");
+	  //            glog.log("get_sensors\n");
             wib::GetSensors::Sensors sensors;    
             w->read_sensors(sensors);
             sensors.SerializeToString(&reply_str);
@@ -251,12 +251,12 @@ int main(int argc, char **argv) {
             w->read_timing_status(rep);
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetTimingStatus>()) {
-            glog.log("get_timing_status\n");
+	  //            glog.log("get_timing_status\n");
             wib::GetTimingStatus::TimingStatus rep;    
             w->read_timing_status(rep);
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetTimestamp>()) {
-            glog.log("get_timestamp\n");
+	  //            glog.log("get_timestamp\n");
             wib::GetTimestamp req;
             command.cmd().UnpackTo(&req);
             wib::GetTimestamp::Timestamp rep;    
@@ -270,7 +270,7 @@ int main(int argc, char **argv) {
             rep.set_sec((ts>>0)&0x3f);
             rep.SerializeToString(&reply_str);
         } else if (command.cmd().Is<wib::GetSWVersion>()) {
-            glog.log("get_sw_version\n");
+	  //            glog.log("get_sw_version\n");
             wib::GetSWVersion req;
             command.cmd().UnpackTo(&req);
             wib::GetSWVersion::Version rep;    
@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
             rep.set_success(success);
             rep.SerializeToString(&reply_str);
         }else if (command.cmd().Is<wib::LogControl>()) {
-            glog.log("log_control\n");
+	  //            glog.log("log_control\n");
             wib::LogControl req;    
             command.cmd().UnpackTo(&req);
             wib::LogControl::Log rep;    
@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
                 }
                 *rep.mutable_contents() = buf.str();
             } else if (req.return_log()) {
-                glog.log("log stored\n");
+	        glog.log("log stored\n");
                 glog.store(rep.mutable_contents());
             }
             if (req.clear_log()) {
@@ -366,7 +366,7 @@ int main(int argc, char **argv) {
 	        glog.log("Received an unknown message!\n");
 	    }
         
-        glog.log("sending message %i size %lu bytes\n",i+1,reply_str.size());
+	//        glog.log("sending message %i size %lu bytes\n",i+1,reply_str.size());
         zmq::message_t reply(reply_str.size());
         memcpy((void*)reply.data(), reply_str.c_str(), reply_str.size());
         socket.send(reply,zmq::send_flags::none);

@@ -85,7 +85,7 @@ public:
     ~FEMB_3ASIC();
     
     // Front end I2C configuration
-    bool configure_coldata(bool cold, FrameType frame, int detectorType);
+    bool configure_coldata(FrameType frame, int lineDriver1, int lineDriver2);
     bool configure_coldadc(bool cold, bool test_pattern = false, coldadc_conf *conf = NULL, bool se_larasic = true);
     bool configure_larasic(const larasic_conf &c, int detectorType=0, int femb=0);
     bool set_fast_act(uint8_t act_cmd);

@@ -235,6 +235,15 @@ def update(args):
     print('WIB will now update and reboot.')
 bind_parser(update_parser,update)
 
+recompile_parser = sub.add_parser('recompile',help='Deploy a new root and boot archive to the WIB',add_help=False)
+def recompile(args):
+    req = wibpb.Recompile()
+    rep = wibpb.Empty()
+    print('Sending recompile command...')
+    wib.send_command(req,rep) 
+    print('WIB will now update.')
+bind_parser(recompile_parser, recompile)
+
 exit_parser = sub.add_parser('exit',help='Closes the command interface',add_help=False)
 def exit(args):
     sys.exit(0)

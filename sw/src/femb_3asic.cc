@@ -22,7 +22,7 @@ FEMB_3ASIC::~FEMB_3ASIC() {
     }
 }
 
-bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType) {
+bool FEMB_3ASIC::configure_coldata(FrameType frame, int lineDriver1, int lineDriver2) {
     bool res = true;
     //See COLDATA datasheet
     //See https://docs.google.com/document/d/1OAhVMvBe33dMkuIEOaqZNht0cjfUtLdNoIFy0QeGKp0/edit#
@@ -43,7 +43,9 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
         //res &= i2c_write_verify(0, i, 5, 0x46, 0x1);    //CONFIG_SER_MODE
         //res &= i2c_write_verify(0, i, 5, 0x47, 0x0);    //CONFIG_SER_INV_SER_CLK
 
-	if (detectorType == 1 || detectorType == 4) {
+	int lineDriver = lineDriver1;
+	if (i == 2) lineDriver = lineDriver2;
+	if (lineDriver == 1) {
 	  // Upper APA line driver configuration
 	  res &= i2c_write_verify(0, i, 5, 0x48, 0x0);    //CONFIG_DRV_VMBOOST
 	  res &= i2c_write_verify(0, i, 5, 0x49, 0x0);    //CONFIG_DRV_VMDRIVER
@@ -59,21 +61,50 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
 	  res &= i2c_write_verify(0, i, 5, 0x52, 0x1);    //CONFIG_DRV_CML
 	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
 	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
-	} else if (detectorType == 2) {
+	} else if (lineDriver == 2) {
+	  // 25 meter warm cable settings in COLDATA datasheet
+	  res &= i2c_write_verify(0, i, 5, 0x48, 0x7);    //CONFIG_DRV_VMBOOST
+	  res &= i2c_write_verify(0, i, 5, 0x49, 0x7);    //CONFIG_DRV_VMDRIVER
+        
+	  res &= i2c_write_verify(0, i, 5, 0x4a, 0x1);    //CONFIG_DRV_SELPRE
+	  res &= i2c_write_verify(0, i, 5, 0x4b, 0xA);    //CONFIG_DRV_SELPST1
+	  res &= i2c_write_verify(0, i, 5, 0x4c, 0x1);    //CONFIG_DRV_SELPST2
+
+	  res &= i2c_write_verify(0, i, 5, 0x4d, 0x0);    //CONFIG_DRV_SELCM_MAIN
+	  res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
+	  res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
+	  res &= i2c_write_verify(0, i, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
+	  res &= i2c_write_verify(0, i, 5, 0x51, 0xF);    //CONFIG_DRV_DELAY_CS
+	  res &= i2c_write_verify(0, i, 5, 0x52, 0x0);    //CONFIG_DRV_CML
+	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
+	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
+	} else if (lineDriver == 3) {
+	  // 35 meter warm cable settings in COLDATA datasheet
+	  res &= i2c_write_verify(0, i, 5, 0x48, 0x7);    //CONFIG_DRV_VMBOOST
+	  res &= i2c_write_verify(0, i, 5, 0x49, 0x7);    //CONFIG_DRV_VMDRIVER
+        
+	  res &= i2c_write_verify(0, i, 5, 0x4a, 0x2);    //CONFIG_DRV_SELPRE
+	  res &= i2c_write_verify(0, i, 5, 0x4b, 0xC);    //CONFIG_DRV_SELPST1
+	  res &= i2c_write_verify(0, i, 5, 0x4c, 0x1);    //CONFIG_DRV_SELPST2
+	  res &= i2c_write_verify(0, i, 5, 0x4d, 0x0);    //CONFIG_DRV_SELCM_MAIN
+	  res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
+	  res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
+	  res &= i2c_write_verify(0, i, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
+	  res &= i2c_write_verify(0, i, 5, 0x51, 0xF);    //CONFIG_DRV_DELAY_CS
+	  res &= i2c_write_verify(0, i, 5, 0x52, 0x0);    //CONFIG_DRV_CML
+	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
+	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL	  
+
+	} else if (lineDriver == 4) {
 	  // Lower APA line driver configuration
 	  // 25 meter cold cable settings in COLDATA datasheet
 	  res &= i2c_write_verify(0, i, 5, 0x48, 0x3);    //CONFIG_DRV_VMBOOST
-	  //25m cable values
-	  //res &= i2c_write_verify(i, 2, 5, 0x48, cold ? 0x3 : 0x7);    //CONFIG_DRV_VMBOOST
 	  res &= i2c_write_verify(0, i, 5, 0x49, 0x7);    //CONFIG_DRV_VMDRIVER
         
 	  res &= i2c_write_verify(0, i, 5, 0x4a, 0x0);    //CONFIG_DRV_SELPRE
 	  res &= i2c_write_verify(0, i, 5, 0x4b, 0x2);    //CONFIG_DRV_SELPST1
 	  res &= i2c_write_verify(0, i, 5, 0x4c, 0x0);    //CONFIG_DRV_SELPST2
-	  //25m cable values
-	  //res &= i2c_write_verify(i, 2, 5, 0x4a, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPRE
-	  //res &= i2c_write_verify(i, 2, 5, 0x4b, cold ? 0x2 : 0xA);    //CONFIG_DRV_SELPST1
-	  //res &= i2c_write_verify(i, 2, 5, 0x4c, cold ? 0x0 : 0x1);    //CONFIG_DRV_SELPST2
+
 	  res &= i2c_write_verify(0, i, 5, 0x4d, 0x0);    //CONFIG_DRV_SELCM_MAIN
 	  res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
 	  res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
@@ -82,7 +113,7 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
 	  res &= i2c_write_verify(0, i, 5, 0x52, 0x0);    //CONFIG_DRV_CML
 	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
 	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL
-	} else if (detectorType == 3) {
+	} else if (lineDriver == 5) {
 	  // Bottom CRP line driver configuration
 	  // 35 meter cold cable settings in COLDATA datasheet
 	  res &= i2c_write_verify(0, i, 5, 0x48, 0x3);    //CONFIG_DRV_VMBOOST
@@ -95,12 +126,12 @@ bool FEMB_3ASIC::configure_coldata(bool cold, FrameType frame, int detectorType)
 	  res &= i2c_write_verify(0, i, 5, 0x4e, 0x1);    //CONFIG_DRV_ENABLE_CM
 	  res &= i2c_write_verify(0, i, 5, 0x4f, 0x0);    //CONFIG_DRV_INVERSE_CLK
 	  res &= i2c_write_verify(0, i, 5, 0x50, 0x0);    //CONFIG_DRV_DELAYSEL
-	  res &= i2c_write_verify(0, i, 5, 0x51, 0x0F);    //CONFIG_DRV_DELAY_CS
+	  res &= i2c_write_verify(0, i, 5, 0x51, 0xF);    //CONFIG_DRV_DELAY_CS
 	  res &= i2c_write_verify(0, i, 5, 0x52, 0x0);    //CONFIG_DRV_CML
 	  res &= i2c_write_verify(0, i, 5, 0x53, 0x1);    //CONGIF_DRV_BIAS_CML_INTERNAL
 	  res &= i2c_write_verify(0, i, 5, 0x54, 0x1);    //CONGIF_DRV_BIAS_CS_INTERNAL	  
 	} else {
-	  glog.log("Detector type %i not implemented", detectorType);
+	  glog.log("Line driver type %i not implemented", lineDriver);
 	  return false;
 	}
 
