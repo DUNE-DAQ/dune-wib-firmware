@@ -269,7 +269,15 @@ bool FEMB_3ASIC::store_calib(const uint16_t w0_vals[8][2], const uint16_t w2_val
     return res;
 }
 
-bool FEMB_3ASIC::configure_larasic(const larasic_conf &c, int detectorType, int femb) {
+// Set which of the 16 channels per LArASIC should be pulsed
+void FEMB_3ASIC::set_selected_pulser_channels(bool selected_channels[16]) {
+  for (int i = 0; i < 16; i++) {
+    selected_pulser_channels[i] = selected_channels[i];
+  }
+}
+
+
+bool FEMB_3ASIC::configure_larasic(const larasic_conf &c, int detectorType, int femb, bool pulser_select_channels) {
     bool res = true;
 
     // See LArASIC datasheet
@@ -330,6 +338,9 @@ bool FEMB_3ASIC::configure_larasic(const larasic_conf &c, int detectorType, int 
 		  | ((c.sdf ? 1 : 0) << 0); // 1 = "SE" buffer enable	      
 	      } else if (c.snc == 2) {
 		glog.log("Requested detector-specific baseline setting \"baseline\": 2, but combo of detector_type %d + FEMB %d is unknown", detectorType, femb);
+	      }
+	      if (c.sts && pulser_select_channels && !selected_pulser_channels[addr-0x82]) {
+		channel_reg -= (1 << 7);
 	      }
 	      res &= i2c_write_verify(0, i, page, addr, channel_reg);
 	      //glog.log("Channel %lx is %lx\n",(addr-0x80),channel_reg);

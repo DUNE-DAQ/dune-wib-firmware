@@ -126,6 +126,11 @@ message ConfigureWIB {
 	// Submit two values to configure each COLDATA differently. Submit one to use the same for both.
 	repeated uint32 line_driver = 15;
 
+	// List of up to 16 true/false values to choose which channels on each LArASIC to pulse
+	// Defaults to True for all 16 channels
+	// Note: no effect if no pulser type is enabled
+	repeated bool pulse_channels = 16;
+
     }
     
     // To specify non-hardcoded values for COLDADC registers
