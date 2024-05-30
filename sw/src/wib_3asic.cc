@@ -539,7 +539,20 @@ bool WIB_3ASIC::configure_wib(const wib::ConfigureWIB &conf) {
 	      c.sdacsw1 = 1;
 	      c.sdacsw2 = 0;
 	    }
-            larasic_res &= femb[i]->configure_larasic(c, detector_type, fembNum); // Sets ACT to ACT_PROGRAM_LARASIC
+	    bool pulser_channels[16];
+	    bool pulse_selected_only = false;
+	    int pulserIdx = 0;
+	    while (pulserIdx < 16) {
+	      if (pulserIdx < femb_conf.pulse_channels_size()) {
+		pulser_channels[pulserIdx] = femb_conf.pulse_channels(pulserIdx);
+		pulse_selected_only = true;
+	      } else {
+		pulser_channels[pulserIdx] = true;
+	      }
+	      pulserIdx++;
+	    }
+	    femb[i]->set_selected_pulser_channels(pulser_channels);
+            larasic_res &= femb[i]->configure_larasic(c, detector_type, fembNum, pulse_selected_only); // Sets ACT to ACT_PROGRAM_LARASIC
         } else {
             rx_mask |= (0xF << (i*4));
         }

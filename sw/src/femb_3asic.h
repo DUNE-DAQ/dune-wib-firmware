@@ -87,12 +87,15 @@ public:
     // Front end I2C configuration
     bool configure_coldata(FrameType frame, int lineDriver1, int lineDriver2);
     bool configure_coldadc(bool cold, bool test_pattern = false, coldadc_conf *conf = NULL, bool se_larasic = true);
-    bool configure_larasic(const larasic_conf &c, int detectorType=0, int femb=0);
+    bool configure_larasic(const larasic_conf &c, int detectorType=0, int femb=0, bool pulse_select_channels = false);
     bool set_fast_act(uint8_t act_cmd);
     bool read_spi_status(); // requires ACT_SAVE_STATUS first
     void log_spi_status(); // requires ACT_SAVE_STATUS first
     
     bool setup_calib_auto();
+
+    // Set which of the 16 channels per LArASIC should be pulsed
+    void set_selected_pulser_channels(bool selected_channels[16]);
 
     // for manual calibration 
     bool setup_calib_manual(uint8_t sn, uint8_t stage);
@@ -112,7 +115,8 @@ public:
     bool i2c_write_verify(uint8_t bus_idx, uint8_t chip_addr, uint8_t reg_page, uint8_t reg_addr, uint8_t data, size_t retries = 1);
 
 protected:
-
+    bool selected_pulser_channels[16] = {true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true};
+  
     int APABaselineMapping[8][16] = {
       {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1}, // ADC2
       {1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0}, // ADC4
