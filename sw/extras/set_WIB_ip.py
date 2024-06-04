@@ -50,8 +50,9 @@ def get_info(crate_addr, slot_addr):
             mac = f"AA:BB:CC:DD:0{crate_addr}:0{slot_addr}"
             name = f"np04-wib-00{slot_addr}"
     elif (crate_addr == 0x8):
-        ip = f"192.168.121.{19+slot_addr}"
-        mac = f"AA:BB:CC:DD:08:0{slot_addr}"
+        ip = f"192.168.121.{19+slot_addr-2}"
+        mac = f"AA:BB:CC:DD:08:0{slot_addr-2}"
+        name = f"iceberg-wib-10{slot_addr-1}"
     elif (crate_addr == 0x9):
         ip = f"10.73.138.{39+slot_addr}"
         mac = f"AA:BB:CC:DD:09:0{slot_addr}"
