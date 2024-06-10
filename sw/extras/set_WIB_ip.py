@@ -32,6 +32,8 @@ def get_info(crate_addr, slot_addr):
         ip = f"10.73.137.{(crate_addr*5)+19+slot_addr}"
         mac = f"AA:BB:CC:DD:0{crate_addr}:0{slot_addr}"
         name = f"np04-wib-{crate_addr}0{slot_addr}"
+        if crate_addr == 0x6 and slot_addr == 0x6:
+            ip = "10.73.137.122"
     elif (crate_addr == 0x5):
         if (slot_addr == 0x4):
             ip = "10.73.137.55"
