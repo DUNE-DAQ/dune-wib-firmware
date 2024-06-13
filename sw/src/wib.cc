@@ -166,12 +166,15 @@ int WIB::get_i2c_phase_steps() {
 }
 
 void WIB::felix_tx_reset() {
+  glog.log("FELIX no longer implemented - skipping FELIX transmitter reset request\n");
+  /*
     glog.log("Resetting FELIX transmitter\n");
     //assert and release RESET bits for both links
     //FIXME need firmware documentation to better understand this
     io_reg_write(&this->regs,REG_FELIX_CTRL,0x00000311);
     io_reg_write(&this->regs,REG_FELIX_CTRL,0x00000300);
     felix_initialized = true;
+  */
 }
 
 // read a single field from a file, stripping left and right whitespace
@@ -882,7 +885,15 @@ bool WIB::read_timing_status(wib::GetTimingStatus::TimingStatus &status) {
     status.set_lol_val(lol_val);
     status.set_lol_flg_val(lol_flg_val);
     status.set_ept_status(ept_status);
-    
+
+    // Set wib_sync field in DAQ header
+    uint32_t value = io_reg_read(&this->regs, REG_DAQ_FIELDS_1);
+    if ((ept_status & 0x8) == 0x8) {
+      value |= (1 << 31);
+    } else {
+      value &= ~(1 << 31);
+    }
+    io_reg_write(&this->regs, REG_DAQ_FIELDS_1, value);
     return true;
 }
 
