@@ -91,7 +91,7 @@ bool WIB_3ASIC::femb_power_set(int femb_idx, bool on, bool cold) {
         }
         glog.log("Powering on FEMB %i COLDATA\n",femb_idx);
         femb_power_en_ctrl(femb_idx, 0x6B); //COLDATA ON
-        usleep(1000000);
+        usleep(2000000);
         glog.log("Loading %s COLDATA config\n",cold?"COLD":"WARM");
         power_res &= femb[femb_idx]->configure_coldata(FRAME_14,1,1); //default config
         if (!power_res) {
@@ -249,6 +249,16 @@ bool WIB_3ASIC::set_pulser(bool on) {
         FEMB_3ASIC::fast_cmd(FAST_CMD_ACT); // Perform ACT
         pulser_on = on;
         if (!pulser_res) glog.log("ERROR: Pulser failed to toggle, pulser state unknown\n");
+	else {
+	  // Set calibration flag in DAQ header
+	  uint32_t value = io_reg_read(&this->regs, REG_DAQ_FIELDS_2);
+	  if (on) {
+	    value |= (0xF << 28);
+	  } else {
+	    value &= ~(0xF << 28);	    
+	  }
+	  io_reg_write(&this->regs, REG_DAQ_FIELDS_2, value);
+	}
         return pulser_res;
     } else {
         glog.log(on ? "Pulser already started\n" : "Pulser already stopped\n");
@@ -666,10 +676,10 @@ bool WIB_3ASIC::calibrate() {
 bool WIB_3ASIC::configure_wib_pulser(uint16_t pulse_dac, uint32_t pulse_period, uint8_t pulse_phase, uint32_t pulse_duration) {
   
     // Set DAC value
-    uint32_t prev = io_reg_read(&this->regs, 0x003C/4);
+    uint32_t prev = io_reg_read(&this->regs, REG_PULSER_CTRL);
     uint32_t mask = 0xffffffff ^ (0xFFFF << 16);
     uint32_t write = (pulse_dac & 0xFFFF) << 16;
-    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+    io_reg_write(&this->regs, REG_PULSER_CTRL, (prev & mask) | write);
 
     // Wait for up to 5 s for DAC programming to finish
     for (int i = 0; i < 10; i++) {
@@ -690,36 +700,36 @@ bool WIB_3ASIC::configure_wib_pulser(uint16_t pulse_dac, uint32_t pulse_period, 
 
     
     // Program remaining settings
-    prev = io_reg_read(&this->regs, 0x003C/4);
+    prev = io_reg_read(&this->regs, REG_PULSER_CTRL);
     mask = 0xffffffff ^ (0b11111 << 6);
-    write = (pulse_phase & 0xb11111) << 6;
-    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+    write = (pulse_phase & 0b11111) << 6;
+    io_reg_write(&this->regs, REG_PULSER_CTRL, (prev & mask) | write);
 
-    prev = io_reg_read(&this->regs, 0x0040/4);
+    prev = io_reg_read(&this->regs, REG_PULSER_PERIOD);
     mask = 0xffffffff ^ (0x1FFFFF);
     write = pulse_period & 0x1FFFFF;
-    io_reg_write(&this->regs, 0x0040/4, (prev & mask) | write);
+    io_reg_write(&this->regs, REG_PULSER_PERIOD, (prev & mask) | write);
 
-    prev = io_reg_read(&this->regs, 0x0044/4);
+    prev = io_reg_read(&this->regs, REG_PULSER_DUR);
     mask = 0xffffffff ^ (0x7FFFFFF);
     write = pulse_duration & 0x7FFFFFF;
-    io_reg_write(&this->regs, 0x0044/4, (prev & mask) | write);
+    io_reg_write(&this->regs, REG_PULSER_DUR, (prev & mask) | write);
 
     return true;
     
 }
 
 bool WIB_3ASIC::enable_wib_pulser(bool femb0, bool femb1, bool femb2, bool femb3) {
-    uint32_t prev = io_reg_read(&this->regs, 0x003C/4);
+    uint32_t prev = io_reg_read(&this->regs, REG_PULSER_CTRL);
     uint32_t mask = 0xffffffff ^ (0b1111 << 11);
     uint32_t write = (femb3 << 14) | (femb2 << 13) | (femb1 << 12) | (femb0 << 11);
-    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+    io_reg_write(&this->regs, REG_PULSER_CTRL, (prev & mask) | write);
 
     // Start pulses
-    prev = io_reg_read(&this->regs, 0x003C/4);
+    prev = io_reg_read(&this->regs, REG_PULSER_CTRL);
     mask = 0xffffffff ^ 0b111111;
     write = ((femb3 | femb2 | femb1 | femb0) << 5) | (1 << 4) | (femb0 << 3) | (femb1 << 2) | (femb2 << 1) | (femb3);
-    io_reg_write(&this->regs, 0x003C/4, (prev & mask) | write);
+    io_reg_write(&this->regs, REG_PULSER_CTRL, (prev & mask) | write);
 
     bool enableFEMBs[] = {femb0, femb1, femb2, femb3};
     bool conf_res = true;
